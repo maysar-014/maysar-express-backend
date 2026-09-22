@@ -111,6 +111,7 @@ describe('wallet.routes', () => {
   const controller = {
     getWallet: jest.fn(),
     getBalance: jest.fn(),
+    listHolds: jest.fn(),
     creditWallet: jest.fn(),
     debitWallet: jest.fn(),
     placeHold: jest.fn(),
@@ -138,7 +139,8 @@ describe('wallet.routes', () => {
       })
     );
     expect(idempotencyCtor).toHaveBeenCalledWith('redis://test-redis:6379');
-    expect(idempotencyWrapper).toHaveBeenCalledTimes(1);
+    // The topup route builds a custom IdempotencyMiddleware, so the shared wrapper is applied twice
+    expect(idempotencyWrapper).toHaveBeenCalledTimes(2);
   });
 
   it('registers expected wallet route signatures', () => {
@@ -149,6 +151,7 @@ describe('wallet.routes', () => {
       expect.arrayContaining([
         'GET /:userId',
         'GET /:userId/balance',
+        'GET /:userId/holds',
         'POST /:userId/credit',
         'POST /:userId/debit',
         'POST /:userId/hold',
@@ -175,7 +178,7 @@ describe('wallet.routes', () => {
   it('applies role authorization for topup and payout routes', () => {
     createWalletRoutes(controller as never);
 
-    expect(authorizeRole).toHaveBeenCalledWith(['buyer', 'seller']);
+    expect(authorizeRole).toHaveBeenCalledWith(['buyer', 'seller', 'admin', 'system']);
     expect(authorizeRole).toHaveBeenCalledWith(['enabler']);
   });
 

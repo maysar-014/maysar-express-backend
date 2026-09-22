@@ -1,0 +1,28 @@
+[
+ {
+  "module": "api/inventory/stock",
+  "path": "/api/inventory/stock/{variantId}",
+  "method": "GET",
+  "tags": [
+   "Inventory"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"error\":\"Stock not found\",\"variantId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"warehouseId\":\"all\"}"
+ },
+ {
+  "module": "api/inventory/stock",
+  "path": "/api/inventory/stock/{variantId}/{warehouseId}",
+  "method": "PUT",
+  "tags": [
+   "Inventory"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for PUT requests\"}"
+ }
+]

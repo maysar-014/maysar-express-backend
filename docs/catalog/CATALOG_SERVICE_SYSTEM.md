@@ -178,3 +178,17 @@ Mounted at `/api/catalog`.
 | `domain/algorithms/__tests__/fingerprint.algorithm.test.ts` | Fingerprint determinism |
 | `application/use-cases/__tests__/create-product.use-case.test.ts` | Full creation pipeline |
 | `tests/integration/meilisearch-search.integration.test.ts` | Search indexing + retrieval |
+
+
+---
+
+## System Maintenance Routes
+
+Mounted at `/api/catalog/system/maintenance`. Guards: `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/catalog/system/maintenance/cleanup/outbox/report` | Dry-run count of deletable catalog outbox events |
+| POST | `/api/catalog/system/maintenance/cleanup/outbox` | Batched deletion of expired outbox events. Body: `{ "dryRun": true }` to simulate |
+
+**Retention defaults:** sent/processed → 7 days, failed → 30 days. Batch size: 1000. Max runtime: 20 s.

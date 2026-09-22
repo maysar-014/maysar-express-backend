@@ -1,0 +1,25 @@
+31:| [06-enabler-journeys.md](./06-enabler-journeys.md) | Enabler onboarding, training, assisted sales, commissions | Enablers | `enabler-service`, `training-service`, `commission-service`, `wallet-service` |
+43:| Enabler | Onboarding, training, assisted sales attribution, commission settlement |
+63:6. [06-enabler-journeys.md](./06-enabler-journeys.md)
+=== 03-seller ===
+20:| `enabler-service` | Enabler collaboration and assisted selling |
+56:| SEL-12 | Enabler collaboration request | The seller requests help from an enabler and tracks acceptance or rejection. | No eligible enabler, training mismatch, or collaboration decline keeps the request pending. |
+=== user-flow-maps ===
+83:## 3. Enabler Journey — Onboarding to Commission
+87:    START(["🤝 Enabler Registers"]) --> PROFILE["Create Enabler Profile"]
+91:    CERT -->|Passed| CERTIFIED["Certified Enabler ✅"]
+95:    BUYER_CLICKS --> ORDER_PLACED["Buyer Places Order\n(Enabler Code Attached)"]
+100:    COMMISSION --> WALLET_CREDIT["Commission Credited\nto Enabler Wallet"]
+=== operations ===
+24:| 07 - Notification and Enabler Failures | 3 |
+29:KYC-gated roles: `SELLER`, `COURIER`, `SUPPLIER`, `ENABLER` (KYC submission -> admin approval -> verified check must pass before full role operations).
+131:#### Step 13: Enabler Hub Products
+133:- User intent: Enabler Hub Products.
+134:- Request: `GET {{platform_base_url}}/api/enabler/hub/products`.
+139:#### Step 14: Enabler Register Reachability
+141:- User intent: Enabler Register Reachability.
+142:- Request: `POST {{platform_base_url}}/api/enabler/enablers/register`.
+337:#### Step 16: Enabler Hub Products
+339:- User intent: Enabler Hub Products.
+=== README ===
+109:| enabler-service | [README](../services/enabler-service/README.md) | [openapi.yaml](../services/enabler-service/openapi.yaml) |

@@ -216,3 +216,17 @@ Mounted at `/api/auth` (module name `auth-service` → strip `-service` → `/ap
 | `session/` test suite | Session create/validate/revoke lifecycle |
 | `2fa/` test suite | TOTP setup, verify, disable |
 | E2E Postman collection | Login → JWT → protected route → logout |
+
+
+---
+
+## System Maintenance Routes
+
+Mounted at `/api/auth/system/maintenance`. Guards: `requireRoleOrService(['admin','system'])` **and** `x-service-key` header (value in `ALLOWED_SERVICE_KEYS` env var).
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/auth/system/maintenance/cleanup/outbox/report` | Dry-run count of deletable auth outbox events |
+| POST | `/api/auth/system/maintenance/cleanup/outbox` | Batched deletion of expired outbox events. Body: `{ "dryRun": true }` to simulate |
+
+**Retention defaults:** sent/processed → 7 days (`OUTBOX_SENT_RETENTION_DAYS`), failed → 30 days (`OUTBOX_FAILED_RETENTION_DAYS`). Batch size: 1000 (`CLEANUP_BATCH_SIZE`). Max runtime per call: 20 s (`CLEANUP_MAX_RUNTIME_MS`).

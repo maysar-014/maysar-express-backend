@@ -128,3 +128,17 @@ Routes are prefixed under sub-paths:
 - [ ] Mark notifications as read when user views them
 - [ ] Handle push notification permission request on app first launch
 - [ ] Register FCM device token via `PUT /api/user/profile` `{ "fcmToken": "..." }`
+
+
+---
+
+## System Maintenance Routes
+
+Mounted at `/api/notification/system/maintenance`. Guards: `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/notification/system/maintenance/cleanup/outbox/report` | Dry-run count of deletable notification outbox events |
+| POST | `/api/notification/system/maintenance/cleanup/outbox` | Batched deletion of expired outbox events. Body: `{ "dryRun": true }` to simulate |
+
+**Retention defaults:** sent/processed → 7 days, failed → 30 days. Batch size: 1000. Max runtime: 20 s.

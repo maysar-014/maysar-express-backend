@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/auth/device",
+  "path": "/api/auth/device/{deviceId}",
+  "method": "DELETE",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"userId\\\" must be a valid ID\"]}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"userId\\\" must be a valid ID\"]}"
+ }
+]

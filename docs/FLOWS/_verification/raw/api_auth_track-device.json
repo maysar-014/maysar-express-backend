@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/auth/track-device",
+  "path": "/api/auth/track-device",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"userId\\\" is required\",\"\\\"deviceId\\\" is required\",\"\\\"deviceInfo\\\" is required\"]}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"userId\\\" is required\",\"\\\"deviceId\\\" is required\",\"\\\"deviceInfo\\\" is required\"]}"
+ }
+]

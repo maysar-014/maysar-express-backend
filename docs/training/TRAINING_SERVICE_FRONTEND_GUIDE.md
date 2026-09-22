@@ -1,7 +1,7 @@
 # Training Service — Frontend Integration Guide
 
 > Audience: Client app engineers (courier app, enabler portal, admin panel)
-> Mount path: `/api/training-service` → training at `/api/v1/training`, modules at `/api/v1/modules`
+> Mount path: `/api/training` → training at `/api/training/api/v1/training`, modules at `/api/training/api/v1/modules`
 
 ---
 
@@ -21,9 +21,9 @@ Admin creates module + requirement → Learner starts training → Tracks progre
 
 | Aspect | Detail |
 |--------|--------|
-| Mount path | `/api/training-service` |
-| Training routes | `/api/training-service/api/v1/training` |
-| Module routes | `/api/training-service/api/v1/modules` |
+| Mount path | `/api/training` |
+| Training routes | `/api/training/api/v1/training` |
+| Module routes | `/api/training/api/v1/modules` |
 | Auth | `requireAuth` on all training routes; modules are public |
 | Admin routes | `requireRole(['admin', 'system'])` |
 | Default minimum score | 60 (configurable per requirement) |
@@ -37,18 +37,18 @@ Admin creates module + requirement → Learner starts training → Tracks progre
 
 | Surface | Auth | Notes |
 |---------|------|-------|
-| `GET /api/v1/modules` | None | Public module catalog |
-| `GET /api/v1/modules/:id` | None | Public |
-| `GET /api/v1/modules/:id/content` | None | Public |
-| `GET /api/v1/modules/leaderboard` | None | Public |
-| `GET /api/v1/modules/badges/:learnerId` | None | Public |
-| `POST /api/v1/training/start` | JWT | Any authenticated user |
-| `POST /api/v1/training/:id/complete` | JWT | Any authenticated user |
-| `GET /api/v1/training/progress/:learnerId` | JWT | Own progress or admin |
-| `GET /api/v1/training/eligibility/:learnerId` | JWT | Own eligibility or admin |
-| `GET /api/v1/training/available` | JWT | Any authenticated user |
-| `POST /api/v1/training/:id/progress` | JWT | Any authenticated user |
-| `GET/POST/PUT/DELETE /api/v1/training/admin/*` | JWT (admin/system) | Admin only |
+| `GET /api/training/api/v1/modules` | None | Public module catalog |
+| `GET /api/training/api/v1/modules/:id` | None | Public |
+| `GET /api/training/api/v1/modules/:id/content` | None | Public |
+| `GET /api/training/api/v1/modules/leaderboard` | None | Public |
+| `GET /api/training/api/v1/modules/badges/:learnerId` | None | Public |
+| `POST /api/training/api/v1/training/start` | JWT | Any authenticated user |
+| `POST /api/training/api/v1/training/:id/complete` | JWT | Any authenticated user |
+| `GET /api/training/api/v1/training/progress/:learnerId` | JWT | Own progress or admin |
+| `GET /api/training/api/v1/training/eligibility/:learnerId` | JWT | Own eligibility or admin |
+| `GET /api/training/api/v1/training/available` | JWT | Any authenticated user |
+| `POST /api/training/api/v1/training/:id/progress` | JWT | Any authenticated user |
+| `GET/POST/PUT/DELETE /api/training/api/v1/training/admin/*` | JWT (admin/system) | Admin only |
 
 ---
 
@@ -101,7 +101,7 @@ FAILED/EXPIRED → IN_PROGRESS (retake, if attempts < maxAttempts)
 ## 5. Learner API
 
 ### 5.1 Start training
-`POST /api/training-service/api/v1/training/start` → **201**
+`POST /api/training/api/v1/training/start` → **201**
 
 ```jsonc
 {
@@ -130,7 +130,7 @@ Response:
 The response may include `warnings` and `recommendations` arrays from the TrainingPolicy. Always display these to the user before they start.
 
 ### 5.2 Track module progress
-`POST /api/training-service/api/v1/training/:id/progress` → **200**
+`POST /api/training/api/v1/training/:id/progress` → **200**
 
 ```jsonc
 {
@@ -143,7 +143,7 @@ The response may include `warnings` and `recommendations` arrays from the Traini
 Call this as the user advances through sections. The `progress` object is stored and returned in `GET /progress/:learnerId`.
 
 ### 5.3 Complete training
-`POST /api/training-service/api/v1/training/:id/complete` → **200**
+`POST /api/training/api/v1/training/:id/complete` → **200**
 
 ```jsonc
 {
@@ -196,7 +196,7 @@ Response on fail (`score < minimumScore`):
 **Always show `minimumScore` alongside the user's score** so they know what they needed.
 
 ### 5.4 Get training progress
-`GET /api/training-service/api/v1/training/progress/:learnerId` → **200**
+`GET /api/training/api/v1/training/progress/:learnerId` → **200**
 
 ```jsonc
 {
@@ -231,7 +231,7 @@ Response on fail (`score < minimumScore`):
 ```
 
 ### 5.5 Check eligibility
-`GET /api/training-service/api/v1/training/eligibility/:learnerId` → **200**
+`GET /api/training/api/v1/training/eligibility/:learnerId` → **200**
 
 ```jsonc
 {
@@ -250,12 +250,12 @@ Response on fail (`score < minimumScore`):
 }
 ```
 
-`missingRequirements` contains module IDs. Cross-reference with `GET /api/v1/modules` to get module names for display.
+`missingRequirements` contains module IDs. Cross-reference with `GET /api/training/api/v1/modules` to get module names for display.
 
 **`eligible: true` means all mandatory requirements are COMPLETED and not expired.** Use this to gate platform features.
 
 ### 5.6 Get available modules
-`GET /api/training-service/api/v1/training/available` → **200**
+`GET /api/training/api/v1/training/available` → **200**
 
 Returns modules the authenticated user is eligible to take based on their role and completed prerequisites. Use this to populate the "Start Training" screen.
 
@@ -264,27 +264,27 @@ Returns modules the authenticated user is eligible to take based on their role a
 ## 6. Module Catalog API (public)
 
 ### 6.1 List all modules
-`GET /api/training-service/api/v1/modules` → **200**
+`GET /api/training/api/v1/modules` → **200**
 
 Returns all public training modules with metadata (no content body).
 
 ### 6.2 Get a module
-`GET /api/training-service/api/v1/modules/:id` → **200**
+`GET /api/training/api/v1/modules/:id` → **200**
 
 Returns module metadata including `prerequisites`, `targetRoles`, `difficulty`, `durationMinutes`.
 
 ### 6.3 Get module content
-`GET /api/training-service/api/v1/modules/:id/content` → **200**
+`GET /api/training/api/v1/modules/:id/content` → **200**
 
 Returns full content including sections, steps, and quiz questions. Load this only when the user starts the module — not on the catalog page.
 
 ### 6.4 Get leaderboard
-`GET /api/training-service/api/v1/modules/leaderboard` → **200**
+`GET /api/training/api/v1/modules/leaderboard` → **200**
 
 Returns top learners ranked by total score and completion count.
 
 ### 6.5 Get learner badges
-`GET /api/training-service/api/v1/modules/badges/:learnerId` → **200**
+`GET /api/training/api/v1/modules/badges/:learnerId` → **200**
 
 ```jsonc
 {
@@ -345,8 +345,8 @@ Returns top learners ranked by total score and completion count.
 ## 9. UX Patterns
 
 **Courier onboarding training flow:**
-1. `GET /api/v1/training/eligibility/:learnerId` → show progress bar (`completionPercentage`) and list of `missingRequirements`.
-2. `GET /api/v1/modules` → cross-reference `missingRequirements` IDs to get module names and `durationMinutes`.
+1. `GET /api/training/api/v1/training/eligibility/:learnerId` → show progress bar (`completionPercentage`) and list of `missingRequirements`.
+2. `GET /api/training/api/v1/modules` → cross-reference `missingRequirements` IDs to get module names and `durationMinutes`.
 3. For each required module → show card with difficulty badge, duration, and "Start" button.
 4. On "Start" → `POST /start` → check response for `warnings` → show warning dialog if present → load `GET /modules/:id/content`.
 5. As user advances → `POST /:id/progress` with section completion data.
@@ -380,28 +380,28 @@ Returns top learners ranked by total score and completion count.
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/api/training-service/api/v1/modules` | None | List modules |
-| GET | `/api/training-service/api/v1/modules/leaderboard` | None | Leaderboard |
-| GET | `/api/training-service/api/v1/modules/:id` | None | Get module |
-| GET | `/api/training-service/api/v1/modules/:id/content` | None | Module content |
-| GET | `/api/training-service/api/v1/modules/badges/:learnerId` | None | Learner badges |
-| POST | `/api/training-service/api/v1/training/start` | JWT | Start training |
-| POST | `/api/training-service/api/v1/training/:id/complete` | JWT | Complete training |
-| GET | `/api/training-service/api/v1/training/progress/:learnerId` | JWT | Get progress |
-| GET | `/api/training-service/api/v1/training/eligibility/:learnerId` | JWT | Check eligibility |
-| GET | `/api/training-service/api/v1/training/available` | JWT | Available modules |
-| POST | `/api/training-service/api/v1/training/:id/progress` | JWT | Track progress |
-| GET | `/api/training-service/api/v1/training/admin/modules` | JWT (admin) | Admin: list modules |
-| POST | `/api/training-service/api/v1/training/admin/modules` | JWT (admin) | Admin: create module |
-| PUT | `/api/training-service/api/v1/training/admin/modules/:id` | JWT (admin) | Admin: update module |
-| PATCH | `/api/training-service/api/v1/training/admin/modules/:id/content` | JWT (admin) | Admin: update content |
-| DELETE | `/api/training-service/api/v1/training/admin/modules/:id` | JWT (admin) | Admin: delete module |
-| GET | `/api/training-service/api/v1/training/admin/requirements` | JWT (admin) | Admin: list requirements |
-| POST | `/api/training-service/api/v1/training/admin/requirements` | JWT (admin) | Admin: create requirement |
-| PUT | `/api/training-service/api/v1/training/admin/requirements/:module` | JWT (admin) | Admin: update requirement |
-| DELETE | `/api/training-service/api/v1/training/admin/requirements/:module` | JWT (admin) | Admin: delete requirement |
-| GET | `/api/training-service/api/v1/training/admin/learners` | JWT (admin) | Admin: list learners |
-| POST | `/api/training-service/api/v1/training/admin/complete-for-learner` | JWT (admin) | Admin: override complete |
-| POST | `/api/training-service/api/v1/training/admin/grant-eligibility/:learnerId` | JWT (admin) | Admin: grant eligibility |
-| DELETE | `/api/training-service/api/v1/training/admin/learners/:learnerId/reset` | JWT (admin) | Admin: reset records |
-| GET | `/api/training-service/api/v1/training/admin/stats` | JWT (admin) | Admin: stats |
+| GET | `/api/training/api/v1/modules` | None | List modules |
+| GET | `/api/training/api/v1/modules/leaderboard` | None | Leaderboard |
+| GET | `/api/training/api/v1/modules/:id` | None | Get module |
+| GET | `/api/training/api/v1/modules/:id/content` | None | Module content |
+| GET | `/api/training/api/v1/modules/badges/:learnerId` | None | Learner badges |
+| POST | `/api/training/api/v1/training/start` | JWT | Start training |
+| POST | `/api/training/api/v1/training/:id/complete` | JWT | Complete training |
+| GET | `/api/training/api/v1/training/progress/:learnerId` | JWT | Get progress |
+| GET | `/api/training/api/v1/training/eligibility/:learnerId` | JWT | Check eligibility |
+| GET | `/api/training/api/v1/training/available` | JWT | Available modules |
+| POST | `/api/training/api/v1/training/:id/progress` | JWT | Track progress |
+| GET | `/api/training/api/v1/training/admin/modules` | JWT (admin) | Admin: list modules |
+| POST | `/api/training/api/v1/training/admin/modules` | JWT (admin) | Admin: create module |
+| PUT | `/api/training/api/v1/training/admin/modules/:id` | JWT (admin) | Admin: update module |
+| PATCH | `/api/training/api/v1/training/admin/modules/:id/content` | JWT (admin) | Admin: update content |
+| DELETE | `/api/training/api/v1/training/admin/modules/:id` | JWT (admin) | Admin: delete module |
+| GET | `/api/training/api/v1/training/admin/requirements` | JWT (admin) | Admin: list requirements |
+| POST | `/api/training/api/v1/training/admin/requirements` | JWT (admin) | Admin: create requirement |
+| PUT | `/api/training/api/v1/training/admin/requirements/:module` | JWT (admin) | Admin: update requirement |
+| DELETE | `/api/training/api/v1/training/admin/requirements/:module` | JWT (admin) | Admin: delete requirement |
+| GET | `/api/training/api/v1/training/admin/learners` | JWT (admin) | Admin: list learners |
+| POST | `/api/training/api/v1/training/admin/complete-for-learner` | JWT (admin) | Admin: override complete |
+| POST | `/api/training/api/v1/training/admin/grant-eligibility/:learnerId` | JWT (admin) | Admin: grant eligibility |
+| DELETE | `/api/training/api/v1/training/admin/learners/:learnerId/reset` | JWT (admin) | Admin: reset records |
+| GET | `/api/training/api/v1/training/admin/stats` | JWT (admin) | Admin: stats |

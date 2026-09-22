@@ -223,3 +223,17 @@ The logistics service is documented across three frontend-facing files:
 | `docs/frontend/LOGISTICS_FRONTEND_UI_SPECIFICATIONS.md` | Courier app UI wireframes (design reference, not API docs) |
 
 The integration guide (`LOGISTICS_FRONTEND_INTEGRATION_GUIDE.md`) is the most detailed and should be the primary reference for implementing the quote and fulfillment options flows.
+
+
+---
+
+## System Maintenance Routes
+
+Mounted at `/api/logistics/system/maintenance`. Guards: `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/logistics/system/maintenance/cleanup/outbox/report` | Dry-run count of deletable logistics outbox events |
+| POST | `/api/logistics/system/maintenance/cleanup/outbox` | Batched deletion of expired outbox events. Body: `{ "dryRun": true }` to simulate |
+
+**Retention defaults:** sent/processed → 7 days, failed → 30 days. Batch size: 1000. Max runtime: 20 s.

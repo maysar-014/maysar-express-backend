@@ -1,3 +1,29 @@
+> ## ⚠️ CONFLICTING — COMPLIANCE-SERVICE REFERENCES ARE INCORRECT
+>
+> Multiple sections of this document reference `compliance-service` as a live standalone service
+> responsible for KYC review, AML monitoring, and compliance reporting.
+>
+> **`compliance-service` does not exist as a live service in the verified system inventory.**
+> It is not present in `docs/SERVICE_DEPENDENCY_MAP.md` and no `/api/compliance/*` routes were found
+> in the September 2026 endpoint sweep.
+>
+> **Actual compliance implementation:**
+> - KYC review is handled through `kyc-service` middleware events (`kyc.status_changed` →
+>   consumed by order-service for COD trust signals).
+> - COD dispute resolution and reputation management are handled through `support-service`
+>   (`COD_DISPUTE_RESOLVED` event → `user-service` reputation penalty).
+> - There is no standalone compliance HTTP service or compliance dashboard endpoint.
+>
+> Additionally, governance routes (`/api/governance/*`) referenced in this document as live admin
+> capabilities return route-level 404 in the verified sweep — the governance feature is **not active**.
+>
+> **Canonical replacement:** [`docs/FLOWS/role-overviews/compliance-officer-lifecycle.md`](../FLOWS/role-overviews/compliance-officer-lifecycle.md)
+> **Canonical replacement for support flows:** [`docs/FLOWS/support/user-flow/support-agent-flows.md`](../FLOWS/support/user-flow/support-agent-flows.md)
+>
+> *Conflict identified: September 2026 — service-flow-documentation spec*
+
+---
+
 # Admin, Support, And Compliance
 
 This doc covers internal operational personas: admins, support agents, and compliance officers.

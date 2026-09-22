@@ -16,6 +16,12 @@ import { InternalWalletAdapter } from "./infrastructure/providers/internal-walle
 import { InternalBankTransferAdapter } from "./infrastructure/providers/internal-bank-transfer.adapter";
 import { PaymentMethodProviderRegistry } from "./infrastructure/providers/payment-provider.registry";
 import {
+  SandboxLedger,
+  SandboxSimulatorAdapter,
+  SandboxAwareProviderRouter,
+} from "./infrastructure/providers/sandbox-simulation";
+import type { WebhookPayload } from "./domain/repositories/payment-provider.gateway";
+import {
   getPaymentMethodConfigService,
   PaymentMethodConfigService,
 } from "./config/payment-methods.config";
@@ -24,12 +30,15 @@ import { HandlePaymentWebhookUseCase } from "./application/use-cases/handle-paym
 import { ProcessPaymentUseCase } from "./application/use-cases/process-payment.use-case";
 import { RefundPaymentUseCase } from "./application/use-cases/refund-payment.use-case";
 import { CheckPaymentStatusUseCase } from "./application/use-cases/check-payment-status.use-case";
+import { BlockTransactionUseCase } from "./application/use-cases/block-transaction.use-case";
+import { FlagTransactionUseCase } from "./application/use-cases/flag-transaction.use-case";
 import { PaymentProcessingEngine } from "./domain/engines/payment-processing.engine";
 import { FraudEngine } from "./domain/engines/fraud.engine";
 import { PaymentLimitsPolicy } from "./domain/policies/payment-limits.policy";
 import { FraudPreventionPolicy } from "./domain/policies/fraud-prevention.policy";
 import { RefundPolicy } from "./domain/policies/refund.policy";
 import { PaymentController } from "./api/controllers/payment.controller";
+import { PaymentAdminController } from "./api/controllers/payment-admin.controller";
 import { WebhookController } from "./api/controllers/webhook.controller";
 import { EventBus } from "@shared-events/eventBus";
 import { IEventBus } from "./infrastructure/messaging/event-bus.interface";
@@ -82,6 +91,8 @@ export class Container {
   public paymentMethodProviderRegistry: PaymentMethodProviderRegistry;
   public internalWalletAdapter: InternalWalletAdapter;
   public internalBankTransferAdapter: InternalBankTransferAdapter;
+  public sandboxLedger: SandboxLedger;
+  public sandboxAwareRouter: SandboxAwareProviderRouter;
   public handlePaymentWebhookUseCase: HandlePaymentWebhookUseCase;
   public paymentMethodsController: PaymentMethodsController;
 
@@ -98,8 +109,11 @@ export class Container {
   public processPaymentUseCase: ProcessPaymentUseCase;
   public refundPaymentUseCase: RefundPaymentUseCase;
   public checkPaymentStatusUseCase: CheckPaymentStatusUseCase;
+  public blockTransactionUseCase: BlockTransactionUseCase;
+  public flagTransactionUseCase: FlagTransactionUseCase;
   // Controllers
   public paymentController: PaymentController;
+  public paymentAdminController: PaymentAdminController;
   public webhookController: WebhookController;
 
   private constructor() {
@@ -141,10 +155,37 @@ export class Container {
       this.walletServiceClient,
     );
     this.internalBankTransferAdapter = new InternalBankTransferAdapter();
+
+    // Sandbox simulation — shared ledger so simulated transactions are
+    // verifiable across the whole service (webhooks, status polling).
+    this.sandboxLedger = new SandboxLedger();
+    const dispatchSandboxWebhook = (payload: WebhookPayload): Promise<void> =>
+      this.handlePaymentWebhookUseCase.execute(
+        payload.providerReference,
+        (payload.metadata?.transactionId as string) ?? "",
+        payload.status,
+        payload,
+      ).then(() => undefined);
+
     this.paymentMethodProviderRegistry = new PaymentMethodProviderRegistry(
       this.paymentMethodConfigService,
       this.internalWalletAdapter,
       this.internalBankTransferAdapter,
+      (methodCode, channel) =>
+        new SandboxSimulatorAdapter({
+          channel,
+          methodCode,
+          ledger: this.sandboxLedger,
+          dispatchWebhook: dispatchSandboxWebhook,
+        }),
+    );
+
+    // Sandbox-aware router: webhook/status traffic for `sbx_*` references is
+    // verified against the simulation ledger; everything else goes to the
+    // real provider gateway (live path untouched).
+    this.sandboxAwareRouter = new SandboxAwareProviderRouter(
+      this.sandboxLedger,
+      this.paymentGateway,
     );
 
     // Engines
@@ -169,8 +210,10 @@ export class Container {
           );
         case PaymentProvider.PAYMENT_GATEWAY:
         default:
-          // Legacy/contract path — the generic gateway adapter.
-          return this.paymentGateway;
+          // Legacy/contract path — sandbox-aware: `sbx_*` references verify
+          // against the simulation ledger, real references against the
+          // gateway.
+          return this.sandboxAwareRouter;
       }
     };
 
@@ -197,10 +240,21 @@ export class Container {
       this.refundPolicy,
     );
 
+    this.blockTransactionUseCase = new BlockTransactionUseCase(
+      this.paymentRepository,
+    );
+
+    this.flagTransactionUseCase = new FlagTransactionUseCase(
+      this.paymentRepository,
+    );
+
     // Controllers
+    // HandlePaymentWebhookUseCase verification is sandbox-aware: `sbx_*`
+    // references resolve against the simulation ledger, live references
+    // against the real provider gateway.
     this.handlePaymentWebhookUseCase = new HandlePaymentWebhookUseCase(
       this.paymentRepository,
-      this.paymentGateway,
+      this.sandboxAwareRouter,
       this.eventBus,
       this.webhookEventRepository,
     );
@@ -212,11 +266,17 @@ export class Container {
       this.checkPaymentStatusUseCase,
       this.refundPaymentUseCase,
       this.handlePaymentWebhookUseCase,
-      this.paymentGateway,
+      this.sandboxAwareRouter,
+    );
+
+    this.paymentAdminController = new PaymentAdminController(
+      this.blockTransactionUseCase,
+      this.flagTransactionUseCase,
+      this.paymentRepository,
     );
 
     this.webhookController = new WebhookController(
-      this.paymentGateway,
+      this.sandboxAwareRouter,
       this.handlePaymentWebhookUseCase,
     );
 

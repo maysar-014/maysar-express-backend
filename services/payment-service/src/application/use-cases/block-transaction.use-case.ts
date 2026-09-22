@@ -16,17 +16,26 @@ export class BlockTransactionUseCase {
             throw new Error(`Transaction ${dto.transactionId} not found`);
         }
 
-        // updateStatus will validate the transition (PENDING/PROCESSING -> FAILED/CANCELLED)
-        // payment.updateStatus(PaymentStatus.CANCELLED, dto.reason);
+        // Money already captured or settled (COMPLETED / REFUNDED /
+        // PARTIALLY_REFUNDED) cannot be blocked — reversing it is the refund
+        // workflow, not a block. Only in-flight payments can be blocked.
+        if (
+            payment.status === PaymentStatus.COMPLETED ||
+            payment.status === PaymentStatus.REFUNDED ||
+            payment.status === PaymentStatus.PARTIALLY_REFUNDED
+        ) {
+            throw new Error(`Cannot block a ${payment.status} payment`);
+        }
 
-        // Mirroring paymentService.ts logic for "BLOCK"
+        // Audit metadata is recorded regardless of the resulting status.
         payment.updateMetadata({
             blockedAt: new Date(),
             blockedBy: dto.adminId,
             blockReason: dto.reason
         });
 
-        // Ensure status reflects blocked state
+        // PENDING/PROCESSING → FAILED. FAILED/CANCELLED payments keep their
+        // terminal status; the block metadata above is the audit record.
         payment.markAsFailed(`Blocked by admin: ${dto.reason}`);
 
         await this.paymentRepository.update(payment);

@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/governance/summary",
+  "path": "/api/governance/summary",
+  "method": "GET",
+  "tags": [
+   "Governance"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/governance/summary not found\",\"timestamp\":\"2026-09-20T17:45:51.978Z\",\"path\":\"/api/governance/summary\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/governance/summary not found\",\"timestamp\":\"2026-09-20T17:45:51.987Z\",\"path\":\"/api/governance/summary\"}}"
+ }
+]

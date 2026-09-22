@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/payment/webhooks",
+  "path": "/api/payment/webhooks/paymentGateway",
+  "method": "POST",
+  "tags": [
+   "Payments"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/payment/webhooks/paymentGateway not found\",\"timestamp\":\"2026-09-20T17:45:53.629Z\",\"path\":\"/api/payment/webhooks/paymentGateway\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/payment/webhooks/paymentGateway not found\",\"timestamp\":\"2026-09-20T17:45:53.633Z\",\"path\":\"/api/payment/webhooks/paymentGateway\"}}"
+ }
+]

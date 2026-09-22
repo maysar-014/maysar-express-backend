@@ -344,3 +344,23 @@ Only `seller`, `admin`, or `agent` can escalate. Buyers cannot escalate directly
 | POST | `/api/support/disputes/:id/evidence` | JWT | Add evidence |
 | POST | `/api/support/agents` | JWT (admin) | Create agent |
 | PUT | `/api/support/agents/:id` | JWT (admin) | Update agent |
+
+
+---
+
+## System Maintenance (internal/ops)
+
+These endpoints are for ops/admin use only. They are not called from the frontend.
+
+```
+POST /api/support/system/maintenance/cleanup/outbox/report
+POST /api/support/system/maintenance/cleanup/outbox
+```
+
+**Auth:** `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+### Outbox cleanup report
+`POST /api/support/system/maintenance/cleanup/outbox/report` → **200** — dry-run count of deletable outbox events.
+
+### Outbox cleanup
+`POST /api/support/system/maintenance/cleanup/outbox` → **200** — batched deletion. Body: `{ "dryRun": true }` to simulate. `maxRuntimeMs` defaults to 20 seconds.

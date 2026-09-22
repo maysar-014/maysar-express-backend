@@ -1,0 +1,158 @@
+[
+ {
+  "module": "api/training/api",
+  "path": "/api/training/api/health",
+  "method": "GET",
+  "tags": [
+   "Training"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"UP\",\"timestamp\":\"2026-09-20T17:45:53.870Z\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"UP\",\"timestamp\":\"2026-09-20T17:45:53.874Z\"}"
+ },
+ {
+  "module": "api/training/api",
+  "path": "/api/training/api/v1/modules/{id}",
+  "method": "GET",
+  "tags": [
+   "Training"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"error\":\"TrainingModule with identifier usr_01KRFXQZC36NK3CDEWJJS21RP8 was not found\",\"timestamp\":\"2026-09-20T17:45:53.925Z\"}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"error\":\"TrainingModule with identifier usr_01KRFXQZC36NK3CDEWJJS21RP8 was not found\",\"timestamp\":\"2026-09-20T17:45:53.942Z\"}"
+ },
+ {
+  "module": "api/training/api",
+  "path": "/api/training/api/v1/modules",
+  "method": "GET",
+  "tags": [
+   "Training"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":[{\"id\":\"platform-overview\",\"name\":\"Understanding the Maysar Platform 🌍\",\"description\":\"A comprehensive overview of how Maysar works — the technology, the people, and the mission behind Tanzania's digital trade network.\",\"conte",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":[{\"id\":\"platform-overview\",\"name\":\"Understanding the Maysar Platform 🌍\",\"description\":\"A comprehensive overview of how Maysar works — the technology, the people, and the mission behind Tanzania's digital trade network.\",\"contentType\":\"TEXT\",\"content\":{\"quiz\":[{\"answer\":\"Buyers, Sellers, Couriers, Enablers, and Suppliers.\",\"question\":\"What are the five types of participants in the Maysar ecosystem?\"},{\"answer\":\"Through KYC verification, rating systems, secure payments, dispute resolution, and COD verification.\",\"question\":\"How does Maysar ensure trust between participants?\"}],\"type\":\"TEXT\",\"sections\":[{\"body\":\"Maysar exists to democratize trade in Tanzania and beyond. "
+ },
+ {
+  "module": "api/training/api",
+  "path": "/api/training/api/v1/modules/{id}/content",
+  "method": "GET",
+  "tags": [
+   "Training"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"error\":\"TrainingModule with identifier usr_01KRFXQZC36NK3CDEWJJS21RP8 was not found\",\"timestamp\":\"2026-09-20T17:45:53.926Z\"}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"error\":\"TrainingModule with identifier usr_01KRFXQZC36NK3CDEWJJS21RP8 was not found\",\"timestamp\":\"2026-09-20T17:45:53.946Z\"}"
+ },
+ {
+  "module": "api/training/api",
+  "path": "/api/training/api/v1/modules/badges/{learnerId}",
+  "method": "GET",
+  "tags": [
+   "Training"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":[]}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":[]}"
+ },
+ {
+  "module": "api/training/api",
+  "path": "/api/training/api/v1/modules/leaderboard",
+  "method": "GET",
+  "tags": [
+   "Training"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":[]}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":[]}"
+ },
+ {
+  "module": "api/training/api",
+  "path": "/api/training/api/v1/training/{id}/complete",
+  "method": "POST",
+  "tags": [
+   "Training"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"message\":\"Training completed\",\"data\":{\"trainingRecordId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"status\":\"COMPLETED\",\"completedAt\":\"2026-09-20T17:45:54.010Z\"}}"
+ },
+ {
+  "module": "api/training/api",
+  "path": "/api/training/api/v1/training/{id}/progress",
+  "method": "POST",
+  "tags": [
+   "Training"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"message\":\"Training progress recorded\",\"data\":{\"trainingRecordId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"status\":\"NOT_STARTED\",\"updatedAt\":\"2026-09-20T17:45:54.016Z\"}}"
+ },
+ {
+  "module": "api/training/api",
+  "path": "/api/training/api/v1/training/available",
+  "method": "GET",
+  "tags": [
+   "Training"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"modules\":[{\"id\":\"module-default\",\"name\":\"Getting Started\",\"description\":\"Fallback training module (in-memory)\",\"contentType\":\"TEXT\",\"content\":{\"type\":\"TEXT\",\"body\":\"Training content is unavailable; using fallback module.\"},\"durationMinutes\":15,\"category\":\"general\",\"prerequisites\":[],\"targetRoles\":[],\"isPublic\":true,\"difficulty\":\"BEGINNER\"}],\"recommendations\":[\"module-default\"]}}"
+ },
+ {
+  "module": "api/training/api",
+  "path": "/api/training/api/v1/training/eligibility/{learnerId}",
+  "method": "GET",
+  "tags": [
+   "Training"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"eligible\":true,\"completionPercentage\":100,\"missingRequirements\":[],\"completedModules\":[],\"inProgressModules\":[],\"learnerId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\"}}"
+ },
+ {
+  "module": "api/training/api",
+  "path": "/api/training/api/v1/training/progress/{learnerId}",
+  "method": "GET",
+  "tags": [
+   "Training"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"completed\":[],\"inProgress\":[],\"required\":[],\"eligible\":true,\"learnerId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\"}}"
+ },
+ {
+  "module": "api/training/api",
+  "path": "/api/training/api/v1/training/start",
+  "method": "POST",
+  "tags": [
+   "Training"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 201,
+  "authBody": "{\"success\":true,\"message\":\"Training started\",\"trainingRecordId\":\"trn_rec_01M2ZYSB6QZD3AM9WN5WDKM6ZJ\",\"data\":{\"trainingRecordId\":\"trn_rec_01M2ZYSB6QZD3AM9WN5WDKM6ZJ\",\"status\":\"IN_PROGRESS\"}}"
+ }
+]

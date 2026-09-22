@@ -180,3 +180,17 @@ Uses **offset-based** pagination (not cursor). Response includes `pagination.has
 | `domain/policies/__tests__/business-registration.policy.test.ts` | Max 5 businesses, update blocks, reactivation rules |
 | `domain/policies/__tests__/business-verification.policy.test.ts` | Document requirements per type, REJECTED cannot re-verify |
 | `application/use-cases/__tests__/register-business.use-case.test.ts` | Duplicate registration number → 409 |
+
+
+---
+
+## System Maintenance Routes
+
+Mounted at `/api/business-registry/system/maintenance`. Guards: `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/business-registry/system/maintenance/cleanup/outbox/report` | Dry-run count of deletable business-registry outbox events |
+| POST | `/api/business-registry/system/maintenance/cleanup/outbox` | Batched deletion of expired outbox events. Body: `{ "dryRun": true }` to simulate |
+
+**Retention defaults:** sent/processed → 7 days, failed → 30 days. Batch size: 1000. Max runtime: 20 s.

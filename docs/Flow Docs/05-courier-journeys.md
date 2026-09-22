@@ -1,3 +1,29 @@
+> ## ⚠️ PARTIALLY OBSOLETE — CONFLICTS WITH VERIFIED IMPLEMENTATION
+>
+> This document's sequence diagrams were created before the current logistics architecture was implemented.
+> The following specific conflicts have been identified against the verified system (September 2026 sweep):
+>
+> **(a) Dispatch model is obsolete:** The diagrams show direct delivery status writes by the courier UI
+> (`UI->>Logistics: Update delivery status`). The actual implementation uses `Logistics_DeliveryJob`
+> records (`DJB-` prefix) dispatched via `PoolOptimizationJob` (runs every 5 minutes) →
+> `DriverAssignmentEngine`. Couriers receive job assignments; they do not write delivery status directly.
+>
+> **(b) COD OTP routing is wrong:** The diagrams show the COD OTP flow routing through `payment-service`.
+> The actual implementation routes: `logistics-service` → `notification-service` → Buyer (OTP receipt) →
+> Courier (OTP entry) → `logistics-service` verify → `wallet-service` commitment release →
+> `Delivery.Success.v1` event → `user-service` reputation update. `payment-service` is not involved in
+> the COD OTP flow.
+>
+> **(c) Assignment records are wrong:** The diagrams show bare `Logistics_Delivery` records being assigned.
+> The actual unit of work is a `Logistics_DeliveryJob` (`DJB-` prefix) which bundles one or more
+> `Logistics_Shipment` records.
+>
+> **Canonical replacement:** [`docs/FLOWS/logistics/user-flow/courier-flows.md`](../FLOWS/logistics/user-flow/courier-flows.md)
+>
+> *Conflict identified: September 2026 — service-flow-documentation spec*
+
+---
+
 # Courier Journeys
 
 This doc covers courier availability, assignment, delivery execution, COD verification, route planning, and earnings.

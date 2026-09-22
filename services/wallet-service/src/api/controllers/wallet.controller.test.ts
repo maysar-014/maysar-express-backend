@@ -33,6 +33,7 @@ describe('WalletController', () => {
   const topUpUseCase = { execute: jest.fn() };
   const walletRepository = { findByUserId: jest.fn() };
   const initiatePayoutUseCase = { execute: jest.fn() };
+  const holdRepository = { findActiveByWalletId: jest.fn() };
 
   const controller = new WalletController(
     creditWalletUseCase as never,
@@ -46,7 +47,8 @@ describe('WalletController', () => {
     getStatementUseCase as never,
     topUpUseCase as never,
     walletRepository as never,
-    initiatePayoutUseCase as never
+    initiatePayoutUseCase as never,
+    holdRepository as never
   );
 
   beforeEach(() => {
@@ -135,6 +137,60 @@ describe('WalletController', () => {
           })
         ],
         totalCount: 1
+      })
+    );
+  });
+
+  it('listHolds returns an empty collection when the wallet does not exist', async () => {
+    walletRepository.findByUserId.mockResolvedValueOnce(null);
+
+    const res = makeRes();
+    await controller.listHolds(makeReq({ method: 'GET' }), res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ success: true, data: { holds: [], total: 0 } });
+    expect(holdRepository.findActiveByWalletId).not.toHaveBeenCalled();
+  });
+
+  it('listHolds serializes active holds with a flat numeric amount', async () => {
+    walletRepository.findByUserId.mockResolvedValueOnce({ id: 'wallet-1', userId: 'user-1' });
+    holdRepository.findActiveByWalletId.mockResolvedValueOnce([
+      {
+        amount: { amount: 2500, currency: 'TZS' },
+        toObject: () => ({
+          id: 'hold-1',
+          walletId: 'wallet-1',
+          userId: 'user-1',
+          reason: 'ORDER_COMMITMENT',
+          status: 'ACTIVE',
+          isCaptured: false,
+          isReleased: false,
+          expiresAt: new Date('2030-01-01T00:00:00.000Z'),
+          createdAt: new Date('2029-01-01T00:00:00.000Z'),
+          updatedAt: new Date('2029-01-01T00:00:00.000Z')
+        })
+      }
+    ]);
+
+    const res = makeRes();
+    await controller.listHolds(makeReq({ method: 'GET' }), res);
+
+    expect(holdRepository.findActiveByWalletId).toHaveBeenCalledWith('wallet-1');
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        data: expect.objectContaining({
+          total: 1,
+          holds: [
+            expect.objectContaining({
+              holdId: 'hold-1',
+              amount: 2500,
+              currency: 'TZS',
+              status: 'ACTIVE'
+            })
+          ]
+        })
       })
     );
   });

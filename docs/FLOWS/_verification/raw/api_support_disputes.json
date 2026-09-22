@@ -1,0 +1,67 @@
+[
+ {
+  "module": "api/support/disputes",
+  "path": "/api/support/disputes",
+  "method": "POST",
+  "tags": [
+   "Support"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"path\":\"reason\",\"message\":\"Required\"},{\"path\":\"description\",\"message\":\"Required\"}]}}"
+ },
+ {
+  "module": "api/support/disputes",
+  "path": "/api/support/disputes/{id}/evidence",
+  "method": "POST",
+  "tags": [
+   "Support"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"path\":\"attachments\",\"message\":\"At least one attachment or note is required\"}]}}"
+ },
+ {
+  "module": "api/support/disputes",
+  "path": "/api/support/disputes/{id}",
+  "method": "GET",
+  "tags": [
+   "Support"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":\"Dispute not found\"}"
+ },
+ {
+  "module": "api/support/disputes",
+  "path": "/api/support/disputes/{id}/escalate",
+  "method": "POST",
+  "tags": [
+   "Support"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"error\":\"Forbidden: Insufficient permissions\"}"
+ },
+ {
+  "module": "api/support/disputes",
+  "path": "/api/support/disputes",
+  "method": "GET",
+  "tags": [
+   "Support"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"items\":[],\"total\":0,\"page\":1,\"limit\":10}}"
+ }
+]

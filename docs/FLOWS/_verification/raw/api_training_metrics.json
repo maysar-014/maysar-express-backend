@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/training/metrics",
+  "path": "/api/training/metrics",
+  "method": "GET",
+  "tags": [
+   "Training"
+  ],
+  "anonStatus": 200,
+  "anonBody": "# HELP analytics_service_process_cpu_user_seconds_total Total user CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_user_seconds_total counter\nanalytics_service_process_cpu_user_seconds_total 58.156000000000006\n\n# HELP analytics_servic",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "# HELP analytics_service_process_cpu_user_seconds_total Total user CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_user_seconds_total counter\nanalytics_service_process_cpu_user_seconds_total 58.23400000000001\n\n# HELP analytics_service_process_cpu_system_seconds_total Total system CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_system_seconds_total counter\nanalytics_service_process_cpu_system_seconds_total 20.062999999999995\n\n# HELP analytics_service_process_cpu_seconds_total Total user and system CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_seconds_total counter\nanalytics_service_process_cpu_seconds_total 78.297\n\n# HELP analytics_service_pro"
+ }
+]

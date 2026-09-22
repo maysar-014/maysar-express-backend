@@ -43,3 +43,63 @@ export class TaskAssignedEvent {
         public readonly timestamp: Date = new Date()
     ) { }
 }
+
+// ── Enabler capability lifecycle events (§50) ────────────────────────────────
+// Emitted for meaningful state changes only — not for every internal call.
+
+export class EnablerTermsAcceptedEvent {
+    constructor(
+        public readonly enablerId: string,
+        public readonly userId: string,
+        public readonly termsVersion: string,
+        public readonly acceptedAt: Date = new Date()
+    ) { }
+}
+
+export class EnablerTrainingRecordedEvent {
+    constructor(
+        public readonly enablerId: string,
+        public readonly userId: string,
+        public readonly trainingStatus: string,
+        public readonly recordedAt: Date = new Date()
+    ) { }
+}
+
+export class EnablerActivatedEvent {
+    constructor(
+        public readonly enablerId: string,
+        public readonly userId: string,
+        public readonly activatedAt: Date = new Date()
+    ) { }
+}
+
+export class EnablerRestrictedEvent {
+    constructor(
+        public readonly enablerId: string,
+        public readonly reason: string,
+        public readonly occurredAt: Date = new Date()
+    ) { }
+}
+
+export class EnablerSuspendedEvent {
+    constructor(
+        public readonly enablerId: string,
+        public readonly reason: string,
+        public readonly occurredAt: Date = new Date()
+    ) { }
+}
+
+export class EnablerReactivatedEvent {
+    constructor(
+        public readonly enablerId: string,
+        public readonly occurredAt: Date = new Date()
+    ) { }
+}
+
+export class EnablerDeactivatedEvent {
+    constructor(
+        public readonly enablerId: string,
+        public readonly reason: string,
+        public readonly occurredAt: Date = new Date()
+    ) { }
+}

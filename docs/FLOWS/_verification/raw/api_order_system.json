@@ -1,0 +1,28 @@
+[
+ {
+  "module": "api/order/system",
+  "path": "/api/order/system/maintenance/cleanup/outbox",
+  "method": "POST",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 401,
+  "authBody": "{\"success\":false,\"error\":\"Service key required\"}"
+ },
+ {
+  "module": "api/order/system",
+  "path": "/api/order/system/maintenance/cleanup/outbox/report",
+  "method": "POST",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 401,
+  "authBody": "{\"success\":false,\"error\":\"Service key required\"}"
+ }
+]

@@ -1,0 +1,93 @@
+[
+ {
+  "module": "api/order/health",
+  "path": "/api/order/health/circuit-breakers",
+  "method": "GET",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"service\":\"order-service\",\"timestamp\":\"2026-09-20T17:45:53.291Z\",\"circuitBreakers\":{\"redis-cache\":{\"state\":\"CLOSED\",\"failures\":0,\"successes\":0,\"requests\":0,\"lastFailureTime\":null,\"lastSuccessTime\":null,\"nextAttemptTime\":null}}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"service\":\"order-service\",\"timestamp\":\"2026-09-20T17:45:53.295Z\",\"circuitBreakers\":{\"redis-cache\":{\"state\":\"CLOSED\",\"failures\":0,\"successes\":0,\"requests\":0,\"lastFailureTime\":null,\"lastSuccessTime\":null,\"nextAttemptTime\":null}}}"
+ },
+ {
+  "module": "api/order/health",
+  "path": "/api/order/health/live",
+  "method": "GET",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"service\":\"order-service\",\"status\":\"alive\",\"timestamp\":\"2026-09-20T17:45:53.325Z\",\"uptime\":4921.1660598}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"service\":\"order-service\",\"status\":\"alive\",\"timestamp\":\"2026-09-20T17:45:53.331Z\",\"uptime\":4921.1716096}"
+ },
+ {
+  "module": "api/order/health",
+  "path": "/api/order/health/metrics",
+  "method": "GET",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 200,
+  "anonBody": "# HELP order_service_process_cpu_user_seconds_total Total user CPU time spent in seconds.\n# TYPE order_service_process_cpu_user_seconds_total counter\norder_service_process_cpu_user_seconds_total 49.75\n\n# HELP order_service_process_cpu_system_seconds_",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "# HELP order_service_process_cpu_user_seconds_total Total user CPU time spent in seconds.\n# TYPE order_service_process_cpu_user_seconds_total counter\norder_service_process_cpu_user_seconds_total 49.797\n\n# HELP order_service_process_cpu_system_seconds_total Total system CPU time spent in seconds.\n# TYPE order_service_process_cpu_system_seconds_total counter\norder_service_process_cpu_system_seconds_total 15.782\n\n# HELP order_service_process_cpu_seconds_total Total user and system CPU time spent in seconds.\n# TYPE order_service_process_cpu_seconds_total counter\norder_service_process_cpu_seconds_total 65.579\n\n# HELP order_service_process_start_time_seconds Start time of the process since unix ep"
+ },
+ {
+  "module": "api/order/health",
+  "path": "/api/order/health/ping",
+  "method": "GET",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"service\":\"order-service\",\"status\":\"pong\",\"timestamp\":\"2026-09-20T17:45:53.354Z\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"service\":\"order-service\",\"status\":\"pong\",\"timestamp\":\"2026-09-20T17:45:53.358Z\"}"
+ },
+ {
+  "module": "api/order/health",
+  "path": "/api/order/health",
+  "method": "GET",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"service\":\"order-service\",\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:53.327Z\",\"version\":\"1.0.0\",\"environment\":\"development\",\"uptime\":4921.1680253,\"database\":{\"prisma\":true,\"details\":{\"prisma\":{\"status\":\"healthy\",\"latency\":38}}}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"service\":\"order-service\",\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:53.389Z\",\"version\":\"1.0.0\",\"environment\":\"development\",\"uptime\":4921.2295846,\"database\":{\"prisma\":true,\"details\":{\"prisma\":{\"status\":\"healthy\",\"latency\":7}}}}"
+ },
+ {
+  "module": "api/order/health",
+  "path": "/api/order/health/detailed",
+  "method": "GET",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"service\":\"order-service\",\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:53.377Z\",\"checks\":{\"database\":{\"prisma\":true,\"details\":{\"prisma\":{\"status\":\"healthy\",\"latency\":53}}},\"circuitBreakers\":{\"redis-cache\":{\"state\":\"CLOSED\",\"failures\":0,\"successe",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"service\":\"order-service\",\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:53.394Z\",\"checks\":{\"database\":{\"prisma\":true,\"details\":{\"prisma\":{\"status\":\"healthy\",\"latency\":7}}},\"circuitBreakers\":{\"redis-cache\":{\"state\":\"CLOSED\",\"failures\":0,\"successes\":0,\"requests\":0,\"lastFailureTime\":null,\"lastSuccessTime\":null,\"nextAttemptTime\":null}},\"system\":{\"platform\":\"win32\",\"arch\":\"x64\",\"nodeVersion\":\"v20.19.0\",\"pid\":20728,\"uptime\":4921.2347761},\"metrics\":{\"memory\":{\"rss\":382652416,\"heapUsed\":292927384,\"heapTotal\":345419776,\"external\":12895210},\"circuitBreakers\":{\"redis-cache\":{\"state\":\"CLOSED\",\"failures\":0,\"successes\":0,\"requests\":0,\"lastFailureTime\":null,\"lastSuccessTime\":null,\"nextAttemptTime\":null"
+ },
+ {
+  "module": "api/order/health",
+  "path": "/api/order/health/ready",
+  "method": "GET",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"service\":\"order-service\",\"status\":\"ready\",\"timestamp\":\"2026-09-20T17:45:53.390Z\",\"database\":{\"prisma\":true,\"details\":{\"prisma\":{\"status\":\"healthy\",\"latency\":7}}}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"service\":\"order-service\",\"status\":\"ready\",\"timestamp\":\"2026-09-20T17:45:53.453Z\",\"database\":{\"prisma\":true,\"details\":{\"prisma\":{\"status\":\"healthy\",\"latency\":48}}}}"
+ }
+]

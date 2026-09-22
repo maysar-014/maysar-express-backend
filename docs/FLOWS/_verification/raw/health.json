@@ -1,0 +1,15 @@
+[
+ {
+  "module": "health",
+  "path": "/health",
+  "method": "GET",
+  "tags": [
+   "Health"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"ok\",\"uptime\":4922.6823471,\"timestamp\":\"2026-09-20T17:45:54.841Z\",\"memoryUsage\":{\"rss\":412626944,\"heapTotal\":374706176,\"heapUsed\":335661432,\"external\":13078576,\"arrayBuffers\":4596759}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"ok\",\"uptime\":4922.6893266,\"timestamp\":\"2026-09-20T17:45:54.848Z\",\"memoryUsage\":{\"rss\":412729344,\"heapTotal\":374706176,\"heapUsed\":336022032,\"external\":13078608,\"arrayBuffers\":4596791}}"
+ }
+]

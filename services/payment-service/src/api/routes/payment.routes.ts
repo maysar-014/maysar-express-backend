@@ -7,6 +7,8 @@ import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import { RedisRateLimitStore } from "../../../../../shared/middleware/redis-rate-limit.store";
 import { PaymentController } from "../controllers/payment.controller";
+import { PaymentAdminController } from "../controllers/payment-admin.controller";
+import { requireRoleOrService } from "@shared/middleware/auth-context.middleware";
 import {
   getSharedRedisClient,
   resolveRedisUrl,
@@ -128,8 +130,28 @@ const refundPaymentRequestSchema = {
     .strict(),
 };
 
+const blockPaymentAdminRequestSchema = {
+  params: paymentIdParamsSchema,
+  body: z
+    .object({
+      reason: z.string().min(3).max(500),
+    })
+    .strict(),
+};
+
+const flagPaymentAdminRequestSchema = {
+  params: paymentIdParamsSchema,
+  body: z
+    .object({
+      reason: z.string().min(3).max(500),
+      flagType: z.string().min(1).max(64).default("MANUAL_REVIEW"),
+    })
+    .strict(),
+};
+
 export function createPaymentRoutes(
   paymentController: PaymentController,
+  paymentAdminController: PaymentAdminController,
 ): Router {
   const router = Router();
 
@@ -168,6 +190,22 @@ export function createPaymentRoutes(
     "/:id/refund",
     validateRequest(refundPaymentRequestSchema),
     asyncHandler((req, res) => paymentController.refundPayment(req, res)),
+  );
+
+  // Block an in-flight payment (admin/system only) — PENDING/PROCESSING → FAILED
+  router.post(
+    "/:id/block",
+    requireRoleOrService(["admin", "system"]),
+    validateRequest(blockPaymentAdminRequestSchema),
+    asyncHandler((req, res) => paymentAdminController.blockPayment(req, res)),
+  );
+
+  // Flag a payment for review (admin/system only) — audit metadata only
+  router.post(
+    "/:id/flag",
+    requireRoleOrService(["admin", "system"]),
+    validateRequest(flagPaymentAdminRequestSchema),
+    asyncHandler((req, res) => paymentAdminController.flagPayment(req, res)),
   );
 
   return router;

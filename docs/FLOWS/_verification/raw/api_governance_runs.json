@@ -1,0 +1,54 @@
+[
+ {
+  "module": "api/governance/runs",
+  "path": "/api/governance/runs",
+  "method": "GET",
+  "tags": [
+   "Governance"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/governance/runs not found\",\"timestamp\":\"2026-09-20T17:45:51.942Z\",\"path\":\"/api/governance/runs\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/governance/runs not found\",\"timestamp\":\"2026-09-20T17:45:51.949Z\",\"path\":\"/api/governance/runs\"}}"
+ },
+ {
+  "module": "api/governance/runs",
+  "path": "/api/governance/runs/{runId}",
+  "method": "GET",
+  "tags": [
+   "Governance"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/governance/runs/usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\",\"timestamp\":\"2026-09-20T17:45:51.952Z\",\"path\":\"/api/governance/runs/usr_01KRFXQZC36NK3CDEWJJS21RP8\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/governance/runs/usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\",\"timestamp\":\"2026-09-20T17:45:51.968Z\",\"path\":\"/api/governance/runs/usr_01KRFXQZC36NK3CDEWJJS21RP8\"}}"
+ },
+ {
+  "module": "api/governance/runs",
+  "path": "/api/governance/runs/{runId}/evidence/{gateId}",
+  "method": "GET",
+  "tags": [
+   "Governance"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/governance/runs/usr_01KRFXQZC36NK3CDEWJJS21RP8/evidence/usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\",\"timestamp\":\"2026-09-20T17:45:51.957Z\",\"path\":\"/api/governance/runs/usr_",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/governance/runs/usr_01KRFXQZC36NK3CDEWJJS21RP8/evidence/usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\",\"timestamp\":\"2026-09-20T17:45:51.975Z\",\"path\":\"/api/governance/runs/usr_01KRFXQZC36NK3CDEWJJS21RP8/evidence/usr_01KRFXQZC36NK3CDEWJJS21RP8\"}}"
+ },
+ {
+  "module": "api/governance/runs",
+  "path": "/api/governance/runs",
+  "method": "POST",
+  "tags": [
+   "Governance"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/governance/runs not found\",\"timestamp\":\"2026-09-20T17:45:52.033Z\",\"path\":\"/api/governance/runs\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/governance/runs not found\",\"timestamp\":\"2026-09-20T17:45:52.072Z\",\"path\":\"/api/governance/runs\"}}"
+ }
+]

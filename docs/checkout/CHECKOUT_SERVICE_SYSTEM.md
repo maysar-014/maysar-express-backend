@@ -139,3 +139,17 @@ Mounted at `/api/checkout`.
 | `application/use-cases/__tests__/initiate-checkout.use-case.test.ts` | Quote validation, inventory reservation |
 | `application/use-cases/__tests__/multi-seller-checkout.use-case.test.ts` | All-or-nothing validation |
 | `tests/integration/multi-seller-consolidation.integration.test.ts` | Multi-seller consolidation (4/4) |
+
+
+---
+
+## System Maintenance Routes
+
+Mounted at `/api/checkout/system/maintenance`. Guards: `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/checkout/system/maintenance/cleanup/outbox/report` | Dry-run count of deletable checkout outbox events |
+| POST | `/api/checkout/system/maintenance/cleanup/outbox` | Batched deletion of expired outbox events. Body: `{ "dryRun": true }` to simulate |
+
+**Retention defaults:** sent/processed → 7 days, failed → 30 days. Batch size: 1000. Max runtime: 20 s.

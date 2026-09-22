@@ -62,6 +62,8 @@ export const PaymentModule: Module = {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const createPaymentRoutes =
         require("./src/api/routes/payment.routes").createPaymentRoutes;
+      const createPaymentAdminRoutes =
+        require("./src/api/routes/payment-admin.routes").createPaymentAdminRoutes;
       router.use(
         "/payments/webhooks",
         createWebhookRoutes(container.webhookController),
@@ -69,7 +71,10 @@ export const PaymentModule: Module = {
       router.use(
         "/payments",
         requireAuth,
-        createPaymentRoutes(container.paymentController),
+        createPaymentRoutes(
+          container.paymentController,
+          container.paymentAdminController,
+        ),
       );
       router.use("/webhooks", createWebhookRoutes(container.webhookController));
       // Authoritative method discovery for buyer apps — no hard-coded frontend list.
@@ -82,6 +87,12 @@ export const PaymentModule: Module = {
         "/admin/payment-methods",
         requireRoleOrService(["admin", "system"]),
         createPaymentMethodsAdminRoutes(container.paymentMethodsController),
+      );
+      // Admin payment summary roster (block/flag are POST /payments/:id/*).
+      router.use(
+        "/admin/payments",
+        requireRoleOrService(["admin", "system"]),
+        createPaymentAdminRoutes(container.paymentAdminController),
       );
     } catch (error) {
       logger.warn(

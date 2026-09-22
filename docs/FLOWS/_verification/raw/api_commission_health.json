@@ -1,0 +1,41 @@
+[
+ {
+  "module": "api/commission/health",
+  "path": "/api/commission/health",
+  "method": "GET",
+  "tags": [
+   "Commission"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/commission/health not found\",\"timestamp\":\"2026-09-20T17:45:51.349Z\",\"path\":\"/api/commission/health\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/commission/health not found\",\"timestamp\":\"2026-09-20T17:45:51.359Z\",\"path\":\"/api/commission/health\"}}"
+ },
+ {
+  "module": "api/commission/health",
+  "path": "/api/commission/health/live",
+  "method": "GET",
+  "tags": [
+   "Commission"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/commission/health/live not found\",\"timestamp\":\"2026-09-20T17:45:51.354Z\",\"path\":\"/api/commission/health/live\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/commission/health/live not found\",\"timestamp\":\"2026-09-20T17:45:51.369Z\",\"path\":\"/api/commission/health/live\"}}"
+ },
+ {
+  "module": "api/commission/health",
+  "path": "/api/commission/health/ready",
+  "method": "GET",
+  "tags": [
+   "Commission"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/commission/health/ready not found\",\"timestamp\":\"2026-09-20T17:45:51.372Z\",\"path\":\"/api/commission/health/ready\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/commission/health/ready not found\",\"timestamp\":\"2026-09-20T17:45:51.378Z\",\"path\":\"/api/commission/health/ready\"}}"
+ }
+]

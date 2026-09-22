@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/auth/extend-session",
+  "path": "/api/auth/extend-session",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"sessionId\\\" is required\",\"\\\"userId\\\" is required\"]}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"sessionId\\\" is required\",\"\\\"userId\\\" is required\"]}"
+ }
+]

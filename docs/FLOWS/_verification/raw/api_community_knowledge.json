@@ -1,0 +1,132 @@
+[
+ {
+  "module": "api/community/knowledge",
+  "path": "/api/community/knowledge/articles",
+  "method": "GET",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"articles\":[],\"pagination\":{\"page\":1,\"limit\":20,\"total\":0}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"articles\":[],\"pagination\":{\"page\":1,\"limit\":20,\"total\":0}}"
+ },
+ {
+  "module": "api/community/knowledge",
+  "path": "/api/community/knowledge/articles",
+  "method": "POST",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"ValidationError\",\"message\":\"Article validation failed\",\"details\":[{\"field\":\"title\",\"message\":\"Title is required\"},{\"field\":\"summary\",\"message\":\"Summary is required\"},{\"field\":\"sections\",\"message\":\"\\\"sections\\\" is required\"},{\"field\":\"category\",\"message\":\"Category is required\"},{\"field\":\"industryTags\",\"message\":\"\\\"industryTags\\\" is required\"},{\"field\":\"expertiseLevel\",\"message\":\"\\\"expertiseLevel\\\" is required\"}]}"
+ },
+ {
+  "module": "api/community/knowledge",
+  "path": "/api/community/knowledge/articles/{articleId}",
+  "method": "GET",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"article\":null}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"article\":null}"
+ },
+ {
+  "module": "api/community/knowledge",
+  "path": "/api/community/knowledge/articles/{articleId}/publish",
+  "method": "POST",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"message\":\"Article published\",\"data\":{\"articleId\":\"no-fixture\",\"publishedBy\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\"}}"
+ },
+ {
+  "module": "api/community/knowledge",
+  "path": "/api/community/knowledge/articles/{articleId}/reviews",
+  "method": "POST",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 201,
+  "authBody": "{\"success\":true,\"message\":\"Review submitted\",\"data\":{\"articleId\":\"no-fixture\",\"reviewerId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\"}}"
+ },
+ {
+  "module": "api/community/knowledge",
+  "path": "/api/community/knowledge/challenges",
+  "method": "GET",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/community/knowledge/challenges not found\",\"timestamp\":\"2026-09-20T17:45:51.580Z\",\"path\":\"/api/community/knowledge/challenges\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/community/knowledge/challenges not found\",\"timestamp\":\"2026-09-20T17:45:51.591Z\",\"path\":\"/api/community/knowledge/challenges\"}}"
+ },
+ {
+  "module": "api/community/knowledge",
+  "path": "/api/community/knowledge/challenges",
+  "method": "POST",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/community/knowledge/challenges not found\",\"timestamp\":\"2026-09-20T17:45:51.582Z\",\"path\":\"/api/community/knowledge/challenges\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/community/knowledge/challenges not found\",\"timestamp\":\"2026-09-20T17:45:51.604Z\",\"path\":\"/api/community/knowledge/challenges\"}}"
+ },
+ {
+  "module": "api/community/knowledge",
+  "path": "/api/community/knowledge/challenges/{challengeId}/solutions",
+  "method": "POST",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/community/knowledge/challenges/no-fixture/solutions not found\",\"timestamp\":\"2026-09-20T17:45:51.608Z\",\"path\":\"/api/community/knowledge/challenges/no-fixture/solutions\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/community/knowledge/challenges/no-fixture/solutions not found\",\"timestamp\":\"2026-09-20T17:45:51.616Z\",\"path\":\"/api/community/knowledge/challenges/no-fixture/solutions\"}}"
+ },
+ {
+  "module": "api/community/knowledge",
+  "path": "/api/community/knowledge/discover",
+  "method": "GET",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/community/knowledge/discover not found\",\"timestamp\":\"2026-09-20T17:45:51.610Z\",\"path\":\"/api/community/knowledge/discover\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/community/knowledge/discover not found\",\"timestamp\":\"2026-09-20T17:45:51.619Z\",\"path\":\"/api/community/knowledge/discover\"}}"
+ },
+ {
+  "module": "api/community/knowledge",
+  "path": "/api/community/knowledge/expertise/validate",
+  "method": "POST",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/community/knowledge/expertise/validate not found\",\"timestamp\":\"2026-09-20T17:45:51.613Z\",\"path\":\"/api/community/knowledge/expertise/validate\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/community/knowledge/expertise/validate not found\",\"timestamp\":\"2026-09-20T17:45:51.624Z\",\"path\":\"/api/community/knowledge/expertise/validate\"}}"
+ }
+]

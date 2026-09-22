@@ -1,0 +1,106 @@
+[
+ {
+  "module": "api/community/posts",
+  "path": "/api/community/posts",
+  "method": "POST",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"ValidationError\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"authorId\",\"message\":\"Author ID is required\"},{\"field\":\"content\",\"message\":\"Content is required\"},{\"field\":\"type\",\"message\":\"Post type is required\"}]}"
+ },
+ {
+  "module": "api/community/posts",
+  "path": "/api/community/posts/{postId}",
+  "method": "GET",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"error\":\"ValidationError\",\"message\":\"Post ID must be a valid ID\"}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"ValidationError\",\"message\":\"Post ID must be a valid ID\"}"
+ },
+ {
+  "module": "api/community/posts",
+  "path": "/api/community/posts/{postId}/related",
+  "method": "GET",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"error\":\"ValidationError\",\"message\":\"Post ID must be a valid ID\"}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"ValidationError\",\"message\":\"Post ID must be a valid ID\"}"
+ },
+ {
+  "module": "api/community/posts",
+  "path": "/api/community/posts/authors/{authorId}",
+  "method": "GET",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"posts\":[],\"pagination\":{\"limit\":20,\"offset\":0,\"count\":0}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"posts\":[],\"pagination\":{\"limit\":20,\"offset\":0,\"count\":0}}"
+ },
+ {
+  "module": "api/community/posts",
+  "path": "/api/community/posts/search",
+  "method": "GET",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"error\":\"ValidationError\",\"message\":\"Search query is required\"}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"ValidationError\",\"message\":\"Search query is required\"}"
+ },
+ {
+  "module": "api/community/posts",
+  "path": "/api/community/posts/published",
+  "method": "GET",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"posts\":[],\"pagination\":{\"limit\":50,\"offset\":0,\"count\":0}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"posts\":[],\"pagination\":{\"limit\":50,\"offset\":0,\"count\":0}}"
+ },
+ {
+  "module": "api/community/posts",
+  "path": "/api/community/posts/users/{userId}/feed",
+  "method": "GET",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"includeFollowed\":true,\"posts\":[],\"count\":0}"
+ },
+ {
+  "module": "api/community/posts",
+  "path": "/api/community/posts/trending",
+  "method": "GET",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"topics\":[],\"timeWindowHours\":24}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"topics\":[],\"timeWindowHours\":24}"
+ }
+]

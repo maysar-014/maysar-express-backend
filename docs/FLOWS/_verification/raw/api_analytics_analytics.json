@@ -1,0 +1,28 @@
+[
+ {
+  "module": "api/analytics/analytics",
+  "path": "/api/analytics/analytics/dashboard/{sellerId}",
+  "method": "GET",
+  "tags": [
+   "Analytics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"sellerId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"averageOrderValue\":null,\"conversionRate\":null,\"customerLifetimeValue\":null,\"returnRate\":null,\"profitMargin\":null,\"activeVisitors\":null,\"cartAbandonment\":null,\"liveOrders\":null,\"inventoryAlerts\":null,\"customerInquiries\":null,\"todaySales\":null,\"todayOrderCount\":null,\"thisMonthRevenue\":null,\"lastMonthRevenue\":null,\"monthOverMonthGrowth\":null,\"repeatCustomerRate\":null,\"bestPerformingProductId\":null,\"bestPerformingProductRevenue\":null,\"bestPerformingProductUnitsSold\":null,\"pendingCustomerQuestions\":null,\"lowConversionProductCount\":null,\"profitabilityScore\":15,\"averageRating\":null,\"responseRate\":null,\"averageDeliveryTime\":null,\"lastUpdated\":\"2026-09-19"
+ },
+ {
+  "module": "api/analytics/analytics",
+  "path": "/api/analytics/analytics/sales/{sellerId}",
+  "method": "GET",
+  "tags": [
+   "Analytics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "[]"
+ }
+]

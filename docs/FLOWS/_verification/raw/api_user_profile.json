@@ -1,0 +1,28 @@
+[
+ {
+  "module": "api/user/profile",
+  "path": "/api/user/profile",
+  "method": "GET",
+  "tags": [
+   "Users"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"id\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"email\":\"buyer@maysar.co.tz\",\"phoneNumber\":\"+255700000002\",\"firstName\":\"Amina\",\"lastName\":\"Hassan\",\"fullName\":\"Amina Hassan\",\"dateOfBirth\":\"1970-01-01T00:00:00.000Z\",\"role\":\"buyer\",\"status\":\"locked\",\"emailVerified\":true,\"phoneVerified\":true,\"profilePicture\":\"\",\"preferredLanguage\":\"en\",\"preferredCurrency\":\"UTC\",\"addresses\":[{\"value\":{\"id\":\"addr-1787427368840\",\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"type\":\"home\",\"isPrimary\":true,\"street\":\"SOKON 1\",\"city\":\"Arusha\",\"state\":\"Arusha\",\"postalCode\":\"11101\",\"country\":\"Tanzania\",\"createdAt\":\"2026-08-22T19:36:09.053Z\",\"updatedAt\":\"2026-09-20T17:45:54.144Z\"}},{\"value\":{\"id\":\"usr_add_01M1M7"
+ },
+ {
+  "module": "api/user/profile",
+  "path": "/api/user/profile",
+  "method": "PUT",
+  "tags": [
+   "Users"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"id\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"email\":\"buyer@maysar.co.tz\",\"phoneNumber\":\"+255700000002\",\"firstName\":\"Amina\",\"lastName\":\"Hassan\",\"fullName\":\"Amina Hassan\",\"dateOfBirth\":\"1970-01-01T00:00:00.000Z\",\"role\":\"buyer\",\"status\":\"locked\",\"emailVerified\":true,\"phoneVerified\":true,\"profilePicture\":\"\",\"preferredLanguage\":\"en\",\"preferredCurrency\":\"UTC\",\"addresses\":[{\"value\":{\"id\":\"usr_add_01M1MCBHGP71R9D21P31GKG3E8\",\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"type\":\"home\",\"isPrimary\":true,\"street\":\"SOKON 1\",\"ward\":\"Arusha\",\"district\":\"Arusha\",\"region\":\"Arusha\",\"state\":\"Arusha\",\"postalCode\":\"11101\",\"country\":\"Tanzania\",\"createdAt\":\"2026-09-03T19:36:26.942Z\",\"updatedAt\":\"2026"
+ }
+]

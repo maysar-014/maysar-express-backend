@@ -1,0 +1,41 @@
+[
+ {
+  "module": "api/maps/health",
+  "path": "/api/maps/health",
+  "method": "GET",
+  "tags": [
+   "Maps"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"healthy\",\"service\":\"maps-service\",\"timestamp\":\"2026-09-20T17:45:52.932Z\",\"circuitBreakers\":{\"total\":1,\"closed\":1,\"open\":0,\"halfOpen\":0,\"unhealthy\":0},\"details\":{\"providers\":{\"routing\":true,\"tracking\":true,\"traffic\":true,\"weather\":true}}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"healthy\",\"service\":\"maps-service\",\"timestamp\":\"2026-09-20T17:45:52.936Z\",\"circuitBreakers\":{\"total\":1,\"closed\":1,\"open\":0,\"halfOpen\":0,\"unhealthy\":0},\"details\":{\"providers\":{\"routing\":true,\"tracking\":true,\"traffic\":true,\"weather\":true}}}"
+ },
+ {
+  "module": "api/maps/health",
+  "path": "/api/maps/health/live",
+  "method": "GET",
+  "tags": [
+   "Maps"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"alive\",\"service\":\"maps-service\",\"timestamp\":\"2026-09-20T17:45:52.939Z\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"alive\",\"service\":\"maps-service\",\"timestamp\":\"2026-09-20T17:45:52.942Z\"}"
+ },
+ {
+  "module": "api/maps/health",
+  "path": "/api/maps/health/ready",
+  "method": "GET",
+  "tags": [
+   "Maps"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"ready\",\"service\":\"maps-service\",\"timestamp\":\"2026-09-20T17:45:52.944Z\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"ready\",\"service\":\"maps-service\",\"timestamp\":\"2026-09-20T17:45:52.949Z\"}"
+ }
+]

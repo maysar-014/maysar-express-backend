@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/inventory/metrics",
+  "path": "/api/inventory/metrics",
+  "method": "GET",
+  "tags": [
+   "Inventory"
+  ],
+  "anonStatus": 200,
+  "anonBody": "# HELP analytics_service_process_cpu_user_seconds_total Total user CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_user_seconds_total counter\nanalytics_service_process_cpu_user_seconds_total 55.547000000000004\n\n# HELP analytics_servic",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "# HELP analytics_service_process_cpu_user_seconds_total Total user CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_user_seconds_total counter\nanalytics_service_process_cpu_user_seconds_total 55.75000000000001\n\n# HELP analytics_service_process_cpu_system_seconds_total Total system CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_system_seconds_total counter\nanalytics_service_process_cpu_system_seconds_total 19.952999999999996\n\n# HELP analytics_service_process_cpu_seconds_total Total user and system CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_seconds_total counter\nanalytics_service_process_cpu_seconds_total 75.703\n\n# HELP analytics_service_pro"
+ }
+]

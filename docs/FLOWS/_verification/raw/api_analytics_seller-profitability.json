@@ -1,0 +1,93 @@
+[
+ {
+  "module": "api/analytics/seller-profitability",
+  "path": "/api/analytics/seller-profitability/financial",
+  "method": "GET",
+  "tags": [
+   "Analytics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"avgPayoutTimeHours\":0,\"avgWithdrawalTimeHours\":0,\"disputesPer100Orders\":0}"
+ },
+ {
+  "module": "api/analytics/seller-profitability",
+  "path": "/api/analytics/seller-profitability/growth-indicators",
+  "method": "GET",
+  "tags": [
+   "Analytics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"revenueGrowthMoM\":0,\"productVelocityAvg\":0.1,\"repeatBuyerRate\":100}"
+ },
+ {
+  "module": "api/analytics/seller-profitability",
+  "path": "/api/analytics/seller-profitability/happiness",
+  "method": "GET",
+  "tags": [
+   "Analytics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"productExpansionRate\":0,\"referralCount\":0}"
+ },
+ {
+  "module": "api/analytics/seller-profitability",
+  "path": "/api/analytics/seller-profitability/dashboard",
+  "method": "GET",
+  "tags": [
+   "Analytics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"topRow\":{\"gmv\":0,\"activeSellers\":0,\"arps\":0,\"repeatBuyerRate\":100},\"secondRow\":{\"sellerRetentionPercent\":0,\"churnPercent\":0,\"medianRevenue\":0,\"payoutTimeHours\":0},\"thirdRow\":{\"revenueDistribution\":{\"top20Percent\":0,\"restPercent\":100},\"growthPerSeller\":[],\"timeToFirstSale\":0,\"productVelocityHeatmap\":[]},\"timestamp\":\"2026-09-20T17:45:45.652Z\"}"
+ },
+ {
+  "module": "api/analytics/seller-profitability",
+  "path": "/api/analytics/seller-profitability/retention",
+  "method": "GET",
+  "tags": [
+   "Analytics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"retentionRate90Days\":0,\"churnRateMonthly\":0,\"avgTimeToFirstSaleDays\":0}"
+ },
+ {
+  "module": "api/analytics/seller-profitability",
+  "path": "/api/analytics/seller-profitability/revenue-health",
+  "method": "GET",
+  "tags": [
+   "Analytics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"arpsWeekly\":0,\"arpsMonthly\":0,\"medianRevenue\":0,\"revenueDistributionTop20\":0}"
+ },
+ {
+  "module": "api/analytics/seller-profitability",
+  "path": "/api/analytics/seller-profitability/dashboard/{sellerId}",
+  "method": "GET",
+  "tags": [
+   "Analytics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"topRow\":{\"gmv\":0,\"activeSellers\":0,\"arps\":0,\"repeatBuyerRate\":100},\"secondRow\":{\"sellerRetentionPercent\":0,\"churnPercent\":0,\"medianRevenue\":0,\"payoutTimeHours\":0},\"thirdRow\":{\"revenueDistribution\":{\"top20Percent\":0,\"restPercent\":100},\"growthPerSeller\":[],\"timeToFirstSale\":0,\"productVelocityHeatmap\":[]},\"timestamp\":\"2026-09-20T17:45:45.779Z\",\"sellerId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\"}"
+ }
+]

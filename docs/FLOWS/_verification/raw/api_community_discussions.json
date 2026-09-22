@@ -1,0 +1,80 @@
+[
+ {
+  "module": "api/community/discussions",
+  "path": "/api/community/discussions",
+  "method": "GET",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"threads\":[],\"pagination\":{\"page\":1,\"limit\":20,\"total\":0},\"filters\":{}}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"threads\":[],\"pagination\":{\"page\":1,\"limit\":20,\"total\":0},\"filters\":{}}}"
+ },
+ {
+  "module": "api/community/discussions",
+  "path": "/api/community/discussions",
+  "method": "POST",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"ValidationError\",\"message\":\"Discussion validation failed\",\"details\":[{\"field\":\"topic\",\"message\":\"Topic is required\"},{\"field\":\"content\",\"message\":\"Content is required\"},{\"field\":\"category\",\"message\":\"Category is required\"},{\"field\":\"expertiseLevel\",\"message\":\"\\\"expertiseLevel\\\" is required\"},{\"field\":\"industry\",\"message\":\"\\\"industry\\\" is required\"},{\"field\":\"tags\",\"message\":\"\\\"tags\\\" is required\"}]}"
+ },
+ {
+  "module": "api/community/discussions",
+  "path": "/api/community/discussions/{threadId}",
+  "method": "GET",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"thread\":null,\"answers\":[]}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"thread\":null,\"answers\":[]}}"
+ },
+ {
+  "module": "api/community/discussions",
+  "path": "/api/community/discussions/{threadId}/accept/{answerId}",
+  "method": "PATCH",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"message\":\"Answer accepted\",\"data\":{\"threadId\":\"no-fixture\",\"answerId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"acceptedBy\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\"}}"
+ },
+ {
+  "module": "api/community/discussions",
+  "path": "/api/community/discussions/{threadId}/close",
+  "method": "PATCH",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"message\":\"Thread closed\",\"data\":{\"threadId\":\"no-fixture\",\"closedBy\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\"}}"
+ },
+ {
+  "module": "api/community/discussions",
+  "path": "/api/community/discussions/{threadId}/answers",
+  "method": "POST",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"ValidationError\",\"message\":\"Answer validation failed\",\"details\":[{\"field\":\"content\",\"message\":\"Answer content is required\"}]}"
+ }
+]

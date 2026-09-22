@@ -1,0 +1,15 @@
+[
+ {
+  "module": "debug-sentry",
+  "path": "/debug-sentry",
+  "method": "GET",
+  "tags": [
+   "Health"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"disabled\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"disabled\"}"
+ }
+]

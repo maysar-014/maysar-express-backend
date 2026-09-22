@@ -146,10 +146,12 @@ The server checks all of these before accepting a payout request. Show them in t
 ```
 
 **Validation rules (server-enforced):**
-- `bankDetails.accountNumber` must be 10–20 digits
-- `mobileMoneyDetails.phoneNumber` must match `(+255|255|0)[67][0-9]{8}`
 - `bankDetails` required when `method = BANK_TRANSFER`
 - `mobileMoneyDetails` required when `method = MOBILE_MONEY`
+- `mobileMoneyDetails.phoneNumber` must match `/^\+?\d{7,15}$/` (international format)
+- All `bankDetails` fields (`bankName`, `bankCode`, `accountNumber`, `accountName`) are required non-blank strings when method is `BANK_TRANSFER`
+
+> ⚠️ The doc previously stated account number must be 10–20 digits and phone must match `(+255|255|0)[67][0-9]{8}`. The actual Joi validators in `payout.routes.ts` use broader patterns: phone is `/^\+?\d{7,15}$/` and account number is a non-blank string (no digit-count constraint at the HTTP layer). The stricter rules may be enforced by the downstream payment provider but are not rejected by this service's validators.
 
 Response:
 ```jsonc
@@ -254,8 +256,8 @@ Only allowed when `status === 'PENDING'`. Returns 422 if the payout has moved to
 - [ ] Display `netAmount` in history, not gross `amount`
 - [ ] Show `reference` as confirmation number on completed payouts
 - [ ] Poll `GET /payouts/:id` every 10s while `PROCESSING`
-- [ ] Validate phone number format client-side: `(+255|255|0)[67][0-9]{8}`
-- [ ] Validate account number: 10–20 digits only
+- [ ] Validate phone number format client-side: `/^\+?\d{7,15}$/` (server uses this pattern — Tanzanian pattern `(+255|255|0)[67][0-9]{8}` can be used as additional client-side guidance)
+- [ ] Note: account number has no digit-count constraint at the server — validate per bank requirements
 
 ---
 
@@ -267,4 +269,25 @@ Only allowed when `status === 'PENDING'`. Returns 422 if the payout has moved to
 | GET | `/api/payout/payouts` | JWT | List payouts |
 | GET | `/api/payout/payouts/:id` | JWT | Get payout detail |
 | POST | `/api/payout/payouts/:id/cancel` | JWT | Cancel payout (PENDING only) |
-| POST | `/api/payout/payouts/:id/reverse` | JWT (admin) | Admin reversal of COMPLETED payout |
+
+> **Note:** The `POST /payouts/:id/reverse` (admin reversal) endpoint is **not implemented** in `payout.routes.ts`. The `REVERSED` status in the status machine is a domain concept that can be set internally, but there is no HTTP route for it. Remove it from any admin UI until the route is added.
+
+
+---
+
+## System Maintenance (internal/ops)
+
+These endpoints are for ops/admin use only. They are not called from the frontend.
+
+```
+POST /api/payout/system/maintenance/cleanup/outbox/report
+POST /api/payout/system/maintenance/cleanup/outbox
+```
+
+**Auth:** `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+### Outbox cleanup report
+`POST /api/payout/system/maintenance/cleanup/outbox/report` → **200** — dry-run count of deletable outbox events.
+
+### Outbox cleanup
+`POST /api/payout/system/maintenance/cleanup/outbox` → **200** — batched deletion. Body: `{ "dryRun": true }` to simulate. `maxRuntimeMs` defaults to 20 seconds.

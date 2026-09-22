@@ -1,0 +1,119 @@
+[
+ {
+  "module": "api/notification/notifications",
+  "path": "/api/notification/notifications",
+  "method": "POST",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"UserId is required\"}}"
+ },
+ {
+  "module": "api/notification/notifications",
+  "path": "/api/notification/notifications/{id}",
+  "method": "GET",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Notification not found\"}}"
+ },
+ {
+  "module": "api/notification/notifications",
+  "path": "/api/notification/notifications",
+  "method": "GET",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"items\":[],\"total\":0,\"page\":1,\"limit\":20,\"hasMore\":false}}"
+ },
+ {
+  "module": "api/notification/notifications",
+  "path": "/api/notification/notifications/{id}",
+  "method": "DELETE",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Notification not found\"}}"
+ },
+ {
+  "module": "api/notification/notifications",
+  "path": "/api/notification/notifications/bulk",
+  "method": "POST",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"results\":[]},\"message\":\"Bulk send completed\"}"
+ },
+ {
+  "module": "api/notification/notifications",
+  "path": "/api/notification/notifications/{id}/retry",
+  "method": "POST",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Notification usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\"}}"
+ },
+ {
+  "module": "api/notification/notifications",
+  "path": "/api/notification/notifications/{id}/status",
+  "method": "PATCH",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Notification not found\"}}"
+ },
+ {
+  "module": "api/notification/notifications",
+  "path": "/api/notification/notifications/unread-count",
+  "method": "GET",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"unreadCount\":0}}"
+ },
+ {
+  "module": "api/notification/notifications",
+  "path": "/api/notification/notifications/mark-all-read",
+  "method": "POST",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"updatedCount\":0},\"message\":\"Notifications marked as read\"}"
+ }
+]

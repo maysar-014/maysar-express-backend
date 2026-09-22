@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/checkout/metrics",
+  "path": "/api/checkout/metrics",
+  "method": "GET",
+  "tags": [
+   "Checkout"
+  ],
+  "anonStatus": 200,
+  "anonBody": "# HELP analytics_service_process_cpu_user_seconds_total Total user CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_user_seconds_total counter\nanalytics_service_process_cpu_user_seconds_total 53.828\n\n# HELP analytics_service_process_cp",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "# HELP analytics_service_process_cpu_user_seconds_total Total user CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_user_seconds_total counter\nanalytics_service_process_cpu_user_seconds_total 53.875\n\n# HELP analytics_service_process_cpu_system_seconds_total Total system CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_system_seconds_total counter\nanalytics_service_process_cpu_system_seconds_total 19.906\n\n# HELP analytics_service_process_cpu_seconds_total Total user and system CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_seconds_total counter\nanalytics_service_process_cpu_seconds_total 73.781\n\n# HELP analytics_service_process_start_time_seconds"
+ }
+]

@@ -185,29 +185,29 @@ POST /api/auth/reset-password
 
 ### Two-factor authentication
 
+The 2FA routes are mounted at `/api/auth/2fa` via `createTwoFactorRouter`.
+
 #### Setup 2FA
 ```
 POST /api/auth/2fa/setup
 ```
+Body: `{ "userId": "usr_01J...", "email": "...", "method": "totp", "deviceName": "..." }` — all optional.
 Returns `{ qrCodeUrl, secret }`. Show QR code for authenticator app scanning.
 
 #### Verify 2FA setup
 ```
-POST /api/auth/2fa/verify
+POST /api/auth/2fa/verify-setup
 ```
 ```jsonc
-{
-  "secret": "<base32-secret>",  // 16–64 chars, base32 alphabet
-  "totpCode": "123456"          // 6 digits
-}
+{ "userId": "usr_01J...", "code": "123456" }
 ```
-Confirms the user scanned correctly. Must be called before `enable`.
+Confirms the user scanned correctly (`isVerified: true`). Must be called before `enable`. Note: field is `code`, not `totpCode`.
 
 #### Enable 2FA
 ```
 POST /api/auth/2fa/enable
 ```
-Requires CSRF token header. Body: `{ "password": "...", "totpCode": "123456" }`
+Registered via `auth.routes.ts` (not the 2fa router). Requires CSRF token header. Body: `{ "password": "...", "totpCode": "123456" }`
 
 Returns `backupCodes[]` — **10 single-use codes**. Display once, never retrievable again.
 
@@ -215,14 +215,32 @@ Returns `backupCodes[]` — **10 single-use codes**. Display once, never retriev
 ```
 POST /api/auth/2fa/disable
 ```
-Requires CSRF token header. Body: `{ "password": "..." }`
+Two separate handlers exist:
+- Via `auth.routes.ts`: requires CSRF header, body `{ "password": "..." }`
+- Via `two-factor.routes.ts`: body `{ "userId": "...", "code": "..." }` (no CSRF)
 
 #### Get 2FA status
 ```
 GET /api/auth/2fa/status
 ```
 
-#### Verify 2FA login OTP (separate endpoint)
+#### Verify backup code
+```
+POST /api/auth/2fa/backup
+```
+```jsonc
+{ "userId": "usr_01J...", "code": "<backup-code>" }
+```
+
+#### Verify TOTP during login (2fa router)
+```
+POST /api/auth/2fa/verify
+```
+```jsonc
+{ "userId": "usr_01J...", "code": "123456" }
+```
+
+#### Verify OTP (otp-verification router — separate from 2fa router)
 ```
 POST /api/auth/verify-otp
 POST /api/auth/verify          (alias)
@@ -230,10 +248,14 @@ POST /api/auth/verify          (alias)
 ```jsonc
 { "userId": "usr_01J...", "otp": "123456" }
 ```
+Also accepts `code` as an alias for `otp`.
 
 #### Regenerate backup codes
 ```
 POST /api/auth/2fa/backup-codes/regenerate
+```
+```jsonc
+{ "userId": "usr_01J..." }
 ```
 Invalidates all existing backup codes and returns 10 new ones.
 
@@ -289,35 +311,51 @@ Strip tokens from URL immediately after extraction to prevent browser history le
 
 ### Sessions
 
+The sessions router is mounted at `/api/auth/sessions` and exposes:
+
 ```
-GET  /api/auth/sessions          → list active sessions
-POST /api/auth/sessions/:id/terminate  → terminate specific session
+GET  /api/auth/sessions          → list active sessions for the authenticated user
+POST /api/auth/sessions          → create a new session (body: { userId, role, deviceInfo, ipAddress })
+DELETE /api/auth/sessions/:sessionId  → terminate a specific session (returns 204)
 ```
+
+> ⚠️ The terminate endpoint uses **`DELETE /:sessionId`** (not `POST /:id/terminate` as previously documented). It returns **204 No Content** on success.
 
 ---
 
 ### Email verification
 
+Email verification is handled by the **user-service**, not the auth-service:
+
 ```
-POST /api/auth/verify-email
-Authorization: Bearer <accessToken>
+POST /api/user/verify-email/:token
 ```
-```jsonc
-{ "token": "<email-verification-token>" }
-```
-Marks the user's email as verified. The verification token is delivered by the user-service after registration.
+
+The auth-service does not expose a `/verify-email` endpoint. After registration, the verification token is delivered by the user-service and redeemed there.
 
 ---
 
 ### Admin routes (`/api/auth/admin` or `/api/v1/admin`)
 
-Admin-only user management endpoints. Require `SYSTEM` or `ENABLER` role.
+Admin routes are mounted at both `/api/auth/admin` and `/api/v1/admin`. All require `admin` role (`requireRole(['admin'])`).
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/api/auth/admin/users` | List users (paginated) |
-| POST | `/api/auth/admin/users/:id/suspend` | Suspend a user account |
-| POST | `/api/auth/admin/users/:id/unlock` | Unlock a locked account |
+| GET | `/api/auth/admin/users/search` | Search users (`query`, `role`, `status`, `limit`, `offset`) |
+| GET | `/api/auth/admin/users/:userId` | Get user by ID |
+| PATCH | `/api/auth/admin/users/:userId/status` | Update user status (`active`, `suspended`, `deactivated`, `locked`) |
+| PATCH | `/api/auth/admin/users/:userId/role` | Update user role |
+| GET | `/api/auth/admin/users/:userId/sessions` | Get user sessions |
+| DELETE | `/api/auth/admin/users/:userId/sessions` | Terminate all user sessions |
+| DELETE | `/api/auth/admin/sessions/:sessionId` | Terminate specific session |
+| GET | `/api/auth/admin/audit` | Get audit logs |
+| GET | `/api/auth/admin/security-events` | Get security events |
+| GET | `/api/auth/admin/stats` | Get system stats |
+| POST | `/api/auth/admin/discovery/refresh` | Refresh service discovery |
+| GET | `/api/auth/admin/health` | Service health overview |
+| PATCH | `/api/auth/admin/users/:userId/verify-phone` | Admin phone verification bypass |
+
+> The previously documented `POST /api/auth/admin/users/:id/suspend` and `POST /api/auth/admin/users/:id/unlock` endpoints do **not exist**. Status changes go through `PATCH /admin/users/:userId/status` with `{ "status": "suspended" }` or `{ "status": "active" }`.
 
 ---
 
@@ -382,3 +420,61 @@ POST /api/auth/phone/verify      { "phoneNumber": "+255712345678", "otp": "12345
 | `ROLE_ALREADY_ASSIGNED` | 409 | Role already assigned |
 | `ROLE_REQUEST_EXISTS` | 409 | Pending request for this role already exists |
 | `UserAlreadyExistsError` | 409 | Email already registered |
+
+
+---
+
+## System Maintenance (internal/ops)
+
+These endpoints are for ops/admin use only. They are not called from the frontend.
+
+```
+POST /api/auth/system/maintenance/cleanup/outbox/report
+POST /api/auth/system/maintenance/cleanup/outbox
+```
+
+**Auth:** `requireRoleOrService(['admin','system'])` **and** `x-service-key` header (value must be in `ALLOWED_SERVICE_KEYS` env var).
+
+### Outbox cleanup report
+`POST /api/auth/system/maintenance/cleanup/outbox/report` → **200**
+
+Returns a dry-run count of outbox events eligible for deletion without deleting anything.
+
+```jsonc
+{
+  "success": true,
+  "batchSize": 1000,
+  "retentionDays": { "sent": 7, "failed": 30 },
+  "cutoffs": { "sent": "2026-09-11T...", "failed": "2026-08-19T..." },
+  "counts": { "processed": 4200, "failed": 12 },
+  "estimatedBatches": { "processed": 5, "failed": 1 },
+  "durationMs": 45
+}
+```
+
+Default retention: sent/processed events older than **7 days**, failed events older than **30 days**. Override via `OUTBOX_SENT_RETENTION_DAYS` / `OUTBOX_FAILED_RETENTION_DAYS` env vars.
+
+### Outbox cleanup
+`POST /api/auth/system/maintenance/cleanup/outbox` → **200**
+
+Deletes eligible outbox events in batches. Pass `{ "dryRun": true }` in the body to simulate without deleting.
+
+```jsonc
+// Request (optional)
+{ "dryRun": true }
+
+// Response
+{
+  "success": true,
+  "dryRun": true,
+  "batchSize": 1000,
+  "maxRuntimeMs": 20000,
+  "results": {
+    "processed": { "deleted": 4200, "batches": 5 },
+    "failed": { "deleted": 12, "batches": 1 }
+  },
+  "durationMs": 1240
+}
+```
+
+`maxRuntimeMs` defaults to **20 seconds** — the job stops after this window and reports what was done. Re-run if more batches remain.

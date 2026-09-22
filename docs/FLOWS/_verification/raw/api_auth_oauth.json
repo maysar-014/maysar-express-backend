@@ -1,0 +1,54 @@
+[
+ {
+  "module": "api/auth/oauth",
+  "path": "/api/auth/oauth/callback",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"success\":false,\"message\":\"Authorization code is required\"}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"message\":\"Authorization code is required\"}"
+ },
+ {
+  "module": "api/auth/oauth",
+  "path": "/api/auth/oauth/initiate",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"authUrl\":\"https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&scope=openid%20profile%20email&prompt=consent&response_type=code&include_granted_scopes=true&code_challenge=GA39Ir3qjYWzd4IWDa4PIBx_rA2BSQpsLEW1AzvVlR8&code_c",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"authUrl\":\"https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&scope=openid%20profile%20email&prompt=consent&response_type=code&include_granted_scopes=true&code_challenge=lT05P976F-bzc2r5BjaJ_1Ya5aa2UMTDySZVrAUlf1Y&code_challenge_method=S256&state=39e02e2b86aa7e0c65d4eb7653a40237&client_id=918710027176-62v22hhlqneci6vmqp8civ7m4g2jagaf.apps.googleusercontent.com&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fauth%2Foauth%2Fcallback\",\"selectedRole\":\"buyer (default)\",\"message\":\"Google OAuth initiated successfully\"}"
+ },
+ {
+  "module": "api/auth/oauth",
+  "path": "/api/auth/oauth/refresh",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"refreshToken\\\" is required\"]}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"refreshToken\\\" is required\"]}"
+ },
+ {
+  "module": "api/auth/oauth",
+  "path": "/api/auth/oauth/revoke",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"token\\\" is required\"]}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"token\\\" is required\"]}"
+ }
+]

@@ -108,6 +108,8 @@ POST /api/user/
 }
 ```
 
+> ⚠️ **Known validator quirk (as-built):** `email` must match `@example.com` (contract-test accommodation — `EXAMPLE_DOT_COM_EMAIL_PATTERN` in `user.routes.ts`). Real email domains are rejected with `400` until this pattern is relaxed. `role` is **required**.
+
 New users start with `status: pending_verification`. Verification email sent automatically.
 
 ### Email verification
@@ -350,3 +352,23 @@ Tanzania canonical address hierarchy (preferred over `city`):
 | `CANNOT_DELETE_ACTIVE_USER` | 422 | Must deactivate before deleting |
 | `RECENT_ACTIVITY_RETENTION` | 422 | Activity in last 90 days — cannot delete |
 | `VALIDATION_ERROR` | 400 | Missing/invalid fields — includes underage dateOfBirth |
+
+
+---
+
+## System Maintenance (internal/ops)
+
+These endpoints are for ops/admin use only. They are not called from the frontend.
+
+```
+POST /api/user/system/maintenance/cleanup/outbox/report
+POST /api/user/system/maintenance/cleanup/outbox
+```
+
+**Auth:** `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+### Outbox cleanup report
+`POST /api/user/system/maintenance/cleanup/outbox/report` → **200** — dry-run count of deletable outbox events.
+
+### Outbox cleanup
+`POST /api/user/system/maintenance/cleanup/outbox` → **200** — batched deletion. Body: `{ "dryRun": true }` to simulate. `maxRuntimeMs` defaults to 20 seconds.

@@ -1,0 +1,67 @@
+[
+ {
+  "module": "api/community/articles",
+  "path": "/api/community/articles",
+  "method": "GET",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/community/articles not found\",\"timestamp\":\"2026-09-20T17:45:51.388Z\",\"path\":\"/api/community/articles\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/community/articles not found\",\"timestamp\":\"2026-09-20T17:45:51.396Z\",\"path\":\"/api/community/articles\"}}"
+ },
+ {
+  "module": "api/community/articles",
+  "path": "/api/community/articles",
+  "method": "POST",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/community/articles not found\",\"timestamp\":\"2026-09-20T17:45:51.401Z\",\"path\":\"/api/community/articles\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/community/articles not found\",\"timestamp\":\"2026-09-20T17:45:51.415Z\",\"path\":\"/api/community/articles\"}}"
+ },
+ {
+  "module": "api/community/articles",
+  "path": "/api/community/articles/{articleId}",
+  "method": "GET",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/community/articles/no-fixture not found\",\"timestamp\":\"2026-09-20T17:45:51.406Z\",\"path\":\"/api/community/articles/no-fixture\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/community/articles/no-fixture not found\",\"timestamp\":\"2026-09-20T17:45:51.420Z\",\"path\":\"/api/community/articles/no-fixture\"}}"
+ },
+ {
+  "module": "api/community/articles",
+  "path": "/api/community/articles/{articleId}/publish",
+  "method": "POST",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/community/articles/no-fixture/publish not found\",\"timestamp\":\"2026-09-20T17:45:51.430Z\",\"path\":\"/api/community/articles/no-fixture/publish\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/community/articles/no-fixture/publish not found\",\"timestamp\":\"2026-09-20T17:45:51.441Z\",\"path\":\"/api/community/articles/no-fixture/publish\"}}"
+ },
+ {
+  "module": "api/community/articles",
+  "path": "/api/community/articles/{articleId}/reviews",
+  "method": "POST",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/community/articles/no-fixture/reviews not found\",\"timestamp\":\"2026-09-20T17:45:51.433Z\",\"path\":\"/api/community/articles/no-fixture/reviews\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/community/articles/no-fixture/reviews not found\",\"timestamp\":\"2026-09-20T17:45:51.445Z\",\"path\":\"/api/community/articles/no-fixture/reviews\"}}"
+ }
+]

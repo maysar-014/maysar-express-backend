@@ -24,10 +24,17 @@ describe('EnablerController', () => {
         expect(res.status).toHaveBeenCalledWith(201);
     });
 
-    it('should approve enabler', async () => {
+    it('should approve enabler with default activation prerequisites', async () => {
         req.params = { id: 'e1' };
         req.body = { adminId: 'admin1' };
         await controller.approve(req as Request, res as Response);
-        expect(mockApproveUseCase.execute).toHaveBeenCalledWith('e1', 'admin1', undefined);
+        expect(mockApproveUseCase.execute).toHaveBeenCalledWith('e1', 'admin1', ['registration_complete', 'terms_accepted']);
+    });
+
+    it('should approve enabler with explicit completeness events', async () => {
+        req.params = { id: 'e1' };
+        req.body = { adminId: 'admin1', completenessEvents: ['registration_complete'] };
+        await controller.approve(req as Request, res as Response);
+        expect(mockApproveUseCase.execute).toHaveBeenCalledWith('e1', 'admin1', ['registration_complete']);
     });
 });

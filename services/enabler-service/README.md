@@ -6,11 +6,25 @@
 [![Redis](https://img.shields.io/badge/Redis-7+-red)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue)](https://docker.com/)
 
-> Third-party sales facilitation network — enabler onboarding, tier management, task assignment, and commission settlement.
+> Third-party sales facilitation network — enabler onboarding, capability lifecycle (terms/training-gated activation, admin enforcement), tier management, task assignment, and commission settlement.
 
 ## Purpose
 
-The Enabler Service manages Maysar's decentralized sales network. Enablers are third-party individuals or businesses who facilitate sales for existing sellers — handling product photography, listing optimization, inventory management, and customer service. The service manages their onboarding, tier progression (Bronze → Silver → Gold → Platinum), task lifecycle, and commission settlement.
+The Enabler Service manages Maysar's decentralized sales network. Enablers are third-party individuals or businesses who facilitate sales for existing sellers — handling product photography, listing optimization, inventory management, and customer service. The service manages their onboarding, **capability lifecycle** (terms/training-gated activation, admin enforcement), tier progression (Bronze → Silver → Gold → Platinum), task lifecycle, and commission settlement.
+
+## Capability Lifecycle
+
+The enabler lifecycle is enforced server-side by `EnablerLifecyclePolicy` — never by the frontend:
+
+```
+PENDING → APPROVED → ACTIVE ⇄ RESTRICTED → SUSPENDED → (REACTIVATE → ACTIVE)
+                                     any non-terminal → DEACTIVATED (terminal)
+```
+
+- **Activation gates** (APPROVED → ACTIVE): accepted terms version (`ENABLER_REQUIRED_TERMS_VERSION`, default `2026-01`) + completed mandatory training read from the shared training domain (fails closed). Activation and terms acceptance are idempotent.
+- **Capability matrix**: only `ACTIVE` may build order drafts, generate customer links, access the permanent link or qualify earnings. `RESTRICTED` keeps read/sharing (attribution-only) capabilities. Enforcement touches capability state only — the underlying Maysar user, wallet, orders and seller/courier duties are untouched.
+- **Auditability**: every enforcement action is recorded in an immutable enforcement trail and emitted as a lifecycle event (`EnablerActivated`, `EnablerRestricted`, `EnablerSuspended`, `EnablerReactivated`, `EnablerDeactivated`, `EnablerTermsAccepted`, `EnablerTrainingRecorded`).
+- **API**: `GET .../capabilities` (snapshot), `POST .../terms`, `POST .../activation`, `POST .../enforcement`, `GET .../enforcement-history` — see `docs/enabler/ENABLER_SERVICE_FRONTEND_GUIDE.md` §6.13.
 
 ## Architecture
 

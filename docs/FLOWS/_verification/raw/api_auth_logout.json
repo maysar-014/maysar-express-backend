@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/auth/logout",
+  "path": "/api/auth/logout",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"message\":\"Logged out\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"message\":\"Logged out\"}"
+ }
+]

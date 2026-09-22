@@ -1,0 +1,93 @@
+[
+ {
+  "module": "api/support/tickets",
+  "path": "/api/support/tickets",
+  "method": "POST",
+  "tags": [
+   "Support"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"path\":\"subject\",\"message\":\"Required\"},{\"path\":\"description\",\"message\":\"Required\"},{\"path\":\"category\",\"message\":\"Required\"}]}}"
+ },
+ {
+  "module": "api/support/tickets",
+  "path": "/api/support/tickets/{id}",
+  "method": "GET",
+  "tags": [
+   "Support"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":\"Ticket not found: usr_01KRFXQZC36NK3CDEWJJS21RP8\"}"
+ },
+ {
+  "module": "api/support/tickets",
+  "path": "/api/support/tickets",
+  "method": "GET",
+  "tags": [
+   "Support"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"items\":[],\"total\":0,\"page\":1,\"limit\":10}}"
+ },
+ {
+  "module": "api/support/tickets",
+  "path": "/api/support/tickets/{id}/assign",
+  "method": "POST",
+  "tags": [
+   "Support"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"error\":\"Forbidden: Insufficient permissions\"}"
+ },
+ {
+  "module": "api/support/tickets",
+  "path": "/api/support/tickets/{id}/messages",
+  "method": "POST",
+  "tags": [
+   "Support"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"path\":\"content\",\"message\":\"Required\"}]}}"
+ },
+ {
+  "module": "api/support/tickets",
+  "path": "/api/support/tickets/{id}/resolve",
+  "method": "POST",
+  "tags": [
+   "Support"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"error\":\"Forbidden: Insufficient permissions\"}"
+ },
+ {
+  "module": "api/support/tickets",
+  "path": "/api/support/tickets/{id}/close",
+  "method": "POST",
+  "tags": [
+   "Support"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":\"Ticket not found: usr_01KRFXQZC36NK3CDEWJJS21RP8\"}"
+ }
+]

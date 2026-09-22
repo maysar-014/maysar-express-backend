@@ -1,0 +1,28 @@
+[
+ {
+  "module": "api/notification/system",
+  "path": "/api/notification/system/maintenance/cleanup/sms",
+  "method": "POST",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 401,
+  "authBody": "{\"success\":false,\"error\":\"Service key required\"}"
+ },
+ {
+  "module": "api/notification/system",
+  "path": "/api/notification/system/maintenance/cleanup/sms/report",
+  "method": "POST",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 401,
+  "authBody": "{\"success\":false,\"error\":\"Service key required\"}"
+ }
+]

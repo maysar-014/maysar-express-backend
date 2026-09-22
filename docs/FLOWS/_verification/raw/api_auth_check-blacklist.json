@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/auth/check-blacklist",
+  "path": "/api/auth/check-blacklist",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"token\\\" is required\"]}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"token\\\" is required\"]}"
+ }
+]

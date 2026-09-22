@@ -1,0 +1,158 @@
+[
+ {
+  "module": "api/auth/admin",
+  "path": "/api/auth/admin/discovery/refresh",
+  "method": "POST",
+  "tags": [
+   "Admin"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"message\":\"Service discovery refreshed successfully\"}"
+ },
+ {
+  "module": "api/auth/admin",
+  "path": "/api/auth/admin/security-events",
+  "method": "GET",
+  "tags": [
+   "Admin"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":[],\"message\":\"Security events retrieved successfully\"}"
+ },
+ {
+  "module": "api/auth/admin",
+  "path": "/api/auth/admin/health",
+  "method": "GET",
+  "tags": [
+   "Admin"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"services\":[],\"overallStatus\":\"unknown\",\"timestamp\":\"2026-09-20T17:45:47.379Z\"},\"message\":\"Service health retrieved successfully\"}"
+ },
+ {
+  "module": "api/auth/admin",
+  "path": "/api/auth/admin/sessions/{sessionId}",
+  "method": "DELETE",
+  "tags": [
+   "Admin"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"INVALID_ID\",\"message\":\"sessionId must be a valid ID\"}}"
+ },
+ {
+  "module": "api/auth/admin",
+  "path": "/api/auth/admin/audit",
+  "method": "GET",
+  "tags": [
+   "Admin"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"logs\":[],\"total\":0,\"limit\":100,\"offset\":0},\"message\":\"Audit logs retrieved successfully\"}"
+ },
+ {
+  "module": "api/auth/admin",
+  "path": "/api/auth/admin/users/{userId}/role",
+  "method": "PATCH",
+  "tags": [
+   "Admin"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"role\\\" is required\"]}"
+ },
+ {
+  "module": "api/auth/admin",
+  "path": "/api/auth/admin/stats",
+  "method": "GET",
+  "tags": [
+   "Admin"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"uptime\":4915.576005,\"memory\":{\"usedBytes\":300720128,\"totalBytes\":8277577728,\"usedPercent\":4},\"cpu\":{\"loadAverage\":0,\"cores\":8},\"activeUsers\":6,\"activeSessions\":0,\"requestsPerSecond\":0,\"timestamp\":\"2026-09-20T17:45:47.735Z\"},\"message\":\"System statistics retrieved successfully\"}"
+ },
+ {
+  "module": "api/auth/admin",
+  "path": "/api/auth/admin/users/{userId}",
+  "method": "GET",
+  "tags": [
+   "Admin"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"email\":\"buyer@maysar.co.tz\",\"role\":\"buyer\",\"status\":\"active\",\"createdAt\":\"2026-08-21T21:19:45.329Z\",\"lastLoginAt\":null,\"permissions\":[]},\"message\":\"User retrieved successfully\"}"
+ },
+ {
+  "module": "api/auth/admin",
+  "path": "/api/auth/admin/users/{userId}/sessions",
+  "method": "GET",
+  "tags": [
+   "Admin"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":[],\"message\":\"User sessions retrieved successfully\"}"
+ },
+ {
+  "module": "api/auth/admin",
+  "path": "/api/auth/admin/users/{userId}/status",
+  "method": "PATCH",
+  "tags": [
+   "Admin"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"status\\\" is required\"]}"
+ },
+ {
+  "module": "api/auth/admin",
+  "path": "/api/auth/admin/users/search",
+  "method": "GET",
+  "tags": [
+   "Admin"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"users\":[{\"userId\":\"usr_01KRFZ1E8HMAE7MMH175PJ9337\",\"email\":\"enabler@maysar.co.tz\",\"role\":\"enabler\",\"status\":\"active\",\"createdAt\":\"2026-08-21T21:19:45.512Z\",\"lastLoginAt\":null},{\"userId\":\"usr_01KRFZ1E7W4JDR9N9PMGYDD77S\",\"email\":\"courier@maysar.co.tz\",\"role\":\"courier\",\"status\":\"active\",\"createdAt\":\"2026-08-21T21:19:45.491Z\",\"lastLoginAt\":null},{\"userId\":\"usr_01KRFZ1E73P67T886TR2QDY0VT\",\"email\":\"supplier@maysar.co.tz\",\"role\":\"supplier\",\"status\":\"active\",\"createdAt\":\"2026-08-21T21:19:45.471Z\",\"lastLoginAt\":null},{\"userId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"email\":\"seller@maysar.co.tz\",\"role\":\"seller\",\"status\":\"active\",\"createdAt\":\"2026-08-21T21:19:45.445Z\",\"lastLoginAt\":n"
+ },
+ {
+  "module": "api/auth/admin",
+  "path": "/api/auth/admin/users/{userId}/sessions",
+  "method": "DELETE",
+  "tags": [
+   "Admin"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"terminatedCount\":0,\"timestamp\":\"2026-09-20T17:45:47.989Z\"},\"message\":\"User sessions terminated successfully\"}"
+ }
+]

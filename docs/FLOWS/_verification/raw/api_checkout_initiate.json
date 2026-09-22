@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/checkout/initiate",
+  "path": "/api/checkout/initiate",
+  "method": "POST",
+  "tags": [
+   "Checkout"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Checkout validation failed\",\"details\":{\"cartId\":\"Cart ID is required\",\"userId\":\"User ID is required\",\"shippingAddressId\":\"Shipping address is required\",\"billingAddressId\":\"Billing address is required\",\"shippingMethodId\":\"Shipping method is required\",\"shippingCost\":\"Shipping cost must be non-negative\"}},\"timestamp\":\"2026-09-20T17:45:51.240Z\"}"
+ }
+]

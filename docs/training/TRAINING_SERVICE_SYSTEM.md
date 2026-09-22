@@ -151,3 +151,10 @@ Response includes `score`, `passed`, `feedback[]`, and `attemptsRemaining`.
 - [ ] Display expiry date and renewal CTA when cert is within 30 days of expiry
 - [ ] Show attempt count and remaining attempts on assessment screen
 - [ ] Lock assessment after max attempts with support contact CTA
+
+
+---
+
+## System Maintenance Routes
+
+The training service does not currently expose outbox maintenance routes (no `maintenance.routes.ts` file). If an outbox is added in future, the standard pattern applies: mount at `/api/training/system/maintenance` behind `requireRoleOrService(['admin','system'])` and `x-service-key`.

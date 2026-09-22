@@ -160,13 +160,13 @@ Response:
 {
   "success": true,
   "data": {
-    "id": "com_01J...",
-    "status": "APPROVED",
-    "approvedAt": "2026-09-06T11:00:00Z",
-    "approvedBy": "usr_admin_01J..."
+    "approved": true,
+    "eventsGenerated": 1
   }
 }
 ```
+
+> ⚠️ The approve response does **not** return the updated commission object. It returns `{ approved: true, eventsGenerated: N }`. Re-fetch `GET /api/commissions/:id` after approval to get the updated `status`, `approvedAt`, and `approvedBy`.
 
 ### 6.3 Get commissions for a seller
 `GET /api/commissions/sellers/:sellerId?status=PENDING&limit=20&cursor=...` → **200**
@@ -187,11 +187,13 @@ Response:
       "createdAt": "2026-09-06T10:00:00Z"
     }
   ],
-  "pagination": { "cursor": "...", "hasMore": true }
+  "pagination": { "limit": 20, "offset": 0, "count": 1 }
 }
 ```
 
-Query params: `status` (filter by status), `limit` (default 20), `cursor` (opaque pagination token).
+Query params: `status` (filter by status), `limit` (default 20), `offset` (integer, default 0).
+
+> ⚠️ Pagination uses **`limit`/`offset`** (not cursor-based). The `pagination` block in the response contains `{ limit, offset, count }` — there is no `cursor` or `hasMore` field. The doc's earlier mention of `cursor` is incorrect.
 
 ### 6.4 Get commission summary for a seller
 `GET /api/commissions/sellers/:sellerId/summary` → **200**
@@ -238,7 +240,7 @@ Returns full commission detail including `breakdown`, `payoutId` (if PAID), and 
 1. Load `GET /sellers/:sellerId/summary` for header KPI cards (total earned, pending, paid).
 2. Load `GET /sellers/:sellerId?status=PENDING` for the pending tab.
 3. Show `breakdown` on commission detail: base amount + quality bonus + special bonus.
-4. Use cursor pagination — never page numbers.
+4. Use `limit`/`offset` pagination — pass `offset` incremented by `limit` for each next page.
 
 **Admin approval queue:**
 1. List all `PENDING` commissions across sellers.

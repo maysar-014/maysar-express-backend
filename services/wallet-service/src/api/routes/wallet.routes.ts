@@ -42,6 +42,12 @@ export function createWalletRoutes(controller: WalletController): Router {
         asyncHandler(controller.getBalance.bind(controller))
     );
 
+    // Active holds currently placed against the wallet
+    router.get('/:userId/holds',
+        AuthorizationMiddleware.authorizeWalletAccess(),
+        asyncHandler(controller.listHolds.bind(controller))
+    );
+
     // Write operations
     router.post('/:userId/credit',
         AuthorizationMiddleware.authorizeWalletAccess(),

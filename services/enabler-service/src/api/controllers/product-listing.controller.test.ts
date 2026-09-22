@@ -38,7 +38,19 @@ describe('ProductListingController', () => {
         { toPlainObject: () => ({ id: 'l2' }) }
       ])
     };
-    const controller = new ProductListingController({ execute: jest.fn() } as never, listingRepository);
+    const browseHubUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        products: [{ id: 'p1' }, { id: 'p2' }],
+        total: 2,
+        page: 1,
+        limit: 20
+      })
+    };
+    const controller = new ProductListingController(
+      { execute: jest.fn() } as never,
+      listingRepository,
+      browseHubUseCase as never
+    );
 
     const listReq: any = { params: { enablerId: 'en-2' } };
     const listRes = makeRes();
@@ -47,11 +59,29 @@ describe('ProductListingController', () => {
     expect(listRes.json).toHaveBeenCalledWith([{ id: 'l1' }, { id: 'l2' }]);
 
     const hubRes = makeRes();
-    await controller.getHubProducts({} as never, hubRes);
-    expect(hubRes.status).toHaveBeenCalledWith(501);
+    await controller.getHubProducts({ query: {} } as never, hubRes);
+    expect(browseHubUseCase.execute).toHaveBeenCalledWith({});
+    expect(hubRes.status).toHaveBeenCalledWith(200);
     expect(hubRes.json).toHaveBeenCalledWith({
-      error: 'NOT_IMPLEMENTED',
-      message: 'Hub product browsing is not implemented.'
+      success: true,
+      message: 'Browse Enabler Hub - Active Products',
+      data: { products: [{ id: 'p1' }, { id: 'p2' }], total: 2, page: 1, limit: 20 }
     });
+  });
+
+  it('getHubProducts returns 500 when browsing fails', async () => {
+    const browseHubUseCase = {
+      execute: jest.fn().mockRejectedValue(new Error('catalog unavailable'))
+    };
+    const controller = new ProductListingController(
+      { execute: jest.fn() } as never,
+      undefined,
+      browseHubUseCase as never
+    );
+
+    const hubRes = makeRes();
+    await controller.getHubProducts({ query: {} } as never, hubRes);
+    expect(hubRes.status).toHaveBeenCalledWith(500);
+    expect(hubRes.json).toHaveBeenCalledWith({ error: 'catalog unavailable' });
   });
 });

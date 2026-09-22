@@ -1,0 +1,41 @@
+[
+ {
+  "module": "api/checkout/health",
+  "path": "/api/checkout/health",
+  "method": "GET",
+  "tags": [
+   "Checkout"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"healthy\",\"service\":\"checkout-service\",\"timestamp\":\"2026-09-20T17:45:51.215Z\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"healthy\",\"service\":\"checkout-service\",\"timestamp\":\"2026-09-20T17:45:51.224Z\"}"
+ },
+ {
+  "module": "api/checkout/health",
+  "path": "/api/checkout/health/live",
+  "method": "GET",
+  "tags": [
+   "Checkout"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"alive\",\"service\":\"checkout-service\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"alive\",\"service\":\"checkout-service\"}"
+ },
+ {
+  "module": "api/checkout/health",
+  "path": "/api/checkout/health/ready",
+  "method": "GET",
+  "tags": [
+   "Checkout"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"ready\",\"service\":\"checkout-service\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"ready\",\"service\":\"checkout-service\"}"
+ }
+]

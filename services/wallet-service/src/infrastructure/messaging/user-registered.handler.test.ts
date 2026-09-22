@@ -100,7 +100,7 @@ describe('UserRegisteredHandler', () => {
         ).resolves.toBeUndefined();
 
         expect(errorSpy).toHaveBeenCalledWith(
-            '[UserRegisteredHandler] Failed to create wallet for user user-xyz:',
+            '[UserRegisteredHandler] Fallback wallet creation also failed for user user-xyz:',
             expect.any(Error)
         );
     });

@@ -1,0 +1,41 @@
+[
+ {
+  "module": "api/payment/health",
+  "path": "/api/payment/health/live",
+  "method": "GET",
+  "tags": [
+   "Payments"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"alive\",\"service\":\"payment-service\",\"timestamp\":\"2026-09-20T17:45:53.517Z\",\"alive\":true,\"uptime\":\"4921s\",\"memory\":{\"rss\":\"363MB\",\"heapUsed\":\"278MB\",\"heapTotal\":\"327MB\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"alive\",\"service\":\"payment-service\",\"timestamp\":\"2026-09-20T17:45:53.524Z\",\"alive\":true,\"uptime\":\"4921s\",\"memory\":{\"rss\":\"363MB\",\"heapUsed\":\"279MB\",\"heapTotal\":\"327MB\"}}"
+ },
+ {
+  "module": "api/payment/health",
+  "path": "/api/payment/health/ready",
+  "method": "GET",
+  "tags": [
+   "Payments"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"ready\",\"ready\":true,\"service\":\"payment-service\",\"timestamp\":\"2026-09-20T17:45:53.539Z\",\"checks\":{\"database\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:53.539Z\",\"latencyMs\":18,\"details\":{\"connection\":\"successful\",\"type\":\"postgresql\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"ready\",\"ready\":true,\"service\":\"payment-service\",\"timestamp\":\"2026-09-20T17:45:53.562Z\",\"checks\":{\"database\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:53.562Z\",\"latencyMs\":18,\"details\":{\"connection\":\"successful\",\"type\":\"postgresql\"}},\"cache\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:53.562Z\",\"latencyMs\":18,\"details\":{\"connection\":\"successful\",\"type\":\"redis\"}},\"messaging\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:53.544Z\",\"details\":{\"connection\":\"successful\",\"type\":\"in-memory\",\"note\":\"Using monolithic in-memory event bus\"}}}}"
+ },
+ {
+  "module": "api/payment/health",
+  "path": "/api/payment/health",
+  "method": "GET",
+  "tags": [
+   "Payments"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"healthy\",\"service\":\"payment-service\",\"timestamp\":\"2026-09-20T17:45:53.536Z\",\"uptime\":\"4921s\",\"dependencies\":{\"database\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:53.535Z\",\"latencyMs\":36,\"details\":{\"connection\":\"successful\",\"type\":\"",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"healthy\",\"service\":\"payment-service\",\"timestamp\":\"2026-09-20T17:45:53.594Z\",\"uptime\":\"4921s\",\"dependencies\":{\"database\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:53.594Z\",\"latencyMs\":34,\"details\":{\"connection\":\"successful\",\"type\":\"postgresql\"}},\"paymentGateway\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:53.560Z\",\"details\":{\"connection\":\"not_configured\",\"provider\":\"selcom-pesa\",\"note\":\"External payment gateway is currently disabled; Selcom Pesa will be enabled later\"}},\"messaging\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:53.560Z\",\"details\":{\"connection\":\"successful\",\"type\":\"in-memory\",\"note\":\"Using monolithic in-memory event bus\"}},\"cache\":{\"status\":\"healthy"
+ }
+]

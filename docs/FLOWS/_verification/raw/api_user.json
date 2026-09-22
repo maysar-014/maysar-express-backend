@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/user",
+  "path": "/api/user",
+  "method": "POST",
+  "tags": [
+   "Users"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"email\",\"message\":\"\\\"email\\\" is required\"},{\"field\":\"phoneNumber\",\"message\":\"\\\"phoneNumber\\\" is required\"},{\"field\":\"firstName\",\"message\":\"\\",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"email\",\"message\":\"\\\"email\\\" is required\"},{\"field\":\"phoneNumber\",\"message\":\"\\\"phoneNumber\\\" is required\"},{\"field\":\"firstName\",\"message\":\"\\\"firstName\\\" is required\"},{\"field\":\"lastName\",\"message\":\"\\\"lastName\\\" is required\"},{\"field\":\"role\",\"message\":\"\\\"role\\\" is required\"}]}}"
+ }
+]

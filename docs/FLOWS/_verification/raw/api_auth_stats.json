@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/auth/stats",
+  "path": "/api/auth/stats",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"activeUsers\":0}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"activeUsers\":0}"
+ }
+]

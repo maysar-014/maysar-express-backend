@@ -39,6 +39,21 @@ import { TrackEnablerReferralEventUseCase } from '../../application/use-cases/tr
 import { earningsQuerySchema } from '../validators/earnings.validator';
 import { acceptPromotionJobBodySchema, promotionJobsQuerySchema } from '../validators/promotion-job.validator';
 import { generateReferralBodySchema, referralQuerySchema, trackReferralEventBodySchema } from '../validators/referral.validator';
+import { EnablerLifecycleController } from '../controllers/enabler-lifecycle.controller';
+import { authorizeEnablerIdentity } from '../middleware/enabler-lifecycle-authorization.middleware';
+import {
+  acceptEnablerTermsBodySchema,
+  activateEnablerBodySchema,
+  enforcementBodySchema,
+  enforcementHistoryQuerySchema,
+} from '../validators/enabler-lifecycle.validator';
+import { PrismaEnablerEnforcementRepository } from '../../infrastructure/repositories/prisma-enabler-enforcement.repository';
+import { EnablerTrainingGateService } from '../../infrastructure/services/enabler-training-gate.service';
+import { AcceptEnablerTermsUseCase } from '../../application/use-cases/accept-enabler-terms.use-case';
+import { ActivateEnablerCapabilityUseCase } from '../../application/use-cases/activate-enabler-capability.use-case';
+import { GetEnablerCapabilityStatusUseCase } from '../../application/use-cases/get-enabler-capability-status.use-case';
+import { ApplyEnablerEnforcementUseCase } from '../../application/use-cases/apply-enabler-enforcement.use-case';
+import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 
 const router = Router();
 router.use(requireAuth);
@@ -146,6 +161,31 @@ const earningsController = new EnablerEarningsController(getEnablerEarningsLedge
 const promotionJobController = new PromotionJobController(listPromotionJobsUseCase, acceptPromotionJobUseCase);
 const referralController = new ReferralController(generateReferralLinkUseCase, getReferralLinkUseCase, trackReferralEventUseCase);
 
+// ── Enabler capability lifecycle (§5, §6, §35, §52) ─────────────────────────
+const enforcementRepo = new PrismaEnablerEnforcementRepository();
+const trainingGate = new EnablerTrainingGateService();
+
+const acceptEnablerTermsUseCase = new AcceptEnablerTermsUseCase(enablerRepo, publisher);
+const activateEnablerCapabilityUseCase = new ActivateEnablerCapabilityUseCase(enablerRepo, publisher);
+// Terms version mandated at activation. Configurable so a rollout can pin a new
+// version without a code change; the enabler never supplies this value.
+const requiredTermsVersion = process.env.ENABLER_REQUIRED_TERMS_VERSION || '2026-01';
+const getEnablerCapabilityStatusUseCase = new GetEnablerCapabilityStatusUseCase(enablerRepo, {
+  requiredTermsVersion,
+  trainingRequired: true,
+});
+const applyEnablerEnforcementUseCase = new ApplyEnablerEnforcementUseCase(enablerRepo, enforcementRepo, publisher);
+
+const enablerLifecycleController = new EnablerLifecycleController(
+  acceptEnablerTermsUseCase,
+  activateEnablerCapabilityUseCase,
+  getEnablerCapabilityStatusUseCase,
+  applyEnablerEnforcementUseCase,
+  enforcementRepo,
+  trainingGate,
+  { requiredTermsVersion }
+);
+
 // Routes
 router.post(
   '/register',
@@ -161,6 +201,40 @@ router.get(
   '/:id',
   validateJoiRequest({ params: idParamsSchema }),
   asyncHandler((req, res) => enablerController.getProfile(req, res))
+);
+
+// ── Enabler capability lifecycle routes (§36) ────────────────────────────────
+// Registered BEFORE the operational-only guard so a RESTRICTED/SUSPENDED enabler
+// can still read why it was cut off, and admins can always enforce (§5, §52).
+router.get(
+  '/:enablerId/capabilities',
+  validateJoiRequest({ params: enablerIdParamsSchema }),
+  authorizeEnablerIdentity,
+  asyncHandler((req, res) => enablerLifecycleController.getCapabilities(req, res))
+);
+router.post(
+  '/:enablerId/terms',
+  validateJoiRequest({ params: enablerIdParamsSchema, body: acceptEnablerTermsBodySchema }),
+  authorizeEnablerIdentity,
+  asyncHandler((req, res) => enablerLifecycleController.acceptTerms(req, res))
+);
+router.post(
+  '/:enablerId/activation',
+  validateJoiRequest({ params: enablerIdParamsSchema, body: activateEnablerBodySchema }),
+  authorizeEnablerIdentity,
+  asyncHandler((req, res) => enablerLifecycleController.activate(req, res))
+);
+router.get(
+  '/:enablerId/enforcement-history',
+  requireRoleOrService(['admin', 'system']),
+  validateJoiRequest({ params: enablerIdParamsSchema, query: enforcementHistoryQuerySchema }),
+  asyncHandler((req, res) => enablerLifecycleController.getEnforcementHistory(req, res))
+);
+router.post(
+  '/:enablerId/enforcement',
+  requireRoleOrService(['admin', 'system']),
+  validateJoiRequest({ params: enablerIdParamsSchema, body: enforcementBodySchema }),
+  asyncHandler((req, res) => enablerLifecycleController.applyEnforcement(req, res))
 );
 
 // Protected Routes

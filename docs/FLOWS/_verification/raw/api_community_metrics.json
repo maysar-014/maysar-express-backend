@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/community/metrics",
+  "path": "/api/community/metrics",
+  "method": "GET",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 200,
+  "anonBody": "# HELP analytics_service_process_cpu_user_seconds_total Total user CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_user_seconds_total counter\nanalytics_service_process_cpu_user_seconds_total 54.438\n\n# HELP analytics_service_process_cp",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "# HELP analytics_service_process_cpu_user_seconds_total Total user CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_user_seconds_total counter\nanalytics_service_process_cpu_user_seconds_total 54.484\n\n# HELP analytics_service_process_cpu_system_seconds_total Total system CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_system_seconds_total counter\nanalytics_service_process_cpu_system_seconds_total 19.921999999999997\n\n# HELP analytics_service_process_cpu_seconds_total Total user and system CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_seconds_total counter\nanalytics_service_process_cpu_seconds_total 74.406\n\n# HELP analytics_service_process_start_"
+ }
+]

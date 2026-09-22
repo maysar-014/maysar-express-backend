@@ -16,6 +16,10 @@ export interface CreditWalletDTO {
     currency: string;
     description: string;
     metadata?: Record<string, unknown>;
+    /** Optional source reference for the credit (e.g. 'topup', 'refund'). */
+    referenceType?: string;
+    /** Optional id of the referenced source entity (e.g. payment/order id). */
+    referenceId?: string;
     idempotencyKey: string;
     correlationId: string;
     auditInfo: AuditInfo;
@@ -88,7 +92,13 @@ export class CreditWalletUseCase {
                 frozenAmountBefore: frozenBefore,
                 frozenAmountAfter: wallet.frozenAmount,
                 description: dto.description,
-                metadata: dto.metadata,
+                metadata: dto.referenceType || dto.referenceId
+                    ? {
+                        ...(dto.metadata ?? {}),
+                        ...(dto.referenceType ? { referenceType: dto.referenceType } : {}),
+                        ...(dto.referenceId ? { referenceId: dto.referenceId } : {})
+                    }
+                    : dto.metadata,
                 createdAt: new Date(),
                 // Enhanced Fields
                 correlationId: dto.correlationId,

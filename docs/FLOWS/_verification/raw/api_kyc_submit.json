@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/kyc/submit",
+  "path": "/api/kyc/submit",
+  "method": "POST",
+  "tags": [
+   "KYC"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"fullName\",\"message\":\"\\\"fullName\\\" is required\"},{\"field\":\"nationalId\",\"message\":\"\\\"nationalId\\\" is required\"}]}}"
+ }
+]

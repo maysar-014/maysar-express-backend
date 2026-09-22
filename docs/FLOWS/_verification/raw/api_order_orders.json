@@ -1,0 +1,171 @@
+[
+ {
+  "module": "api/order/orders",
+  "path": "/api/order/orders",
+  "method": "GET",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"orders\":[{\"orderSource\":\"CART\",\"codCommitmentPaid\":false,\"codEligibilityChecked\":false,\"id\":\"MSR-ORD-20260912-025448-96FC\",\"trackingNumber\":\"MYS-TZ-ORD-20260912-0Q5N\",\"buyerId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"sellerId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"items\":[{\"productId\":\"cat_pro_01M0SXG384GTP1DNMCNMC9YDNY\",\"quantity\":2,\"price\":{\"amount\":1000000,\"currency\":\"TZS\"},\"weight\":0.5}],\"totalAmount\":{\"amount\":2000000,\"currency\":\"TZS\"},\"totalWeight\":1,\"status\":\"PENDING_SELLER_VERIFICATION\",\"cancelReason\":null,\"paymentMethod\":\"cod\",\"deliveryAddress\":{\"street\":\"SOKON 1\",\"postalCode\":\"11101\",\"country\":\"Tanzania\",\"ward\":\"Arusha\",\"district\":\"\",\"region\":\"Arusha\"},\"createdAt\":\"2026-09-11T23:54:48.224Z"
+ },
+ {
+  "module": "api/order/orders",
+  "path": "/api/order/orders",
+  "method": "POST",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+ },
+ {
+  "module": "api/order/orders",
+  "path": "/api/order/orders/{id}",
+  "method": "PUT",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for PUT requests\"}"
+ },
+ {
+  "module": "api/order/orders",
+  "path": "/api/order/orders/{id}",
+  "method": "DELETE",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for DELETE requests\"}"
+ },
+ {
+  "module": "api/order/orders",
+  "path": "/api/order/orders/{id}/confirm-delivery",
+  "method": "POST",
+  "tags": [
+   "Order"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"INVALID_DELIVERY_CODE\",\"message\":\"deliveryCode must be a 6-digit number.\"}"
+ },
+ {
+  "module": "api/order/orders",
+  "path": "/api/order/orders/{id}/status",
+  "method": "POST",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+ },
+ {
+  "module": "api/order/orders",
+  "path": "/api/order/orders/{id}",
+  "method": "GET",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"error\":\"ORDER_NOT_FOUND\",\"message\":\"Order with ID usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\"}"
+ },
+ {
+  "module": "api/order/orders",
+  "path": "/api/order/orders/{id}/cancel",
+  "method": "POST",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+ },
+ {
+  "module": "api/order/orders",
+  "path": "/api/order/orders/search",
+  "method": "GET",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"orders\":[],\"total\":0}"
+ },
+ {
+  "module": "api/order/orders",
+  "path": "/api/order/orders/tracking/{trackingNumber}",
+  "method": "GET",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"INVALID_TRACKING_NUMBER\",\"message\":\"Tracking number format is invalid\"}"
+ },
+ {
+  "module": "api/order/orders",
+  "path": "/api/order/orders/cod/validate",
+  "method": "POST",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+ },
+ {
+  "module": "api/order/orders",
+  "path": "/api/order/orders/disputes/{id}/resolve",
+  "method": "POST",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+ },
+ {
+  "module": "api/order/orders",
+  "path": "/api/order/orders/analytics/stats",
+  "method": "GET",
+  "tags": [
+   "Orders"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"totalOrders\":2,\"confirmedOrders\":0,\"deliveredOrders\":0,\"totalRevenue\":0,\"period\":\"daily\",\"dateRange\":{}}"
+ }
+]

@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/kyc/status",
+  "path": "/api/kyc/status",
+  "method": "GET",
+  "tags": [
+   "KYC"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"kycStatus\":\"verified\",\"kycLevel\":3,\"limits\":{\"maxListings\":100,\"maxTransactions\":1000,\"maxEarnings\":10000000},\"restrictedFeatures\":[],\"nextRequiredAction\":\"none\",\"status\":\"verified\"}}"
+ }
+]

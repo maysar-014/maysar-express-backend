@@ -73,9 +73,11 @@ codCommitmentCount  — number of active COD orders
 
 ## Route Reference
 
+> All wallet endpoints require `/:userId` in the path. The service uses `AuthorizationMiddleware.authorizeWalletAccess()` to verify the authenticated user matches the `:userId` param (or is an admin). The `userId` is the user's ID (e.g. `usr_01J…`).
+
 ### Get wallet balance
 ```
-GET /api/wallet/balance
+GET /api/wallet/:userId/balance
 ```
 
 ```jsonc
@@ -96,18 +98,24 @@ GET /api/wallet/balance
 }
 ```
 
+### Get full wallet object
+```
+GET /api/wallet/:userId
+```
+Returns the full wallet record. Use `/:userId/balance` for balance-only reads.
+
 ### Top-up wallet
 ```
-POST /api/wallet/top-up
+POST /api/wallet/:userId/topup
 ```
 ```jsonc
 { "amount": 50000, "paymentMethod": "MPESA", "phoneNumber": "+255712345678" }
 ```
-Returns `{ paymentId, status: "PENDING" }`. Poll `GET /api/wallet/balance` every 3 seconds for up to 2 minutes.
+Roles: `buyer`, `seller`, `admin`, `system` only. Returns `{ paymentId, status: "PENDING" }`. Poll `GET /api/wallet/:userId/balance` every 3 seconds for up to 2 minutes. Idempotency key auto-generated from `(userId, amount, method, 5s window)` if not provided.
 
 ### Debit wallet
 ```
-POST /api/wallet/debit
+POST /api/wallet/:userId/debit
 X-Idempotency-Key: <uuid-v4>
 ```
 ```jsonc
@@ -123,8 +131,9 @@ Always include `X-Idempotency-Key`. Retry with the same key on network failure.
 
 ### Transaction history
 ```
-GET /api/wallet/statement?limit=20&cursor=...&from=2026-01-01&to=2026-09-30
+GET /api/wallet/:userId/statement?limit=20&cursor=...&from=2026-01-01&to=2026-09-30
 ```
+Also aliased at `GET /api/wallet/:userId/transactions` (same handler, same params).
 
 ```jsonc
 {
@@ -151,9 +160,28 @@ GET /api/wallet/statement?limit=20&cursor=...&from=2026-01-01&to=2026-09-30
 
 ### Holds
 ```
-GET  /api/wallet/holds
-GET  /api/wallet/holds/:holdId
-POST /api/wallet/holds/:holdId/release
+GET  /api/wallet/:userId/holds
+GET  /api/wallet/:userId/holds/:holdId
+POST /api/wallet/:userId/hold/:holdId/release
+POST /api/wallet/:userId/hold/:holdId/capture
+```
+
+Place a hold:
+```
+POST /api/wallet/:userId/hold
+X-Idempotency-Key: <uuid-v4>
+```
+
+### Freeze / unfreeze funds
+```
+POST /api/wallet/:userId/freeze
+POST /api/wallet/:userId/unfreeze
+```
+
+### Payout (enabler only, KYC level 2 required)
+```
+POST /api/wallet/:userId/payout
+GET  /api/wallet/:userId/payout
 ```
 
 ---
@@ -161,9 +189,12 @@ POST /api/wallet/holds/:holdId/release
 ### Transaction reversal (admin only)
 
 ```
-POST /api/wallet/reverse/:transactionId
+POST /api/wallet/:userId/transaction/:transactionId/reverse
 Authorization: Bearer <adminJWT>
+X-Idempotency-Key: <uuid-v4>
 ```
+
+> ⚠️ The reversal path is `/:userId/transaction/:transactionId/reverse` — not `/reverse/:transactionId`. Both `:userId` and `:transactionId` are required.
 
 Reverses a completed transaction. Creates a mirror transaction (e.g. a `DEBIT` creates a `CREDIT` reversal). Frontend should handle a `REFUND`-type transaction appearing in the statement after an admin reversal — this is expected behavior, not an error.
 
@@ -229,3 +260,23 @@ The wallet service emits the following events (subscribed by notification-servic
 | `VELOCITY_BLOCKED` | 429 | Transaction blocked — velocity risk score ≥ 80 |
 | `DUPLICATE_IDEMPOTENCY_KEY` | 200 | Idempotent replay — returns original result |
 | `HOLD_NOT_FOUND` | 404 | Hold ID invalid or already processed |
+
+
+---
+
+## System Maintenance (internal/ops)
+
+These endpoints are for ops/admin use only. They are not called from the frontend.
+
+```
+POST /api/wallet/system/maintenance/cleanup/outbox/report
+POST /api/wallet/system/maintenance/cleanup/outbox
+```
+
+**Auth:** `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+### Outbox cleanup report
+`POST /api/wallet/system/maintenance/cleanup/outbox/report` → **200** — dry-run count of deletable outbox events.
+
+### Outbox cleanup
+`POST /api/wallet/system/maintenance/cleanup/outbox` → **200** — batched deletion. Body: `{ "dryRun": true }` to simulate. `maxRuntimeMs` defaults to 20 seconds.

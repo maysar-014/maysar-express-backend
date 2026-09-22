@@ -58,6 +58,18 @@ export class PrismaEnablerRepository implements IEnablerRepository {
                 taxId: data.taxId,
                 approvedBy: data.approvedBy,
                 approvedAt: data.approvedAt,
+                // Enabler capability: activation requirements + lifecycle (§4–§6)
+                termsVersion: data.termsVersion ?? null,
+                termsAcceptedAt: data.termsAcceptedAt ?? null,
+                trainingStatus: data.trainingStatus ?? 'not_started',
+                trainingCompletedAt: data.trainingCompletedAt ?? null,
+                activatedAt: data.activatedAt ?? null,
+                restrictedAt: data.restrictedAt ?? null,
+                restrictedReason: data.restrictedReason ?? null,
+                suspendedAt: data.suspendedAt ?? null,
+                suspendedReason: data.suspendedReason ?? null,
+                deactivatedAt: data.deactivatedAt ?? null,
+                deactivatedReason: data.deactivatedReason ?? null,
                 createdAt: data.createdAt,
                 updatedAt: data.updatedAt
             }
@@ -83,6 +95,20 @@ export class PrismaEnablerRepository implements IEnablerRepository {
                 approvedBy: data.approvedBy,
                 approvedAt: data.approvedAt,
                 rejectionReason: data.rejectionReason,
+                // Activation requirements + lifecycle state (§4–§6). Explicit
+                // nulls are persisted so clearing a suspension/reactivation is
+                // recorded rather than silently skipped.
+                termsVersion: data.termsVersion ?? null,
+                termsAcceptedAt: data.termsAcceptedAt ?? null,
+                trainingStatus: data.trainingStatus ?? 'not_started',
+                trainingCompletedAt: data.trainingCompletedAt ?? null,
+                activatedAt: data.activatedAt ?? null,
+                restrictedAt: data.restrictedAt ?? null,
+                restrictedReason: data.restrictedReason ?? null,
+                suspendedAt: data.suspendedAt ?? null,
+                suspendedReason: data.suspendedReason ?? null,
+                deactivatedAt: data.deactivatedAt ?? null,
+                deactivatedReason: data.deactivatedReason ?? null,
                 metadata: data.metadata || undefined,
                 updatedAt: new Date()
             }

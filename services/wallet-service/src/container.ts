@@ -349,7 +349,8 @@ export class Container {
             getStatementUseCase,
             topUpUseCase,
             walletRepository,
-            initiatePayoutFromWalletUseCase
+            initiatePayoutFromWalletUseCase,
+            holdRepository
         );
 
         this.walletRepository = walletRepository;

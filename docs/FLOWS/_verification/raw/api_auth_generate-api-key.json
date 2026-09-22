@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/auth/generate-api-key",
+  "path": "/api/auth/generate-api-key",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"serviceId\\\" is required\",\"\\\"permissions\\\" is required\"]}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"serviceId\\\" is required\",\"\\\"permissions\\\" is required\"]}"
+ }
+]

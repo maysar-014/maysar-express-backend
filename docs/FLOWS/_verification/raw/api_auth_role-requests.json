@@ -1,0 +1,28 @@
+[
+ {
+  "module": "api/auth/role-requests",
+  "path": "/api/auth/role-requests",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"role\\\" is required\"]}"
+ },
+ {
+  "module": "api/auth/role-requests",
+  "path": "/api/auth/role-requests",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"items\":[]}}"
+ }
+]

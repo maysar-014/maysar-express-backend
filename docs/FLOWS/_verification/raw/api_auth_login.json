@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/auth/login",
+  "path": "/api/auth/login",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"email\\\" is required\",\"\\\"password\\\" is required\"]}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"email\\\" is required\",\"\\\"password\\\" is required\"]}"
+ }
+]

@@ -1,0 +1,28 @@
+[
+ {
+  "module": "api/catalog/products",
+  "path": "/api/catalog/products/{productId}/buy-box/compute",
+  "method": "POST",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"error\":\"listings array is required\"}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"listings array is required\"}"
+ },
+ {
+  "module": "api/catalog/products",
+  "path": "/api/catalog/products/{productId}/buy-box",
+  "method": "GET",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"productId\":\"cat_01M0K348375C27XANED7D0BVQH\",\"primarySellerId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"primaryScore\":82.07,\"alternatives\":[],\"lastComputedAt\":\"2026-09-10T18:06:07.241Z\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"productId\":\"cat_01M0K348375C27XANED7D0BVQH\",\"primarySellerId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"primaryScore\":82.07,\"alternatives\":[],\"lastComputedAt\":\"2026-09-10T18:06:07.241Z\"}"
+ }
+]

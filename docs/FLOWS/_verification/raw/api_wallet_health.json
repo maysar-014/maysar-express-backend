@@ -1,0 +1,41 @@
+[
+ {
+  "module": "api/wallet/health",
+  "path": "/api/wallet/health",
+  "method": "GET",
+  "tags": [
+   "Wallet"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"healthy\",\"service\":\"wallet-service\",\"timestamp\":\"2026-09-20T17:45:54.472Z\",\"uptime\":\"4922s\",\"memory\":{\"rss\":\"384MB\",\"heapUsed\":\"309MB\"},\"eventBus\":{\"subscribers\":{\"WalletCredited\":0,\"WalletDebited\":0,\"CODSettlementRequested\":0},\"dlqSizes\":",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"healthy\",\"service\":\"wallet-service\",\"timestamp\":\"2026-09-20T17:45:54.478Z\",\"uptime\":\"4922s\",\"memory\":{\"rss\":\"384MB\",\"heapUsed\":\"309MB\"},\"eventBus\":{\"subscribers\":{\"WalletCredited\":0,\"WalletDebited\":0,\"CODSettlementRequested\":0},\"dlqSizes\":{\"WalletCredited\":0,\"WalletDebited\":0,\"CODSettlementRequested\":0}}}"
+ },
+ {
+  "module": "api/wallet/health",
+  "path": "/api/wallet/health/live",
+  "method": "GET",
+  "tags": [
+   "Wallet"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"alive\",\"service\":\"wallet-service\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"alive\",\"service\":\"wallet-service\"}"
+ },
+ {
+  "module": "api/wallet/health",
+  "path": "/api/wallet/health/ready",
+  "method": "GET",
+  "tags": [
+   "Wallet"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"ready\",\"service\":\"wallet-service\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"ready\",\"service\":\"wallet-service\"}"
+ }
+]

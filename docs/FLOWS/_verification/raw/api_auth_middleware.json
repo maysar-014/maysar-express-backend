@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/auth/middleware",
+  "path": "/api/auth/middleware/health",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"status\":\"healthy\",\"timestamp\":1789926348057,\"services\":{\"jwt\":{\"enabled\":true},\"tokenBlacklisting\":{\"enabled\":true,\"count\":0},\"apiKey\":{\"enabled\":false},\"bruteForce\":{\"enabled\":true,\"totalAttempts\":0},\"deviceTracking\":{\"enabl",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"status\":\"healthy\",\"timestamp\":1789926348077,\"services\":{\"jwt\":{\"enabled\":true},\"tokenBlacklisting\":{\"enabled\":true,\"count\":0},\"apiKey\":{\"enabled\":false},\"bruteForce\":{\"enabled\":true,\"totalAttempts\":0},\"deviceTracking\":{\"enabled\":true,\"totalDevices\":0},\"session\":{\"enabled\":true,\"activeSessions\":0}}}}"
+ }
+]

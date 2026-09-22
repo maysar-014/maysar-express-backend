@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/notification/health-summary",
+  "path": "/api/notification/health-summary",
+  "method": "GET",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"ok\",\"service\":\"notification-service\",\"modules\":[\"notification\",\"sms\"],\"timestamp\":\"2026-09-20T17:45:52.964Z\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"ok\",\"service\":\"notification-service\",\"modules\":[\"notification\",\"sms\"],\"timestamp\":\"2026-09-20T17:45:52.967Z\"}"
+ }
+]

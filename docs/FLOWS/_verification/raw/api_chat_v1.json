@@ -1,0 +1,223 @@
+[
+ {
+  "module": "api/chat/v1",
+  "path": "/api/chat/v1/admin/blocklist/domains",
+  "method": "GET",
+  "tags": [
+   "Chat"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"domains\":[]}}"
+ },
+ {
+  "module": "api/chat/v1",
+  "path": "/api/chat/v1/admin/blocklist/domains",
+  "method": "POST",
+  "tags": [
+   "Chat"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 422,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Required\"}}"
+ },
+ {
+  "module": "api/chat/v1",
+  "path": "/api/chat/v1/admin/blocklist/domains/{domain}",
+  "method": "DELETE",
+  "tags": [
+   "Chat"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"ok\":true}}"
+ },
+ {
+  "module": "api/chat/v1",
+  "path": "/api/chat/v1/conversations",
+  "method": "POST",
+  "tags": [
+   "Chat"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 422,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Required\"}}"
+ },
+ {
+  "module": "api/chat/v1",
+  "path": "/api/chat/v1/conversations/{id}",
+  "method": "GET",
+  "tags": [
+   "Chat"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"CHAT_NOT_FOUND\",\"message\":\"Conversation not found\"}}"
+ },
+ {
+  "module": "api/chat/v1",
+  "path": "/api/chat/v1/conversations/{id}/messages",
+  "method": "POST",
+  "tags": [
+   "Chat"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 422,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Required\"}}"
+ },
+ {
+  "module": "api/chat/v1",
+  "path": "/api/chat/v1/conversations/{id}/messages",
+  "method": "GET",
+  "tags": [
+   "Chat"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer+admin",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"CHAT_ACCESS_DENIED\",\"message\":\"Access denied to this conversation\"}}"
+ },
+ {
+  "module": "api/chat/v1",
+  "path": "/api/chat/v1/conversations/{id}/messages/{messageId}",
+  "method": "DELETE",
+  "tags": [
+   "Chat"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"CHAT_NOT_FOUND\",\"message\":\"Message not found\"}}"
+ },
+ {
+  "module": "api/chat/v1",
+  "path": "/api/chat/v1/conversations/{id}/mute",
+  "method": "POST",
+  "tags": [
+   "Chat"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"CHAT_ACCESS_DENIED\",\"message\":\"Access denied to this conversation\"}}"
+ },
+ {
+  "module": "api/chat/v1",
+  "path": "/api/chat/v1/conversations/{id}/mute",
+  "method": "DELETE",
+  "tags": [
+   "Chat"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"CHAT_ACCESS_DENIED\",\"message\":\"Access denied to this conversation\"}}"
+ },
+ {
+  "module": "api/chat/v1",
+  "path": "/api/chat/v1/conversations/{id}/read",
+  "method": "PUT",
+  "tags": [
+   "Chat"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"CHAT_ACCESS_DENIED\",\"message\":\"Access denied to this conversation\"}}"
+ },
+ {
+  "module": "api/chat/v1",
+  "path": "/api/chat/v1/conversations/search",
+  "method": "GET",
+  "tags": [
+   "Chat"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 422,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Required\"}}"
+ },
+ {
+  "module": "api/chat/v1",
+  "path": "/api/chat/v1/messages/{messageId}/report",
+  "method": "POST",
+  "tags": [
+   "Chat"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 422,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Required\"}}"
+ },
+ {
+  "module": "api/chat/v1",
+  "path": "/api/chat/v1/media/upload",
+  "method": "POST",
+  "tags": [
+   "Chat"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 422,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"No file uploaded\"}}"
+ },
+ {
+  "module": "api/chat/v1",
+  "path": "/api/chat/v1/users/{userId}/block",
+  "method": "DELETE",
+  "tags": [
+   "Chat"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"ok\":true}}"
+ },
+ {
+  "module": "api/chat/v1",
+  "path": "/api/chat/v1/users/{userId}/block",
+  "method": "POST",
+  "tags": [
+   "Chat"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"ok\":true}}"
+ },
+ {
+  "module": "api/chat/v1",
+  "path": "/api/chat/v1/conversations",
+  "method": "GET",
+  "tags": [
+   "Chat"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"conversations\":[{\"id\":\"cha_con_01M29EABN21KAKEBKKTE5H2H1C\",\"type\":\"BUYER_SELLER\",\"moderationStatus\":\"ACTIVE\",\"relatedProductId\":null,\"relatedOrderId\":\"MSR-ORD-20260912-025448-96FC\",\"relatedShipmentId\":null,\"relatedSupplierRequestId\":null,\"metadata\":{\"orderId\":\"MSR-ORD-20260912-025448-96FC\",\"createdFromCheckout\":true},\"lastMessageAt\":\"2026-09-11T23:55:07.241Z\",\"createdAt\":\"2026-09-11T23:54:48.357Z\",\"unreadCount\":1,\"lastMessagePreview\":\"hi\",\"otherParticipantName\":\"User KVNPYG3Z\"},{\"id\":\"cha_con_01M26BPCV6EFJN8XR0NDB1C5N7\",\"type\":\"BUYER_SELLER\",\"moderationStatus\":\"ACTIVE\",\"relatedProductId\":\"cat_01M0K348K1566BQX4TJKAJV17Y\",\"relatedOrderId\":null,\"relatedShipmentId\":null,"
+ }
+]

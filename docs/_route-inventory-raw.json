@@ -1,0 +1,3551 @@
+{
+ "auth-service": [
+  {
+   "file": "auth-service/src/2fa/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 5
+  },
+  {
+   "file": "auth-service/src/2fa/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/ready",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 14
+  },
+  {
+   "file": "auth-service/src/2fa/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/live",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 18
+  },
+  {
+   "file": "auth-service/src/2fa/api/routes/two-factor.routes.ts",
+   "method": "GET",
+   "path": "/status",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 107
+  },
+  {
+   "file": "auth-service/src/api/routes/google-oauth.routes.ts",
+   "method": "GET",
+   "path": "/initiate",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 18
+  },
+  {
+   "file": "auth-service/src/api/routes/google-oauth.routes.ts",
+   "method": "GET",
+   "path": "/callback",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 21
+  },
+  {
+   "file": "auth-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 13
+  },
+  {
+   "file": "auth-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/detailed",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 16
+  },
+  {
+   "file": "auth-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/ready",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 19
+  },
+  {
+   "file": "auth-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/live",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 22
+  },
+  {
+   "file": "auth-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/discovery",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 25
+  },
+  {
+   "file": "auth-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/circuit-breaker",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 28
+  },
+  {
+   "file": "auth-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/metrics",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 31
+  },
+  {
+   "file": "auth-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/auth/report",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 35
+  },
+  {
+   "file": "auth-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox/report",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 95
+  },
+  {
+   "file": "auth-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 157
+  },
+  {
+   "file": "auth-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/auth",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 250
+  },
+  {
+   "file": "auth-service/src/api/routes/otp-verification.routes.ts",
+   "method": "POST",
+   "path": "/verify",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 64
+  },
+  {
+   "file": "auth-service/src/api/routes/otp-verification.routes.ts",
+   "method": "POST",
+   "path": "/verify-otp",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 65
+  },
+  {
+   "file": "auth-service/src/session/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 5
+  },
+  {
+   "file": "auth-service/src/session/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/ready",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 14
+  },
+  {
+   "file": "auth-service/src/session/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/live",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 22
+  },
+  {
+   "file": "auth-service/src/session/api/routes/session.routes.ts",
+   "method": "POST",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 12
+  },
+  {
+   "file": "auth-service/src/session/api/routes/session.routes.ts",
+   "method": "DELETE",
+   "path": "/:sessionId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 41
+  },
+  {
+   "file": "auth-service/src/session/api/routes/session.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 51
+  }
+ ],
+ "business-registry-service": [
+  {
+   "file": "business-registry-service/src/api/routes/business.routes.ts",
+   "method": "GET",
+   "path": "/sellers",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 94
+  },
+  {
+   "file": "business-registry-service/src/api/routes/business.routes.ts",
+   "method": "GET",
+   "path": "/sellers/:sellerId/industries",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 97
+  },
+  {
+   "file": "business-registry-service/src/api/routes/business.routes.ts",
+   "method": "GET",
+   "path": "/sellers/:sellerId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 100
+  },
+  {
+   "file": "business-registry-service/src/api/routes/business.routes.ts",
+   "method": "GET",
+   "path": "/industries/:industry/sellers",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 103
+  },
+  {
+   "file": "business-registry-service/src/api/routes/business.routes.ts",
+   "method": "POST",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 117
+  },
+  {
+   "file": "business-registry-service/src/api/routes/business.routes.ts",
+   "method": "GET",
+   "path": "/search",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 122
+  },
+  {
+   "file": "business-registry-service/src/api/routes/business.routes.ts",
+   "method": "GET",
+   "path": "/owner/:ownerId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 124
+  },
+  {
+   "file": "business-registry-service/src/api/routes/business.routes.ts",
+   "method": "GET",
+   "path": "/:id",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 125
+  },
+  {
+   "file": "business-registry-service/src/api/routes/business.routes.ts",
+   "method": "PUT",
+   "path": "/:id",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 126
+  },
+  {
+   "file": "business-registry-service/src/api/routes/business.routes.ts",
+   "method": "DELETE",
+   "path": "/:id",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 127
+  },
+  {
+   "file": "business-registry-service/src/api/routes/business.routes.ts",
+   "method": "POST",
+   "path": "/:id/verify",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 128
+  },
+  {
+   "file": "business-registry-service/src/api/routes/business.routes.ts",
+   "method": "POST",
+   "path": "/:id/suspend",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 131
+  },
+  {
+   "file": "business-registry-service/src/api/routes/business.routes.ts",
+   "method": "POST",
+   "path": "/:id/reactivate",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 134
+  },
+  {
+   "file": "business-registry-service/src/api/routes/business.routes.ts",
+   "method": "POST",
+   "path": "/:id/documents",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 139
+  },
+  {
+   "file": "business-registry-service/src/api/routes/business.routes.ts",
+   "method": "GET",
+   "path": "/:id/documents",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 142
+  },
+  {
+   "file": "business-registry-service/src/api/routes/business.routes.ts",
+   "method": "POST",
+   "path": "/:id/compliance-records",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 144
+  },
+  {
+   "file": "business-registry-service/src/api/routes/business.routes.ts",
+   "method": "GET",
+   "path": "/:id/compliance-records",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 147
+  },
+  {
+   "file": "business-registry-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 8
+  },
+  {
+   "file": "business-registry-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/ready",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 31
+  },
+  {
+   "file": "business-registry-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/live",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 50
+  },
+  {
+   "file": "business-registry-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox/report",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 50
+  },
+  {
+   "file": "business-registry-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 96
+  }
+ ],
+ "catalog-service": [
+  {
+   "file": "catalog-service/src/api/routes/buy-box.routes.ts",
+   "method": "GET",
+   "path": "/products/:productId/buy-box",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 13
+  },
+  {
+   "file": "catalog-service/src/api/routes/buy-box.routes.ts",
+   "method": "POST",
+   "path": "/products/:productId/buy-box/compute",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 14
+  },
+  {
+   "file": "catalog-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/health",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 183
+  },
+  {
+   "file": "catalog-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/health/ready",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 212
+  },
+  {
+   "file": "catalog-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/health/live",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 254
+  },
+  {
+   "file": "catalog-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/health/metrics",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 276
+  },
+  {
+   "file": "catalog-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/health/version",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 303
+  },
+  {
+   "file": "catalog-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/health/search",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 320
+  },
+  {
+   "file": "catalog-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox/report",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 49
+  },
+  {
+   "file": "catalog-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 123
+  },
+  {
+   "file": "catalog-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/event-store/report",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 216
+  },
+  {
+   "file": "catalog-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/event-store",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 246
+  },
+  {
+   "file": "catalog-service/src/api/routes/matching.routes.ts",
+   "method": "POST",
+   "path": "/match",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 15
+  },
+  {
+   "file": "catalog-service/src/api/routes/matching.routes.ts",
+   "method": "POST",
+   "path": "/match/confirm/:confirmationId",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 18
+  },
+  {
+   "file": "catalog-service/src/api/routes/matching.routes.ts",
+   "method": "GET",
+   "path": "/match/pending",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 21
+  },
+  {
+   "file": "catalog-service/src/api/routes/matching.routes.ts",
+   "method": "GET",
+   "path": "/match/audit/:productId",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 24
+  },
+  {
+   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
+   "method": "POST",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 54
+  },
+  {
+   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 55
+  },
+  {
+   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
+   "method": "GET",
+   "path": "/:locationId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 56
+  },
+  {
+   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
+   "method": "PUT",
+   "path": "/:locationId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 57
+  },
+  {
+   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
+   "method": "PATCH",
+   "path": "/:locationId/deactivate",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 60
+  },
+  {
+   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
+   "method": "PATCH",
+   "path": "/:locationId/activate",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 61
+  },
+  {
+   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
+   "method": "PUT",
+   "path": "/:locationId/products/:productId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 71
+  },
+  {
+   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
+   "method": "PATCH",
+   "path": "/:locationId/products/:productId/stock",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 72
+  },
+  {
+   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
+   "method": "DELETE",
+   "path": "/:locationId/products/:productId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 73
+  },
+  {
+   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
+   "method": "POST",
+   "path": "/transfers",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 76
+  },
+  {
+   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
+   "method": "GET",
+   "path": "/products/:productId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 79
+  },
+  {
+   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
+   "method": "POST",
+   "path": "/internal/select-fulfillment",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 82
+  },
+  {
+   "file": "catalog-service/src/api/routes/seller-storefront.routes.ts",
+   "method": "GET",
+   "path": "/:sellerId/storefront",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 16
+  },
+  {
+   "file": "catalog-service/src/campaigns/api/routes/campaign.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 30
+  },
+  {
+   "file": "catalog-service/src/pricing/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 11
+  },
+  {
+   "file": "catalog-service/src/pricing/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/ready",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 33
+  },
+  {
+   "file": "catalog-service/src/pricing/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/live",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 60
+  },
+  {
+   "file": "catalog-service/src/pricing/api/routes/pricing.routes.ts",
+   "method": "POST",
+   "path": "/calculate",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 7
+  }
+ ],
+ "chat-service": [
+  {
+   "file": "chat-service/src/api/routes/chat.routes.ts",
+   "method": "GET",
+   "path": "/conversations",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 160
+  },
+  {
+   "file": "chat-service/src/api/routes/chat.routes.ts",
+   "method": "GET",
+   "path": "/conversations/:id",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 167
+  },
+  {
+   "file": "chat-service/src/api/routes/chat.routes.ts",
+   "method": "PUT",
+   "path": "/conversations/:id/read",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 168
+  },
+  {
+   "file": "chat-service/src/api/routes/chat.routes.ts",
+   "method": "POST",
+   "path": "/conversations/:id/mute",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 169
+  },
+  {
+   "file": "chat-service/src/api/routes/chat.routes.ts",
+   "method": "GET",
+   "path": "/conversations/:id/messages",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 183
+  },
+  {
+   "file": "chat-service/src/api/routes/chat.routes.ts",
+   "method": "POST",
+   "path": "/users/:userId/block",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 205
+  }
+ ],
+ "checkout-service": [
+  {
+   "file": "checkout-service/src/api/routes/checkout.routes.ts",
+   "method": "POST",
+   "path": "/merge",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 13
+  },
+  {
+   "file": "checkout-service/src/api/routes/checkout.routes.ts",
+   "method": "GET",
+   "path": "/current",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 14
+  },
+  {
+   "file": "checkout-service/src/api/routes/checkout.routes.ts",
+   "method": "GET",
+   "path": "/:cartId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 15
+  },
+  {
+   "file": "checkout-service/src/api/routes/checkout.routes.ts",
+   "method": "POST",
+   "path": "/items",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 16
+  },
+  {
+   "file": "checkout-service/src/api/routes/checkout.routes.ts",
+   "method": "PATCH",
+   "path": "/items",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 17
+  },
+  {
+   "file": "checkout-service/src/api/routes/checkout.routes.ts",
+   "method": "DELETE",
+   "path": "/items",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 18
+  },
+  {
+   "file": "checkout-service/src/api/routes/checkout.routes.ts",
+   "method": "DELETE",
+   "path": "/:cartId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 19
+  },
+  {
+   "file": "checkout-service/src/api/routes/checkout.routes.ts",
+   "method": "POST",
+   "path": "/initiate",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 29
+  },
+  {
+   "file": "checkout-service/src/api/routes/checkout.routes.ts",
+   "method": "POST",
+   "path": "/delivery-options",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 30
+  },
+  {
+   "file": "checkout-service/src/api/routes/checkout.routes.ts",
+   "method": "GET",
+   "path": "/:id",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 31
+  },
+  {
+   "file": "checkout-service/src/api/routes/checkout.routes.ts",
+   "method": "POST",
+   "path": "/:id/confirm",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 32
+  },
+  {
+   "file": "checkout-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 5
+  },
+  {
+   "file": "checkout-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/ready",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 13
+  },
+  {
+   "file": "checkout-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/live",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 17
+  },
+  {
+   "file": "checkout-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/checkout-sessions/report",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 50
+  },
+  {
+   "file": "checkout-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/checkout-sessions",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 94
+  }
+ ],
+ "commission-service": [
+  {
+   "file": "commission-service/src/api/routes/commission.routes.ts",
+   "method": "POST",
+   "path": "/calculate",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 51
+  },
+  {
+   "file": "commission-service/src/api/routes/commission.routes.ts",
+   "method": "PUT",
+   "path": "/:id/approve",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 59
+  },
+  {
+   "file": "commission-service/src/api/routes/commission.routes.ts",
+   "method": "GET",
+   "path": "/sellers/:sellerId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 68
+  },
+  {
+   "file": "commission-service/src/api/routes/commission.routes.ts",
+   "method": "GET",
+   "path": "/sellers/:sellerId/summary",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 77
+  },
+  {
+   "file": "commission-service/src/api/routes/commission.routes.ts",
+   "method": "GET",
+   "path": "/:id",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 86
+  },
+  {
+   "file": "commission-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 11
+  },
+  {
+   "file": "commission-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/ready",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 33
+  },
+  {
+   "file": "commission-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/live",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 60
+  }
+ ],
+ "community-service": [
+  {
+   "file": "community-service/src/api/routes/community.routes.ts",
+   "method": "POST",
+   "path": "/articles",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 24
+  },
+  {
+   "file": "community-service/src/api/routes/community.routes.ts",
+   "method": "GET",
+   "path": "/articles",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 31
+  },
+  {
+   "file": "community-service/src/api/routes/community.routes.ts",
+   "method": "GET",
+   "path": "/articles/:articleId",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 38
+  },
+  {
+   "file": "community-service/src/api/routes/community.routes.ts",
+   "method": "POST",
+   "path": "/articles/:articleId/reviews",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 45
+  },
+  {
+   "file": "community-service/src/api/routes/community.routes.ts",
+   "method": "POST",
+   "path": "/articles/:articleId/publish",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 52
+  },
+  {
+   "file": "community-service/src/api/routes/community.routes.ts",
+   "method": "GET",
+   "path": "/discover",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 65
+  },
+  {
+   "file": "community-service/src/api/routes/community.routes.ts",
+   "method": "POST",
+   "path": "/challenges",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 72
+  },
+  {
+   "file": "community-service/src/api/routes/community.routes.ts",
+   "method": "GET",
+   "path": "/challenges",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 79
+  },
+  {
+   "file": "community-service/src/api/routes/community.routes.ts",
+   "method": "POST",
+   "path": "/challenges/:challengeId/solutions",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 86
+  },
+  {
+   "file": "community-service/src/api/routes/community.routes.ts",
+   "method": "POST",
+   "path": "/expertise/validate",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 93
+  },
+  {
+   "file": "community-service/src/api/routes/discussions.routes.ts",
+   "method": "POST",
+   "path": "/",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 22
+  },
+  {
+   "file": "community-service/src/api/routes/discussions.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 29
+  },
+  {
+   "file": "community-service/src/api/routes/discussions.routes.ts",
+   "method": "GET",
+   "path": "/:threadId",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 36
+  },
+  {
+   "file": "community-service/src/api/routes/discussions.routes.ts",
+   "method": "POST",
+   "path": "/:threadId/answers",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 43
+  },
+  {
+   "file": "community-service/src/api/routes/discussions.routes.ts",
+   "method": "PATCH",
+   "path": "/:threadId/accept/:answerId",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 50
+  },
+  {
+   "file": "community-service/src/api/routes/discussions.routes.ts",
+   "method": "PATCH",
+   "path": "/:threadId/close",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 57
+  },
+  {
+   "file": "community-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox/report",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 49
+  },
+  {
+   "file": "community-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 96
+  },
+  {
+   "file": "community-service/src/api/routes/posts.routes.ts",
+   "method": "POST",
+   "path": "/",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 38
+  },
+  {
+   "file": "community-service/src/api/routes/posts.routes.ts",
+   "method": "GET",
+   "path": "/published",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 44
+  },
+  {
+   "file": "community-service/src/api/routes/posts.routes.ts",
+   "method": "GET",
+   "path": "/search",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 50
+  },
+  {
+   "file": "community-service/src/api/routes/posts.routes.ts",
+   "method": "GET",
+   "path": "/trending",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 56
+  },
+  {
+   "file": "community-service/src/api/routes/posts.routes.ts",
+   "method": "GET",
+   "path": "/:postId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 62
+  },
+  {
+   "file": "community-service/src/api/routes/posts.routes.ts",
+   "method": "GET",
+   "path": "/:postId/related",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 68
+  },
+  {
+   "file": "community-service/src/api/routes/posts.routes.ts",
+   "method": "GET",
+   "path": "/authors/:authorId",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 74
+  },
+  {
+   "file": "community-service/src/api/routes/posts.routes.ts",
+   "method": "GET",
+   "path": "/users/:userId/feed",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 80
+  }
+ ],
+ "enabler-service": [
+  {
+   "file": "enabler-service/src/api/routes/enabler.routes.ts",
+   "method": "GET",
+   "path": "/:enablerId/listings",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 252
+  },
+  {
+   "file": "enabler-service/src/api/routes/enabler.routes.ts",
+   "method": "GET",
+   "path": "/:enablerId/orders",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 298
+  },
+  {
+   "file": "enabler-service/src/api/routes/hub.routes.ts",
+   "method": "GET",
+   "path": "/products",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 12
+  },
+  {
+   "file": "enabler-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox/report",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 49
+  },
+  {
+   "file": "enabler-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 96
+  }
+ ],
+ "inventory-service": [
+  {
+   "file": "inventory-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 5
+  },
+  {
+   "file": "inventory-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/ready",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 13
+  },
+  {
+   "file": "inventory-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/live",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 17
+  },
+  {
+   "file": "inventory-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox/report",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 53
+  },
+  {
+   "file": "inventory-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 114
+  }
+ ],
+ "kyc-service": [],
+ "logistics-service": [
+  {
+   "file": "logistics-service/src/api/routes/courier.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 12
+  },
+  {
+   "file": "logistics-service/src/api/routes/courier.routes.ts",
+   "method": "GET",
+   "path": "/:courierId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 15
+  },
+  {
+   "file": "logistics-service/src/api/routes/courier.routes.ts",
+   "method": "PUT",
+   "path": "/:courierId/status",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 18
+  },
+  {
+   "file": "logistics-service/src/api/routes/driver-matching.routes.ts",
+   "method": "POST",
+   "path": "/jobs/:jobId/match-drivers",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 29
+  },
+  {
+   "file": "logistics-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 6
+  },
+  {
+   "file": "logistics-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/ready",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 28
+  },
+  {
+   "file": "logistics-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/live",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 32
+  },
+  {
+   "file": "logistics-service/src/api/routes/kpi.routes.ts",
+   "method": "GET",
+   "path": "/kpis",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 11
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "POST",
+   "path": "/deliveries",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 291
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/deliveries/:deliveryId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 298
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/deliveries",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 306
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "POST",
+   "path": "/deliveries/:deliveryId/status",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 314
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "POST",
+   "path": "/cod/:deliveryId/otp",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 323
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "POST",
+   "path": "/cod/:deliveryId/verify",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 328
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "POST",
+   "path": "/deliveries/:deliveryId/cod/generate-otp",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 338
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "POST",
+   "path": "/deliveries/:deliveryId/cod/verify",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 346
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "PATCH",
+   "path": "/deliveries/:deliveryId/status",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 354
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/routes",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 363
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/routes/courier/:courierId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 368
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "POST",
+   "path": "/routes/optimize",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 374
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/routes/:routeId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 379
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "PUT",
+   "path": "/routes/:routeId/progress",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 386
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "POST",
+   "path": "/routes/:routeId/alternatives",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 391
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/couriers",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 399
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "POST",
+   "path": "/couriers",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 405
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/couriers/:courierId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 420
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "PUT",
+   "path": "/couriers/:courierId/status",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 426
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "PATCH",
+   "path": "/couriers/:courierId/status",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 433
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/tracking/:trackingNumber",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 442
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "POST",
+   "path": "/tracking/location",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 449
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/tracking/courier/:courierId/history",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 454
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/analytics",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 464
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/analytics/performance",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 471
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/analytics/courier/:courierId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 476
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/deliveries/:deliveryId/history",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 482
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/earnings",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 523
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/earnings/courier/:courierId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 530
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "POST",
+   "path": "/earnings",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 537
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "POST",
+   "path": "/earnings/calculate",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 542
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/earnings/summary",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 547
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/stats/performance",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 556
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/engines/status",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 574
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/test/all-engines",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 603
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/health",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 611
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/metrics",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 615
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/qa/architecture",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 622
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/qa/performance",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 626
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "POST",
+   "path": "/qa/load-test",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 630
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/qa/security",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 635
+  },
+  {
+   "file": "logistics-service/src/api/routes/logistics.routes.ts",
+   "method": "GET",
+   "path": "/qa/dashboard",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 639
+  },
+  {
+   "file": "logistics-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox/report",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 49
+  },
+  {
+   "file": "logistics-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 95
+  }
+ ],
+ "maps-service": [],
+ "notification-service": [
+  {
+   "file": "notification-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 8
+  },
+  {
+   "file": "notification-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/ready",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 59
+  },
+  {
+   "file": "notification-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/live",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 72
+  },
+  {
+   "file": "notification-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/sms/report",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 49
+  },
+  {
+   "file": "notification-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/sms",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 82
+  },
+  {
+   "file": "notification-service/src/api/routes/notification.routes.ts",
+   "method": "POST",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 12
+  },
+  {
+   "file": "notification-service/src/api/routes/notification.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 13
+  },
+  {
+   "file": "notification-service/src/api/routes/notification.routes.ts",
+   "method": "GET",
+   "path": "/unread-count",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 14
+  },
+  {
+   "file": "notification-service/src/api/routes/notification.routes.ts",
+   "method": "POST",
+   "path": "/mark-all-read",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 15
+  },
+  {
+   "file": "notification-service/src/api/routes/notification.routes.ts",
+   "method": "POST",
+   "path": "/bulk",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 16
+  },
+  {
+   "file": "notification-service/src/api/routes/notification.routes.ts",
+   "method": "GET",
+   "path": "/:id",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 17
+  },
+  {
+   "file": "notification-service/src/api/routes/notification.routes.ts",
+   "method": "PATCH",
+   "path": "/:id/status",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 18
+  },
+  {
+   "file": "notification-service/src/api/routes/notification.routes.ts",
+   "method": "DELETE",
+   "path": "/:id",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 19
+  },
+  {
+   "file": "notification-service/src/api/routes/notification.routes.ts",
+   "method": "POST",
+   "path": "/:id/retry",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 20
+  },
+  {
+   "file": "notification-service/src/api/routes/push-token.routes.ts",
+   "method": "POST",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 12
+  },
+  {
+   "file": "notification-service/src/api/routes/push-token.routes.ts",
+   "method": "DELETE",
+   "path": "/:token",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 13
+  },
+  {
+   "file": "notification-service/src/sms/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 5
+  },
+  {
+   "file": "notification-service/src/sms/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/ready",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 14
+  },
+  {
+   "file": "notification-service/src/sms/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/live",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 18
+  }
+ ],
+ "order-service": [
+  {
+   "file": "order-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 14
+  },
+  {
+   "file": "order-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/detailed",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 49
+  },
+  {
+   "file": "order-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/ready",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 106
+  },
+  {
+   "file": "order-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/live",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 135
+  },
+  {
+   "file": "order-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/metrics",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 147
+  },
+  {
+   "file": "order-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/ping",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 163
+  },
+  {
+   "file": "order-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/circuit-breakers",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 171
+  },
+  {
+   "file": "order-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox/report",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 49
+  },
+  {
+   "file": "order-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 97
+  },
+  {
+   "file": "order-service/src/api/routes/order.routes.ts",
+   "method": "GET",
+   "path": "/orders/search",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 262
+  },
+  {
+   "file": "order-service/src/api/routes/order.routes.ts",
+   "method": "GET",
+   "path": "/orders/analytics/stats",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 265
+  },
+  {
+   "file": "order-service/src/api/routes/order.routes.ts",
+   "method": "GET",
+   "path": "/orders/tracking/:trackingNumber",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 268
+  },
+  {
+   "file": "order-service/src/api/routes/order.routes.ts",
+   "method": "GET",
+   "path": "/orders/:id",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 271
+  },
+  {
+   "file": "order-service/src/api/routes/order.routes.ts",
+   "method": "PUT",
+   "path": "/orders/:id",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 274
+  },
+  {
+   "file": "order-service/src/api/routes/order.routes.ts",
+   "method": "POST",
+   "path": "/orders/:id/status",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 277
+  },
+  {
+   "file": "order-service/src/api/routes/order.routes.ts",
+   "method": "DELETE",
+   "path": "/orders/:id",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 287
+  }
+ ],
+ "payment-service": [
+  {
+   "file": "payment-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 29
+  },
+  {
+   "file": "payment-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/ready",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 64
+  },
+  {
+   "file": "payment-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/live",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 92
+  },
+  {
+   "file": "payment-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox/report",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 50
+  },
+  {
+   "file": "payment-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 97
+  }
+ ],
+ "payout-service": [
+  {
+   "file": "payout-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox/report",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 50
+  },
+  {
+   "file": "payout-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 97
+  },
+  {
+   "file": "payout-service/src/api/routes/payout.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 51
+  },
+  {
+   "file": "payout-service/src/api/routes/payout.routes.ts",
+   "method": "GET",
+   "path": "/:id",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 52
+  }
+ ],
+ "request-service": [
+  {
+   "file": "request-service/src/api/routes/request.routes.ts",
+   "method": "GET",
+   "path": "/requests/assess/:token",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 134
+  },
+  {
+   "file": "request-service/src/api/routes/request.routes.ts",
+   "method": "POST",
+   "path": "/requests/assess/:token/convert",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 135
+  },
+  {
+   "file": "request-service/src/api/routes/request.routes.ts",
+   "method": "POST",
+   "path": "/requests",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 170
+  },
+  {
+   "file": "request-service/src/api/routes/request.routes.ts",
+   "method": "GET",
+   "path": "/requests",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 171
+  },
+  {
+   "file": "request-service/src/api/routes/request.routes.ts",
+   "method": "GET",
+   "path": "/requests/:requestId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 172
+  },
+  {
+   "file": "request-service/src/api/routes/request.routes.ts",
+   "method": "POST",
+   "path": "/requests/:requestId/cancel",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 173
+  },
+  {
+   "file": "request-service/src/api/routes/request.routes.ts",
+   "method": "POST",
+   "path": "/requests/:requestId/messages",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 174
+  },
+  {
+   "file": "request-service/src/api/routes/request.routes.ts",
+   "method": "GET",
+   "path": "/requests/:requestId/messages",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 175
+  },
+  {
+   "file": "request-service/src/api/routes/request.routes.ts",
+   "method": "GET",
+   "path": "/requests/:requestId/quotes",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 176
+  }
+ ],
+ "support-service": [
+  {
+   "file": "support-service/src/api/routes/agent.routes.ts",
+   "method": "POST",
+   "path": "/",
+   "auth": {
+    "authenticate": true,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 12
+  },
+  {
+   "file": "support-service/src/api/routes/agent.routes.ts",
+   "method": "PUT",
+   "path": "/:id",
+   "auth": {
+    "authenticate": true,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 13
+  },
+  {
+   "file": "support-service/src/api/routes/dispute.routes.ts",
+   "method": "POST",
+   "path": "/",
+   "auth": {
+    "authenticate": true,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 12
+  },
+  {
+   "file": "support-service/src/api/routes/dispute.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": true,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 13
+  },
+  {
+   "file": "support-service/src/api/routes/dispute.routes.ts",
+   "method": "GET",
+   "path": "/:id",
+   "auth": {
+    "authenticate": true,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 14
+  },
+  {
+   "file": "support-service/src/api/routes/dispute.routes.ts",
+   "method": "POST",
+   "path": "/:id/escalate",
+   "auth": {
+    "authenticate": true,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 15
+  },
+  {
+   "file": "support-service/src/api/routes/dispute.routes.ts",
+   "method": "POST",
+   "path": "/:id/evidence",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 16
+  },
+  {
+   "file": "support-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox/report",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 49
+  },
+  {
+   "file": "support-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 96
+  },
+  {
+   "file": "support-service/src/api/routes/ticket.routes.ts",
+   "method": "POST",
+   "path": "/",
+   "auth": {
+    "authenticate": true,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 13
+  },
+  {
+   "file": "support-service/src/api/routes/ticket.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": true,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 14
+  },
+  {
+   "file": "support-service/src/api/routes/ticket.routes.ts",
+   "method": "GET",
+   "path": "/:id",
+   "auth": {
+    "authenticate": true,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 15
+  },
+  {
+   "file": "support-service/src/api/routes/ticket.routes.ts",
+   "method": "POST",
+   "path": "/:id/assign",
+   "auth": {
+    "authenticate": true,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 18
+  },
+  {
+   "file": "support-service/src/api/routes/ticket.routes.ts",
+   "method": "POST",
+   "path": "/:id/resolve",
+   "auth": {
+    "authenticate": true,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 19
+  },
+  {
+   "file": "support-service/src/api/routes/ticket.routes.ts",
+   "method": "POST",
+   "path": "/:id/close",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 20
+  },
+  {
+   "file": "support-service/src/api/routes/ticket.routes.ts",
+   "method": "POST",
+   "path": "/:id/messages",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 23
+  }
+ ],
+ "training-service": [
+  {
+   "file": "training-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 7
+  },
+  {
+   "file": "training-service/src/api/routes/module.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 9
+  }
+ ],
+ "user-service": [
+  {
+   "file": "user-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 12
+  },
+  {
+   "file": "user-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/ready",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 120
+  },
+  {
+   "file": "user-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/live",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 162
+  },
+  {
+   "file": "user-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/metrics",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 176
+  },
+  {
+   "file": "user-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/ping",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 220
+  },
+  {
+   "file": "user-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox/report",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 49
+  },
+  {
+   "file": "user-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 96
+  },
+  {
+   "file": "user-service/src/api/routes/user.routes.ts",
+   "method": "GET",
+   "path": "/lookup",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 405
+  },
+  {
+   "file": "user-service/src/api/routes/user.routes.ts",
+   "method": "GET",
+   "path": "/search",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 406
+  },
+  {
+   "file": "user-service/src/api/routes/user.routes.ts",
+   "method": "POST",
+   "path": "/",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 407
+  },
+  {
+   "file": "user-service/src/api/routes/user.routes.ts",
+   "method": "GET",
+   "path": "/profile",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 409
+  },
+  {
+   "file": "user-service/src/api/routes/user.routes.ts",
+   "method": "PUT",
+   "path": "/profile",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 410
+  },
+  {
+   "file": "user-service/src/api/routes/user.routes.ts",
+   "method": "GET",
+   "path": "/:id",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 411
+  },
+  {
+   "file": "user-service/src/api/routes/user.routes.ts",
+   "method": "PUT",
+   "path": "/:id",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 412
+  },
+  {
+   "file": "user-service/src/api/routes/user.routes.ts",
+   "method": "DELETE",
+   "path": "/:id",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 413
+  },
+  {
+   "file": "user-service/src/api/routes/user.routes.ts",
+   "method": "POST",
+   "path": "/verify-email/:token",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 414
+  },
+  {
+   "file": "user-service/src/api/routes/user.routes.ts",
+   "method": "POST",
+   "path": "/request-password-reset",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 415
+  },
+  {
+   "file": "user-service/src/api/routes/user.routes.ts",
+   "method": "POST",
+   "path": "/reset-password/:token",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 416
+  },
+  {
+   "file": "user-service/src/api/routes/user.routes.ts",
+   "method": "POST",
+   "path": "/:id/password",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 417
+  },
+  {
+   "file": "user-service/src/api/routes/user.routes.ts",
+   "method": "POST",
+   "path": "/:id/suspend",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 418
+  },
+  {
+   "file": "user-service/src/api/routes/user.routes.ts",
+   "method": "POST",
+   "path": "/:id/role",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 419
+  },
+  {
+   "file": "user-service/src/api/routes/user.routes.ts",
+   "method": "POST",
+   "path": "/:id/phone/verify",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 420
+  },
+  {
+   "file": "user-service/src/api/routes/user.routes.ts",
+   "method": "POST",
+   "path": "/:id/2fa/setup",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 421
+  },
+  {
+   "file": "user-service/src/api/routes/user.routes.ts",
+   "method": "POST",
+   "path": "/security/breaches/report",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 422
+  },
+  {
+   "file": "user-service/src/api/routes/user.routes.ts",
+   "method": "GET",
+   "path": "/:userId/cod-reputation",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 425
+  },
+  {
+   "file": "user-service/src/api/routes/user.routes.ts",
+   "method": "DELETE",
+   "path": "/:id/addresses/:addressId",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 429
+  }
+ ],
+ "wallet-service": [
+  {
+   "file": "wallet-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 7
+  },
+  {
+   "file": "wallet-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/ready",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 39
+  },
+  {
+   "file": "wallet-service/src/api/routes/health.routes.ts",
+   "method": "GET",
+   "path": "/live",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 43
+  },
+  {
+   "file": "wallet-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox/report",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 51
+  },
+  {
+   "file": "wallet-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/outbox",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 137
+  },
+  {
+   "file": "wallet-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/idempotency/report",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 253
+  },
+  {
+   "file": "wallet-service/src/api/routes/maintenance.routes.ts",
+   "method": "POST",
+   "path": "/cleanup/idempotency",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 295
+  },
+  {
+   "file": "wallet-service/src/api/routes/wallet.routes.ts",
+   "method": "GET",
+   "path": "/:userId",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 35
+  },
+  {
+   "file": "wallet-service/src/api/routes/wallet.routes.ts",
+   "method": "GET",
+   "path": "/:userId/balance",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 40
+  },
+  {
+   "file": "wallet-service/src/api/routes/wallet.routes.ts",
+   "method": "GET",
+   "path": "/:userId/holds",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 46
+  },
+  {
+   "file": "wallet-service/src/api/routes/wallet.routes.ts",
+   "method": "POST",
+   "path": "/:userId/credit",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 52
+  },
+  {
+   "file": "wallet-service/src/api/routes/wallet.routes.ts",
+   "method": "POST",
+   "path": "/:userId/debit",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 59
+  },
+  {
+   "file": "wallet-service/src/api/routes/wallet.routes.ts",
+   "method": "POST",
+   "path": "/:userId/hold",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 66
+  },
+  {
+   "file": "wallet-service/src/api/routes/wallet.routes.ts",
+   "method": "POST",
+   "path": "/:userId/hold/:holdId/release",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 73
+  },
+  {
+   "file": "wallet-service/src/api/routes/wallet.routes.ts",
+   "method": "POST",
+   "path": "/:userId/hold/:holdId/capture",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 80
+  },
+  {
+   "file": "wallet-service/src/api/routes/wallet.routes.ts",
+   "method": "POST",
+   "path": "/:userId/transaction/:transactionId/reverse",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 87
+  },
+  {
+   "file": "wallet-service/src/api/routes/wallet.routes.ts",
+   "method": "GET",
+   "path": "/:userId/statement",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 94
+  },
+  {
+   "file": "wallet-service/src/api/routes/wallet.routes.ts",
+   "method": "GET",
+   "path": "/:userId/transactions",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 103
+  },
+  {
+   "file": "wallet-service/src/api/routes/wallet.routes.ts",
+   "method": "POST",
+   "path": "/:userId/freeze",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 113
+  },
+  {
+   "file": "wallet-service/src/api/routes/wallet.routes.ts",
+   "method": "POST",
+   "path": "/:userId/unfreeze",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 120
+  },
+  {
+   "file": "wallet-service/src/api/routes/wallet.routes.ts",
+   "method": "POST",
+   "path": "/:userId/topup",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 128
+  },
+  {
+   "file": "wallet-service/src/api/routes/wallet.routes.ts",
+   "method": "POST",
+   "path": "/:userId/payout",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 150
+  },
+  {
+   "file": "wallet-service/src/api/routes/wallet.routes.ts",
+   "method": "GET",
+   "path": "/:userId/payout",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 163
+  }
+ ]
+}

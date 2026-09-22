@@ -1,0 +1,28 @@
+[
+ {
+  "module": "api/admin/dashboard",
+  "path": "/api/admin/dashboard/founder-operating-system",
+  "method": "GET",
+  "tags": [
+   "Analytics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 200,
+  "authBody": "{\"title\":\"Maysar Daily Operating System\",\"generatedAt\":\"2026-09-20T17:45:41.884Z\",\"currentBottleneck\":{\"type\":\"low_retention\",\"severity\":\"critical\",\"summary\":\"90-day seller retention 0.0% is below 60% threshold\"},\"primaryObjective\":\"Stabilize seller retention and repeat buying.\",\"criticalTasks\":[\"Audit the first-sale and onboarding friction that delays activation.\",\"Target dormant sellers and buyers with reactivation follow-ups.\",\"Push one repeat-purchase trigger that improves return behavior.\"],\"dailyWinStatement\":\"Today we win if retention risk drops because activation and repeat purchase friction are reduced.\",\"phases\":[{\"key\":\"fajr\",\"prayerName\":\"Fajr\",\"mode\":\"Strategic Command Center\",\""
+ },
+ {
+  "module": "api/admin/dashboard",
+  "path": "/api/admin/dashboard/red-flags",
+  "method": "GET",
+  "tags": [
+   "Analytics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 200,
+  "authBody": "{\"flags\":[{\"type\":\"low_retention\",\"severity\":\"critical\",\"message\":\"90-day seller retention 0.0% is below 60% threshold\",\"metric\":\"Seller Retention\",\"currentValue\":0,\"threshold\":60},{\"type\":\"low_expansion\",\"severity\":\"low\",\"message\":\"Product expansion rate 0.0% is below 30% target\",\"metric\":\"Product Expansion\",\"currentValue\":0,\"threshold\":30}],\"timestamp\":\"2026-09-20T17:45:45.779Z\"}"
+ }
+]

@@ -1,0 +1,119 @@
+[
+ {
+  "module": "api/analytics/sellers",
+  "path": "/api/analytics/sellers/{sellerId}/dashboard/action-center",
+  "method": "GET",
+  "tags": [
+   "Analytics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "[]"
+ },
+ {
+  "module": "api/analytics/sellers",
+  "path": "/api/analytics/sellers/{sellerId}/dashboard/sales-trend",
+  "method": "GET",
+  "tags": [
+   "Analytics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"data\":[],\"trend\":\"flat\"}"
+ },
+ {
+  "module": "api/analytics/sellers",
+  "path": "/api/analytics/sellers/{sellerId}/dashboard/profitability-score",
+  "method": "GET",
+  "tags": [
+   "Analytics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"score\":15,\"breakdown\":{\"salesGrowth\":0,\"repeatBuyers\":0,\"responseTime\":15,\"orderCompletion\":0,\"inventoryStability\":0}}"
+ },
+ {
+  "module": "api/analytics/sellers",
+  "path": "/api/analytics/sellers/{sellerId}/sla",
+  "method": "GET",
+  "tags": [
+   "Analytics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"sellerId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"evaluatedAt\":\"2026-09-20T17:45:46.140Z\",\"periodStart\":\"2026-08-21T17:45:46.140Z\",\"periodEnd\":\"2026-09-20T17:45:46.140Z\",\"status\":\"manual\",\"overallComplianceScore\":99.29,\"goLiveReadinessScore\":100,\"dataCoverageScore\":37,\"summary\":{\"totalMetrics\":12,\"compliantMetrics\":3,\"atRiskMetrics\":1,\"breachedMetrics\":0,\"manualMetrics\":8,\"totalReadinessGates\":7,\"passedReadinessGates\":1,\"failedReadinessGates\":0,\"manualReadinessGates\":6},\"metrics\":[{\"key\":\"order_confirmation\",\"clause\":\"Order Processing Standards\",\"title\":\"Order confirmation SLA\",\"actual\":100,\"target\":95,\"comparison\":\"higher\",\"unit\":\"%\",\"score\":100,\"status\":\"compliant\",\"confidence\":\"derived\",\"weig"
+ },
+ {
+  "module": "api/analytics/sellers",
+  "path": "/api/analytics/sellers/{sellerId}/sla/breaches",
+  "method": "GET",
+  "tags": [
+   "Analytics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"sellerId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"evaluatedAt\":\"2026-09-20T17:45:46.291Z\",\"periodStart\":\"2026-08-21T17:45:46.291Z\",\"periodEnd\":\"2026-09-20T17:45:46.291Z\",\"status\":\"manual\",\"summary\":{\"totalMetrics\":12,\"compliantMetrics\":3,\"atRiskMetrics\":1,\"breachedMetrics\":0,\"manualMetrics\":8,\"totalReadinessGates\":7,\"passedReadinessGates\":1,\"failedReadinessGates\":0,\"manualReadinessGates\":6},\"breaches\":[{\"key\":\"product_quality\",\"clause\":\"Product Quality Standards\",\"title\":\"Product quality score\",\"severity\":\"low\",\"expected\":\"At least 80%\",\"observed\":\"75.77%\",\"recommendation\":\"The platform does not currently store physical inspection outcomes, so quality is derived from the catalog quality score.\","
+ },
+ {
+  "module": "api/analytics/sellers",
+  "path": "/api/analytics/sellers/{sellerId}/sla/readiness",
+  "method": "GET",
+  "tags": [
+   "Analytics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"sellerId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"evaluatedAt\":\"2026-09-20T17:45:46.754Z\",\"periodStart\":\"2026-08-21T17:45:46.754Z\",\"periodEnd\":\"2026-09-20T17:45:46.754Z\",\"status\":\"manual\",\"goLiveReadinessScore\":100,\"summary\":{\"totalMetrics\":12,\"compliantMetrics\":3,\"atRiskMetrics\":1,\"breachedMetrics\":0,\"manualMetrics\":8,\"totalReadinessGates\":7,\"passedReadinessGates\":1,\"failedReadinessGates\":0,\"manualReadinessGates\":6},\"readiness\":[{\"key\":\"signed_agreement\",\"label\":\"Signed agreement is on file\",\"passed\":false,\"status\":\"manual\",\"confidence\":\"manual\",\"evidence\":[\"No contractual artifact is exposed in the current schema.\"],\"blocker\":\"Manual verification required for the signed seller agreement.\"},{\"k"
+ },
+ {
+  "module": "api/analytics/sellers",
+  "path": "/api/analytics/sellers/{sellerId}/dashboard/money-snapshot",
+  "method": "GET",
+  "tags": [
+   "Analytics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"todaySales\":{\"amount\":0,\"currency\":\"TZS\",\"orderCount\":0},\"thisMonthRevenue\":{\"amount\":0,\"currency\":\"TZS\",\"growth\":0},\"walletBalance\":{\"available\":\"50000\",\"pending\":\"0\",\"currency\":\"TZS\"},\"nextPayoutDate\":null,\"netPayout\":0}"
+ },
+ {
+  "module": "api/analytics/sellers",
+  "path": "/api/analytics/sellers/{sellerId}/dashboard",
+  "method": "GET",
+  "tags": [
+   "Analytics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"moneySnapshot\":{\"todaySales\":{\"amount\":0,\"currency\":\"TZS\",\"orderCount\":0},\"thisMonthRevenue\":{\"amount\":0,\"currency\":\"TZS\",\"growth\":0},\"walletBalance\":{\"available\":\"50000\",\"pending\":\"0\",\"currency\":\"TZS\"},\"nextPayoutDate\":null,\"netPayout\":0},\"performanceInsights\":{\"salesTrend\":{\"data\":[],\"trend\":\"flat\"},\"repeatCustomers\":{\"rate\":100,\"message\":\"1 repeat customers this month\"},\"bestProduct\":{\"name\":\"N/A\",\"unitsSold\":0,\"revenue\":0}},\"actionCenter\":[],\"orders\":{\"new\":0,\"processing\":0,\"shipped\":0,\"completed\":0,\"disputed\":0},\"payoutTransparency\":{\"totalEarned\":0,\"commissionDeducted\":0,\"netPayout\":0,\"nextPayoutDate\":null,\"feeBreakdown\":[{\"type\":\"Commission\",\"amount\":0}]},\"inventoryHealth\":{\"inStock"
+ },
+ {
+  "module": "api/analytics/sellers",
+  "path": "/api/analytics/sellers/{sellerId}/sla/evaluate",
+  "method": "POST",
+  "tags": [
+   "Analytics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"report\":{\"sellerId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"evaluatedAt\":\"2026-09-20T17:45:46.742Z\",\"periodStart\":\"2026-08-21T17:45:46.742Z\",\"periodEnd\":\"2026-09-20T17:45:46.742Z\",\"status\":\"manual\",\"overallComplianceScore\":99.29,\"goLiveReadinessScore\":100,\"dataCoverageScore\":37,\"summary\":{\"totalMetrics\":12,\"compliantMetrics\":3,\"atRiskMetrics\":1,\"breachedMetrics\":0,\"manualMetrics\":8,\"totalReadinessGates\":7,\"passedReadinessGates\":1,\"failedReadinessGates\":0,\"manualReadinessGates\":6},\"metrics\":[{\"key\":\"order_confirmation\",\"clause\":\"Order Processing Standards\",\"title\":\"Order confirmation SLA\",\"actual\":100,\"target\":95,\"comparison\":\"higher\",\"unit\":\"%\",\"score\":100,\"status\":\"compliant\",\"confidence\":\"deri"
+ }
+]

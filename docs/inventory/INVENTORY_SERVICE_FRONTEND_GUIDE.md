@@ -52,6 +52,7 @@ Omit `warehouseId` to get stock across all warehouses.
 ```jsonc
 {
   "variantId": "var_01J...",
+  "warehouseId": "all",
   "stockLevels": [
     {
       "warehouseId": "wh_01J...",
@@ -67,7 +68,7 @@ Omit `warehouseId` to get stock across all warehouses.
 }
 ```
 
-Returns `404` if no stock record exists for the variant.
+Returns `404` if no stock record exists for the variant. Note: `warehouseId` in the top-level response is either the filtered warehouse ID or `"all"` when no filter is applied.
 
 #### Manual stock adjustment (admin/warehouse)
 ```
@@ -113,7 +114,13 @@ GET /api/inventory/materials?warehouseId=wh_01J...&lowStockOnly=true
 ```
 GET /api/inventory/materials/:variantId?warehouseId=wh_01J...
 ```
-Returns empty `materials[]` (not 404) if the material has not been stocked yet.
+Returns **200** in all cases — never 404. Response is always wrapped in `{ "success": true, "data": { … }, "lastUpdated": "…" }`.
+
+- If the material has not been stocked yet: `data.materials` is `[]`, `data.totalAvailable` is `0`, and `data.status` is `"OUT_OF_STOCK"` (uppercase literal).
+- If stock exists: `data.materials[]` contains per-warehouse rows; `data.status` reflects the first row's status using lowercase values (`in_stock`, `low_stock`, `out_of_stock` — from `calculateStockStatus`).
+- `data.warehouseId` is always present: either the filtered warehouse ID or `"all"` when no filter is applied.
+
+> **Status casing:** the `status` field inside individual `materials[]` items uses **lowercase** (`in_stock`, `low_stock`, `out_of_stock`). The top-level `data.status` in the zero-stock fallback uses the uppercase string `"OUT_OF_STOCK"`. Use the `materials[]` items' status for per-warehouse display logic.
 
 #### Update material inventory
 ```
@@ -267,3 +274,23 @@ GET /api/inventory/analytics/stock-levels?warehouseId=wh_01J...&lowStockOnly=tru
 | `Insufficient available stock` | 422 | `reserve()` called with more than available |
 | `Invalid query parameters` | 400 | Bad query params |
 | `Internal server error` | 500 | Server failure — retry with backoff |
+
+
+---
+
+## System Maintenance (internal/ops)
+
+These endpoints are for ops/admin use only. They are not called from the frontend.
+
+```
+POST /api/inventory/system/maintenance/cleanup/outbox/report
+POST /api/inventory/system/maintenance/cleanup/outbox
+```
+
+**Auth:** `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+### Outbox cleanup report
+`POST /api/inventory/system/maintenance/cleanup/outbox/report` → **200** — dry-run count of deletable outbox events.
+
+### Outbox cleanup
+`POST /api/inventory/system/maintenance/cleanup/outbox` → **200** — batched deletion. Body: `{ "dryRun": true }` to simulate. `maxRuntimeMs` defaults to 20 seconds.

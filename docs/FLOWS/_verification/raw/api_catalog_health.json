@@ -1,0 +1,80 @@
+[
+ {
+  "module": "api/catalog/health",
+  "path": "/api/catalog/health",
+  "method": "GET",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"ok\",\"service\":\"catalog-service\",\"modules\":[\"catalog\",\"campaigns\",\"pricing\"],\"timestamp\":\"2026-09-20T17:45:49.362Z\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"ok\",\"service\":\"catalog-service\",\"modules\":[\"catalog\",\"campaigns\",\"pricing\"],\"timestamp\":\"2026-09-20T17:45:49.371Z\"}"
+ },
+ {
+  "module": "api/catalog/health",
+  "path": "/api/catalog/health/live",
+  "method": "GET",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"status\":\"alive\",\"timestamp\":\"2026-09-20T17:45:49.366Z\",\"uptime\":4917.2075497},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.366Z\",\"request\":{\"method\":\"GET\",\"url\":\"/api/catalog/health/live\",\"path\":\"/health/live\"}}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"status\":\"alive\",\"timestamp\":\"2026-09-20T17:45:49.375Z\",\"uptime\":4917.216208},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.375Z\",\"request\":{\"method\":\"GET\",\"url\":\"/api/catalog/health/live\",\"path\":\"/health/live\"}}}"
+ },
+ {
+  "module": "api/catalog/health",
+  "path": "/api/catalog/health/metrics",
+  "method": "GET",
+  "tags": [
+   "Catalog"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"memory\":{\"used\":280,\"total\":314,\"percentage\":89.17},\"cpu\":{\"usage\":59078,\"count\":8},\"disk\":{\"used\":343,\"total\":7894,\"percentage\":4.35},\"requests\":{\"total\":49172,\"active\":0,\"rate\":10},\"errors\":{\"total\":0,\"rate\":0},\"uptime\":491",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"memory\":{\"used\":281,\"total\":314,\"percentage\":89.49},\"cpu\":{\"usage\":59078,\"count\":8},\"disk\":{\"used\":343,\"total\":7894,\"percentage\":4.35},\"requests\":{\"total\":49172,\"active\":0,\"rate\":10},\"errors\":{\"total\":0,\"rate\":0},\"uptime\":4917.22513,\"timestamp\":\"2026-09-20T17:45:49.384Z\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.384Z\",\"request\":{\"method\":\"GET\",\"url\":\"/api/catalog/health/metrics\",\"path\":\"/health/metrics\"}}}"
+ },
+ {
+  "module": "api/catalog/health",
+  "path": "/api/catalog/health/ready",
+  "method": "GET",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"status\":\"ready\",\"timestamp\":\"2026-09-20T17:45:49.381Z\",\"uptime\":4917.2219672,\"checks\":{\"database\":{\"status\":\"healthy\",\"healthy\":true,\"responseTime\":1,\"details\":{\"name\":\"database\",\"checkedAt\":\"2026-09-20T17:45:49.381Z\",\"source",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"status\":\"ready\",\"timestamp\":\"2026-09-20T17:45:49.394Z\",\"uptime\":4917.2349175,\"checks\":{\"database\":{\"status\":\"healthy\",\"healthy\":true,\"responseTime\":1,\"details\":{\"name\":\"database\",\"checkedAt\":\"2026-09-20T17:45:49.394Z\",\"source\":\"synthetic\"}},\"cache\":{\"status\":\"healthy\",\"healthy\":true,\"responseTime\":1,\"details\":{\"name\":\"cache\",\"checkedAt\":\"2026-09-20T17:45:49.394Z\",\"source\":\"synthetic\"}},\"messaging\":{\"status\":\"healthy\",\"healthy\":true,\"responseTime\":1,\"details\":{\"name\":\"messaging\",\"checkedAt\":\"2026-09-20T17:45:49.394Z\",\"source\":\"synthetic\"}}}},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.394Z\",\"request\":{\"method\":\"GET\",\"url\":\"/api/catalog/health/ready\",\"path\":\"/health/ready"
+ },
+ {
+  "module": "api/catalog/health",
+  "path": "/api/catalog/health/version",
+  "method": "GET",
+  "tags": [
+   "Catalog"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"version\":\"v1\",\"build\":{\"number\":\"local\",\"timestamp\":\"2026-09-20T17:45:49.418Z\",\"commit\":\"unknown\",\"branch\":\"local\"},\"dependencies\":{\"database\":\"unknown\",\"cache\":\"unknown\",\"messaging\":\"unknown\",\"externalServices\":\"unknown\"},\"e",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"version\":\"v1\",\"build\":{\"number\":\"local\",\"timestamp\":\"2026-09-20T17:45:49.429Z\",\"commit\":\"unknown\",\"branch\":\"local\"},\"dependencies\":{\"database\":\"unknown\",\"cache\":\"unknown\",\"messaging\":\"unknown\",\"externalServices\":\"unknown\"},\"environment\":\"development\",\"nodeVersion\":\"v20.19.0\",\"platform\":\"win32\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.429Z\",\"request\":{\"method\":\"GET\",\"url\":\"/api/catalog/health/version\",\"path\":\"/health/version\"}}}"
+ },
+ {
+  "module": "api/catalog/health",
+  "path": "/api/catalog/health/search",
+  "method": "GET",
+  "tags": [
+   "Catalog"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"provider\":\"meilisearch\",\"indexName\":\"catalog\",\"status\":\"healthy\",\"cluster\":\"green\",\"responseTime\":471,\"indexCount\":1,\"documentCount\":15,\"checkedAt\":\"2026-09-20T17:45:49.397Z\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.397Z\",\"r",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"provider\":\"meilisearch\",\"indexName\":\"catalog\",\"status\":\"healthy\",\"cluster\":\"green\",\"responseTime\":190,\"indexCount\":1,\"documentCount\":15,\"checkedAt\":\"2026-09-20T17:45:50.143Z\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.143Z\",\"request\":{\"method\":\"GET\",\"url\":\"/api/catalog/health/search\",\"path\":\"/health/search\"}}}"
+ }
+]

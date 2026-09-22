@@ -32,6 +32,8 @@ All coordinate inputs are validated:
 
 Out-of-range values return `422 INVALID_COORDINATES`.
 
+> ⚠️ **As-built note:** The HTTP route only validates that `lat` and `lng` are present and numeric — it does **not** enforce the `-90/+90` and `-180/+180` range bounds at the HTTP layer. Range validation happens inside `GeoPoint.create()` in the domain. If a provider throws on an out-of-range value, the route returns `500 ROUTING_FAILED`, not `422`.
+
 ### Route calculation
 
 - Requires **at least 2 waypoints** (origin + destination).

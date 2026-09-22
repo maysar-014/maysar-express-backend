@@ -1,0 +1,145 @@
+[
+ {
+  "module": "api/auth/2fa",
+  "path": "/api/auth/2fa/backup",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"userId\\\" is required\",\"\\\"code\\\" is required\"]}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"userId\\\" is required\",\"\\\"code\\\" is required\"]}"
+ },
+ {
+  "module": "api/auth/2fa",
+  "path": "/api/auth/2fa/backup-codes/regenerate",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"userId\\\" is required\"]}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"userId\\\" is required\"]}"
+ },
+ {
+  "module": "api/auth/2fa",
+  "path": "/api/auth/2fa/enable",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 403,
+  "anonBody": "{\"success\":false,\"message\":\"CSRF token missing\"}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"message\":\"CSRF token missing\"}"
+ },
+ {
+  "module": "api/auth/2fa",
+  "path": "/api/auth/2fa/health",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"healthy\",\"service\":\"two-factor-service\",\"timestamp\":\"2026-09-20T17:45:47.117Z\",\"uptime\":\"4914s\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"healthy\",\"service\":\"two-factor-service\",\"timestamp\":\"2026-09-20T17:45:47.131Z\",\"uptime\":\"4914s\"}"
+ },
+ {
+  "module": "api/auth/2fa",
+  "path": "/api/auth/2fa/health/live",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"alive\",\"service\":\"two-factor-service\",\"timestamp\":\"2026-09-20T17:45:47.137Z\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"alive\",\"service\":\"two-factor-service\",\"timestamp\":\"2026-09-20T17:45:47.150Z\"}"
+ },
+ {
+  "module": "api/auth/2fa",
+  "path": "/api/auth/2fa/health/ready",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"ready\",\"service\":\"two-factor-service\",\"timestamp\":\"2026-09-20T17:45:47.143Z\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"ready\",\"service\":\"two-factor-service\",\"timestamp\":\"2026-09-20T17:45:47.159Z\"}"
+ },
+ {
+  "module": "api/auth/2fa",
+  "path": "/api/auth/2fa/disable",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 403,
+  "anonBody": "{\"success\":false,\"message\":\"CSRF token missing\"}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"message\":\"CSRF token missing\"}"
+ },
+ {
+  "module": "api/auth/2fa",
+  "path": "/api/auth/2fa/verify",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"secret\\\" is required\",\"\\\"totpCode\\\" is required\"]}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"secret\\\" is required\",\"\\\"totpCode\\\" is required\"]}"
+ },
+ {
+  "module": "api/auth/2fa",
+  "path": "/api/auth/2fa/verify-setup",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"userId\\\" is required\",\"\\\"code\\\" is required\"]}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"userId\\\" is required\",\"\\\"code\\\" is required\"]}"
+ },
+ {
+  "module": "api/auth/2fa",
+  "path": "/api/auth/2fa/status",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":\"Authentication required\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":null}"
+ },
+ {
+  "module": "api/auth/2fa",
+  "path": "/api/auth/2fa/setup",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":\"Authentication required\"}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":\"\\nInvalid `this.prisma.user_TwoFactorAuth.upsert()` invocation in\\nC:\\\\Users\\\\abdal\\\\Desktop\\\\maysar-express-backend\\\\services\\\\auth-service\\\\src\\\\2fa\\\\infrastructure\\\\repositories\\\\prisma-two-factor.repository.ts:54:46\\n\\n  51 const encryptedSecret = this.encryptionService.encrypt(props.secret);\\n  52 \\n  53 // Upsert the 2FA configuration\\n→ 54 await this.prisma.user_TwoFactorAuth.upsert({\\n       where: {\\n         userId: \\\"usr_01KRFXQZC36NK3CDEWJJS21RP8\\\"\\n       },\\n       create: {\\n         id: \\\"usr_twofac_01M2ZYS6CBFQ765FWSY1H0A9G8\\\",\\n         userId: \\\"usr_01KRFXQZC36NK3CDEWJJS21RP8\\\",\\n         secret: \\\"2f9d4632459f6e2709b3feb1:070d3dc5494489abb7377ebd"
+ }
+]

@@ -1,0 +1,197 @@
+[
+ {
+  "module": "api/enabler/enablers",
+  "path": "/api/enabler/enablers/{enablerId}/earnings",
+  "method": "GET",
+  "tags": [
+   "Enabler"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "enabler",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails to match the required pattern: /^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$/\"}]}}"
+ },
+ {
+  "module": "api/enabler/enablers",
+  "path": "/api/enabler/enablers/{enablerId}/earnings/summary",
+  "method": "GET",
+  "tags": [
+   "Enabler"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "enabler",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails to match the required pattern: /^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$/\"}]}}"
+ },
+ {
+  "module": "api/enabler/enablers",
+  "path": "/api/enabler/enablers/{enablerId}/listings",
+  "method": "GET",
+  "tags": [
+   "Enabler"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "enabler",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails to match the required pattern: /^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$/\"}]}}"
+ },
+ {
+  "module": "api/enabler/enablers",
+  "path": "/api/enabler/enablers/{enablerId}/listings",
+  "method": "POST",
+  "tags": [
+   "Enabler"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "enabler",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails to match the required pattern: /^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$/\"}]}}"
+ },
+ {
+  "module": "api/enabler/enablers",
+  "path": "/api/enabler/enablers/{enablerId}/orders",
+  "method": "GET",
+  "tags": [
+   "Enabler"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "enabler",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails to match the required pattern: /^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$/\"}]}}"
+ },
+ {
+  "module": "api/enabler/enablers",
+  "path": "/api/enabler/enablers/{enablerId}/orders",
+  "method": "POST",
+  "tags": [
+   "Enabler"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "enabler",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails to match the required pattern: /^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$/\"}]}}"
+ },
+ {
+  "module": "api/enabler/enablers",
+  "path": "/api/enabler/enablers/{enablerId}/orders/{orderId}/commission",
+  "method": "GET",
+  "tags": [
+   "Enabler"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "enabler",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails to match the required pattern: /^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$/\"}]}}"
+ },
+ {
+  "module": "api/enabler/enablers",
+  "path": "/api/enabler/enablers/{enablerId}/promotion-jobs",
+  "method": "GET",
+  "tags": [
+   "Enabler"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "enabler",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails to match the required pattern: /^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$/\"}]}}"
+ },
+ {
+  "module": "api/enabler/enablers",
+  "path": "/api/enabler/enablers/{enablerId}/promotion-jobs/{jobId}/accept",
+  "method": "POST",
+  "tags": [
+   "Enabler"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "enabler",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails to match the required pattern: /^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$/\"}]}}"
+ },
+ {
+  "module": "api/enabler/enablers",
+  "path": "/api/enabler/enablers/{enablerId}/referral-link",
+  "method": "POST",
+  "tags": [
+   "Enabler"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "enabler",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails to match the required pattern: /^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$/\"}]}}"
+ },
+ {
+  "module": "api/enabler/enablers",
+  "path": "/api/enabler/enablers/{enablerId}/referral-link",
+  "method": "GET",
+  "tags": [
+   "Enabler"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "enabler",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails to match the required pattern: /^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$/\"}]}}"
+ },
+ {
+  "module": "api/enabler/enablers",
+  "path": "/api/enabler/enablers/{enablerId}/referral-link/events",
+  "method": "POST",
+  "tags": [
+   "Enabler"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "enabler",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails to match the required pattern: /^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$/\"}]}}"
+ },
+ {
+  "module": "api/enabler/enablers",
+  "path": "/api/enabler/enablers/{id}",
+  "method": "GET",
+  "tags": [
+   "Enabler"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "enabler",
+  "authStatus": 500,
+  "authBody": "{\"error\":\"\\nInvalid `prisma.enabler_Profile.findUnique()` invocation in\\nC:\\\\Users\\\\abdal\\\\Desktop\\\\maysar-express-backend\\\\services\\\\enabler-service\\\\src\\\\infrastructure\\\\repositories\\\\prisma-enabler.repository.ts:9:51\\n\\n  6 export class PrismaEnablerRepository implements IEnablerRepository {\\n  7 \\n  8     async findById(id: string): Promise<EnablerEntity | null> {\\n→ 9         const data = await prisma.enabler_Profile.findUnique(\\nThe column `enabler_profiles.termsVersion` does not exist in the current database.\"}"
+ },
+ {
+  "module": "api/enabler/enablers",
+  "path": "/api/enabler/enablers/{id}/approve",
+  "method": "POST",
+  "tags": [
+   "Enabler"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "enabler",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"\\nInvalid `prisma.enabler_Profile.findUnique()` invocation in\\nC:\\\\Users\\\\abdal\\\\Desktop\\\\maysar-express-backend\\\\services\\\\enabler-service\\\\src\\\\infrastructure\\\\repositories\\\\prisma-enabler.repository.ts:9:51\\n\\n  6 export class PrismaEnablerRepository implements IEnablerRepository {\\n  7 \\n  8     async findById(id: string): Promise<EnablerEntity | null> {\\n→ 9         const data = await prisma.enabler_Profile.findUnique(\\nThe column `enabler_profiles.termsVersion` does not exist in the current database.\"}"
+ },
+ {
+  "module": "api/enabler/enablers",
+  "path": "/api/enabler/enablers/register",
+  "method": "POST",
+  "tags": [
+   "Enabler"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "enabler",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"userId\",\"message\":\"\\\"userId\\\" is required\"},{\"field\":\"businessName\",\"message\":\"\\\"businessName\\\" is required\"},{\"field\":\"contactEmail\",\"message\":\"\\\"contactEmail\\\" is required\"},{\"field\":\"hasBusinessLicense\",\"message\":\"\\\"hasBusinessLicense\\\" is required\"},{\"field\":\"salesExperience\",\"message\":\"\\\"salesExperience\\\" is required\"}]}}"
+ }
+]

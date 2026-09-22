@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/chat/health",
+  "path": "/api/chat/health",
+  "method": "GET",
+  "tags": [
+   "Chat"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"ok\",\"service\":\"chat-service\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"ok\",\"service\":\"chat-service\"}"
+ }
+]

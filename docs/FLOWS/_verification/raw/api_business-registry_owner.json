@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/business-registry/owner",
+  "path": "/api/business-registry/owner/{ownerId}",
+  "method": "GET",
+  "tags": [
+   "Business"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{}}"
+ }
+]

@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/commission/calculate",
+  "path": "/api/commission/calculate",
+  "method": "POST",
+  "tags": [
+   "Commission"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/commission/calculate not found\",\"timestamp\":\"2026-09-20T17:45:51.337Z\",\"path\":\"/api/commission/calculate\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/commission/calculate not found\",\"timestamp\":\"2026-09-20T17:45:51.345Z\",\"path\":\"/api/commission/calculate\"}}"
+ }
+]

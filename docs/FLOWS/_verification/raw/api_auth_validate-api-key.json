@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/auth/validate-api-key",
+  "path": "/api/auth/validate-api-key",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"apiKey\\\" is required\"]}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"apiKey\\\" is required\"]}"
+ }
+]

@@ -1,0 +1,67 @@
+[
+ {
+  "module": "api/notification/templates",
+  "path": "/api/notification/templates",
+  "method": "POST",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"name\",\"message\":\"\\\"name\\\" is required\"}]}}"
+ },
+ {
+  "module": "api/notification/templates",
+  "path": "/api/notification/templates/{id}",
+  "method": "PUT",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"value\",\"message\":\"\\\"value\\\" must have at least 1 key\"}]}}"
+ },
+ {
+  "module": "api/notification/templates",
+  "path": "/api/notification/templates/{id}",
+  "method": "GET",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Template not found\"}}"
+ },
+ {
+  "module": "api/notification/templates",
+  "path": "/api/notification/templates/{id}",
+  "method": "DELETE",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Template not found\"}}"
+ },
+ {
+  "module": "api/notification/templates",
+  "path": "/api/notification/templates/{id}/render",
+  "method": "POST",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Template not found\"}}"
+ }
+]

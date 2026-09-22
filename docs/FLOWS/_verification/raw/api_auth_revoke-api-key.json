@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/auth/revoke-api-key",
+  "path": "/api/auth/revoke-api-key",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"apiKey\\\" is required\"]}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"apiKey\\\" is required\"]}"
+ }
+]

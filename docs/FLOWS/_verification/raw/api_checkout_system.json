@@ -1,0 +1,28 @@
+[
+ {
+  "module": "api/checkout/system",
+  "path": "/api/checkout/system/maintenance/cleanup/checkout-sessions",
+  "method": "POST",
+  "tags": [
+   "Checkout"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 401,
+  "authBody": "{\"success\":false,\"error\":\"Service key required\"}"
+ },
+ {
+  "module": "api/checkout/system",
+  "path": "/api/checkout/system/maintenance/cleanup/checkout-sessions/report",
+  "method": "POST",
+  "tags": [
+   "Checkout"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 401,
+  "authBody": "{\"success\":false,\"error\":\"Service key required\"}"
+ }
+]

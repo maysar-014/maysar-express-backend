@@ -26,4 +26,5 @@ export { TrainingModule } from './training-service';
 export { UserModule } from './user-service';
 export { WalletModule } from './wallet-service';
 export { ChatModule } from './chat-service';
-export { GovernanceModule } from './governance-service';
+// GovernanceModule — not yet implemented; placeholder export removed to prevent boot failure
+// export { GovernanceModule } from './governance-service';

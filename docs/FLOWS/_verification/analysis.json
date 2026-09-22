@@ -1,0 +1,4551 @@
+{
+ "VERIFIED_READ": {
+  "count": 203,
+  "examples": [
+   {
+    "method": "GET",
+    "path": "/api/admin/dashboard/founder-operating-system",
+    "role": "admin",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"title\":\"Maysar Daily Operating System\",\"generatedAt\":\"2026-09-20T17:45:41.884Z\",\"currentBottleneck\":{\"type\":\"low_retention\",\"severity\":\"critical\",\"summary\":\"90-day seller retenti"
+   },
+   {
+    "method": "GET",
+    "path": "/api/admin/dashboard/red-flags",
+    "role": "admin",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"flags\":[{\"type\":\"low_retention\",\"severity\":\"critical\",\"message\":\"90-day seller retention 0.0% is below 60% threshold\",\"metric\":\"Seller Retention\",\"currentValue\":0,\"threshold\":60}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/admin/dashboard/red-flags",
+    "role": "admin",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"flags\":[{\"type\":\"low_retention\",\"severity\":\"critical\",\"message\":\"90-day seller retention 0.0% is below 60% threshold\",\"metric\":\"Seller Retention\",\"currentValue\":0,\"threshold\":60}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/admin/dashboard/founder-operating-system",
+    "role": "admin",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"title\":\"Maysar Daily Operating System\",\"generatedAt\":\"2026-09-20T17:45:41.991Z\",\"currentBottleneck\":{\"type\":\"low_retention\",\"severity\":\"critical\",\"summary\":\"90-day seller retenti"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/analytics/dashboard/{sellerId}",
+    "role": "seller",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"sellerId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"averageOrderValue\":null,\"conversionRate\":null,\"customerLifetimeValue\":null,\"returnRate\":null,\"profitMargin\":null,\"activeVisitors\":null"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/analytics/sales/{sellerId}",
+    "role": "seller",
+    "anon": 401,
+    "authed": 200,
+    "body": "[]"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/courier/analytics/{courierId}",
+    "role": "courier",
+    "anon": 401,
+    "authed": 200,
+    "body": "null"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/health",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"status\":\"healthy\",\"service\":\"analytics-service\",\"timestamp\":\"2026-09-20T17:45:45.578Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/metrics",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "# HELP analytics_service_process_cpu_user_seconds_total Total user CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_user_seconds_total counter\nanalytics_service_proc"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/seller-profitability/financial",
+    "role": "seller",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"avgPayoutTimeHours\":0,\"avgWithdrawalTimeHours\":0,\"disputesPer100Orders\":0}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/seller-profitability/growth-indicators",
+    "role": "seller",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"revenueGrowthMoM\":0,\"productVelocityAvg\":0.1,\"repeatBuyerRate\":100}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/seller-profitability/happiness",
+    "role": "seller",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"productExpansionRate\":0,\"referralCount\":0}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/seller-profitability/dashboard",
+    "role": "seller",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"topRow\":{\"gmv\":0,\"activeSellers\":0,\"arps\":0,\"repeatBuyerRate\":100},\"secondRow\":{\"sellerRetentionPercent\":0,\"churnPercent\":0,\"medianRevenue\":0,\"payoutTimeHours\":0},\"thirdRow\":{\"re"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/seller-profitability/retention",
+    "role": "seller",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"retentionRate90Days\":0,\"churnRateMonthly\":0,\"avgTimeToFirstSaleDays\":0}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/seller-profitability/revenue-health",
+    "role": "seller",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"arpsWeekly\":0,\"arpsMonthly\":0,\"medianRevenue\":0,\"revenueDistributionTop20\":0}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/seller-profitability/dashboard/{sellerId}",
+    "role": "seller",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"topRow\":{\"gmv\":0,\"activeSellers\":0,\"arps\":0,\"repeatBuyerRate\":100},\"secondRow\":{\"sellerRetentionPercent\":0,\"churnPercent\":0,\"medianRevenue\":0,\"payoutTimeHours\":0},\"thirdRow\":{\"re"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/sellers/{sellerId}/dashboard/action-center",
+    "role": "seller",
+    "anon": 401,
+    "authed": 200,
+    "body": "[]"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/sellers/{sellerId}/dashboard/sales-trend",
+    "role": "seller",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"data\":[],\"trend\":\"flat\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/sellers/{sellerId}/dashboard/profitability-score",
+    "role": "seller",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"score\":15,\"breakdown\":{\"salesGrowth\":0,\"repeatBuyers\":0,\"responseTime\":15,\"orderCompletion\":0,\"inventoryStability\":0}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/sellers/{sellerId}/sla",
+    "role": "seller",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"sellerId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"evaluatedAt\":\"2026-09-20T17:45:46.140Z\",\"periodStart\":\"2026-08-21T17:45:46.140Z\",\"periodEnd\":\"2026-09-20T17:45:46.140Z\",\"status\":\"manu"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/sellers/{sellerId}/sla/breaches",
+    "role": "seller",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"sellerId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"evaluatedAt\":\"2026-09-20T17:45:46.291Z\",\"periodStart\":\"2026-08-21T17:45:46.291Z\",\"periodEnd\":\"2026-09-20T17:45:46.291Z\",\"status\":\"manu"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/sellers/{sellerId}/sla/readiness",
+    "role": "seller",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"sellerId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"evaluatedAt\":\"2026-09-20T17:45:46.754Z\",\"periodStart\":\"2026-08-21T17:45:46.754Z\",\"periodEnd\":\"2026-09-20T17:45:46.754Z\",\"status\":\"manu"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/sellers/{sellerId}/dashboard/money-snapshot",
+    "role": "seller",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"todaySales\":{\"amount\":0,\"currency\":\"TZS\",\"orderCount\":0},\"thisMonthRevenue\":{\"amount\":0,\"currency\":\"TZS\",\"growth\":0},\"walletBalance\":{\"available\":\"50000\",\"pending\":\"0\",\"currency\""
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/sellers/{sellerId}/dashboard",
+    "role": "seller",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"moneySnapshot\":{\"todaySales\":{\"amount\":0,\"currency\":\"TZS\",\"orderCount\":0},\"thisMonthRevenue\":{\"amount\":0,\"currency\":\"TZS\",\"growth\":0},\"walletBalance\":{\"available\":\"50000\",\"pendin"
+   },
+   {
+    "method": "GET",
+    "path": "/api/analytics/supplier/analytics/{supplierId}",
+    "role": "supplier",
+    "anon": 401,
+    "authed": 200,
+    "body": "null"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/2fa/health",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"healthy\",\"service\":\"two-factor-service\",\"timestamp\":\"2026-09-20T17:45:47.131Z\",\"uptime\":\"4914s\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/2fa/health/live",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"alive\",\"service\":\"two-factor-service\",\"timestamp\":\"2026-09-20T17:45:47.150Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/2fa/health/ready",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"ready\",\"service\":\"two-factor-service\",\"timestamp\":\"2026-09-20T17:45:47.159Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/2fa/status",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":null}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/admin/security-events",
+    "role": "admin",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":[],\"message\":\"Security events retrieved successfully\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/admin/health",
+    "role": "admin",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"services\":[],\"overallStatus\":\"unknown\",\"timestamp\":\"2026-09-20T17:45:47.379Z\"},\"message\":\"Service health retrieved successfully\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/admin/audit",
+    "role": "admin",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"logs\":[],\"total\":0,\"limit\":100,\"offset\":0},\"message\":\"Audit logs retrieved successfully\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/admin/stats",
+    "role": "admin",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"uptime\":4915.576005,\"memory\":{\"usedBytes\":300720128,\"totalBytes\":8277577728,\"usedPercent\":4},\"cpu\":{\"loadAverage\":0,\"cores\":8},\"activeUsers\":6,\"activeSessi"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/admin/users/{userId}",
+    "role": "admin",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"email\":\"buyer@maysar.co.tz\",\"role\":\"buyer\",\"status\":\"active\",\"createdAt\":\"2026-08-21T21:19:45.329Z\",\"lastLoginAt\""
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/admin/users/{userId}/sessions",
+    "role": "admin",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":[],\"message\":\"User sessions retrieved successfully\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/admin/users/search",
+    "role": "admin",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"users\":[{\"userId\":\"usr_01KRFZ1E8HMAE7MMH175PJ9337\",\"email\":\"enabler@maysar.co.tz\",\"role\":\"enabler\",\"status\":\"active\",\"createdAt\":\"2026-08-21T21:19:45.512Z\""
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/device-history/{userId}",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"devices\":[],\"total\":0,\"limit\":10,\"offset\":0}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/health",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:47.921Z\",\"uptime\":4827,\"version\":\"1.0.0\",\"environment\":\"development\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/health/circuit-breaker",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"userService\":{\"state\":\"closed\",\"failures\":0,\"successes\":0,\"rejections\":0,\"timeouts\":0}}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/health/detailed",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:47.950Z\",\"uptime\":4827,\"version\":\"1.0.0\",\"environment\":\"development\",\"components\":{\"serviceDiscovery\":{\"use"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/health/discovery",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"userService\":{\"totalInstances\":1,\"healthyInstances\":1,\"unhealthyInstances\":0,\"instances\":[{\"url\":\"http://localhost:3000/api/user\",\"healthy\":true,\"consecuti"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/health/live",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"message\":\"Service is alive\",\"timestamp\":\"2026-09-20T17:45:47.995Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/health/ready",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"message\":\"Service is ready to accept traffic\",\"timestamp\":\"2026-09-20T17:45:48.067Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/health/metrics",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"uptime\":4827,\"timestamp\":\"2026-09-20T17:45:48.084Z\",\"version\":\"1.0.0\",\"environment\":\"development\",\"serviceDiscovery\":{\"userService\":{\"totalInstances\":1,\"he"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/metrics",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"timestamp\":1789926348047,\"totalBlacklistedTokens\":0,\"activeSessions\":0,\"totalDevices\":0,\"totalBruteForceAttempts\":0,\"services\":{\"jwt\":{\"enabled\":true},\"tok"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/middleware/health",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"status\":\"healthy\",\"timestamp\":1789926348077,\"services\":{\"jwt\":{\"enabled\":true},\"tokenBlacklisting\":{\"enabled\":true,\"count\":0},\"apiKey\":{\"enabled\":false},\"b"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/oauth/initiate",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"authUrl\":\"https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&scope=openid%20profile%20email&prompt=consent&response_type=code&include_granted_scopes="
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/role-requests",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"items\":[]}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/sessions",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":[]}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/sessions/health/live",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"status\":\"alive\",\"service\":\"session-service\",\"timestamp\":\"2026-09-20T17:45:48.356Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/sessions/health/ready",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"status\":\"ready\",\"service\":\"session-service\",\"timestamp\":\"2026-09-20T17:45:48.362Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/sessions/health",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"status\":\"healthy\",\"service\":\"session-service\",\"timestamp\":\"2026-09-20T17:45:48.438Z\",\"uptime\":\"4916s\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/stats",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"activeUsers\":0}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/verify",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"valid\":true}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/businesses/owner/{ownerId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/businesses/search",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":[]}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/health",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"ok\",\"service\":\"business-registry-service\",\"timestamp\":\"2026-09-20T17:45:48.909Z\",\"eventBus\":{\"subscribers\":{\"BusinessRegistered\":1,\"BusinessVerified\":1,\"BusinessUpdated\""
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/health/live",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"alive\",\"timestamp\":\"2026-09-20T17:45:48.920Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/health/ready",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"ready\",\"database\":\"connected\",\"timestamp\":\"2026-09-20T17:45:48.995Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/owner/{ownerId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/public/industries/{industry}/sellers",
+    "role": "seller",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"items\":[],\"pagination\":{\"limit\":20,\"offset\":0,\"hasMore\":false}}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/public/sellers",
+    "role": "seller",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"items\":[],\"pagination\":{\"limit\":20,\"offset\":0,\"hasMore\":false}}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/search",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":[]}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/campaigns",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "[]"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/health",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"ok\",\"service\":\"catalog-service\",\"modules\":[\"catalog\",\"campaigns\",\"pricing\"],\"timestamp\":\"2026-09-20T17:45:49.371Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/health/live",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"status\":\"alive\",\"timestamp\":\"2026-09-20T17:45:49.375Z\",\"uptime\":4917.216208},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.375Z\",\"request\":{\"method\":\"GET\",\"url\""
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/health/metrics",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"memory\":{\"used\":281,\"total\":314,\"percentage\":89.49},\"cpu\":{\"usage\":59078,\"count\":8},\"disk\":{\"used\":343,\"total\":7894,\"percentage\":4.35},\"requests\":{\"total\":"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/health/ready",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"status\":\"ready\",\"timestamp\":\"2026-09-20T17:45:49.394Z\",\"uptime\":4917.2349175,\"checks\":{\"database\":{\"status\":\"healthy\",\"healthy\":true,\"responseTime\":1,\"deta"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/health/version",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"version\":\"v1\",\"build\":{\"number\":\"local\",\"timestamp\":\"2026-09-20T17:45:49.429Z\",\"commit\":\"unknown\",\"branch\":\"local\"},\"dependencies\":{\"database\":\"unknown\",\"c"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/health/search",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"provider\":\"meilisearch\",\"indexName\":\"catalog\",\"status\":\"healthy\",\"cluster\":\"green\",\"responseTime\":190,\"indexCount\":1,\"documentCount\":15,\"checkedAt\":\"2026-0"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/match/audit/{productId}",
+    "role": "admin",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"audits\":[]}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/match/pending",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"confirmations\":[]}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/pricing/health",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"healthy\",\"service\":\"pricing-service\",\"timestamp\":\"2026-09-20T17:45:49.466Z\",\"uptime\":\"4917s\",\"dependencies\":{\"database\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/pricing/health/live",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"alive\",\"service\":\"pricing-service\",\"timestamp\":\"2026-09-20T17:45:49.474Z\",\"alive\":true,\"uptime\":\"4917s\",\"memory\":{\"rss\":\"345MB\",\"heapUsed\":\"290MB\",\"heapTotal\":\"315MB\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/pricing/health/ready",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"ready\",\"service\":\"pricing-service\",\"timestamp\":\"2026-09-20T17:45:49.488Z\",\"checks\":{\"database\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:49.488Z\",\"details\":{\"con"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/products/{productId}/buy-box",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"productId\":\"cat_01M0K348375C27XANED7D0BVQH\",\"primarySellerId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"primaryScore\":82.07,\"alternatives\":[],\"lastComputedAt\":\"2026-09-10T18:06:07.241Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/sellers/{sellerId}/storefront",
+    "role": "seller",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"id\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"name\":\"Seller usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"description\":\"Seller storefront\",\"logo\":null,\"shareUrl\":\"http://localh"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/v1/admin/buy-box/history/{productId}",
+    "role": "admin",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":[{\"productId\":\"cat_01M0K348375C27XANED7D0BVQH\",\"sellerId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"compositeScore\":82.06936488169364,\"signalValues\":{\"returnRate\":0,"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/v1/pricing/analytics",
+    "role": "buyer+admin",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"revenueImpact\":0,\"conversionImpact\":0,\"discountsApplied\":0},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.913Z\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/v1/categories",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":[{\"id\":\"cat_01M0K3481P9W5VGWY524BXFV5V\",\"label\":\"Simu na Teknolojia\",\"icon\":null},{\"id\":\"cat_01M0K3481Y1R684EB8K6TVGVP4\",\"label\":\"Mavazi na Mitindo\",\"icon\":n"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/v1/pricing/rules",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"rules\":[]},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.988Z\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/v1/products/{id}/analytics",
+    "role": "buyer+admin",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"productId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"period\":\"30d\",\"metrics\":{\"views\":1250,\"uniqueViews\":890,\"addToCart\":45,\"purchases\":12,\"conversionRate\":0.96,\"r"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/v1/categories/{categoryId}/attributes",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"categoryId\":\"cat_electronics\",\"categoryName\":\"Electronics\",\"categorySlug\":\"electronics\",\"attributes\":[{\"id\":\"cat_attr_electronics_product_category\",\"name\":"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/v1/products/{id}/reviews",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":[],\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.208Z\",\"pagination\":{\"totalCount\":0,\"totalPages\":0,\"currentPage\":1,\"limit\":10}}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/v1/search/analytics",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"totalSearches\":0,\"topQueries\":[]},\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.275Z\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/v1/search/popular",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"items\":[]},\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.280Z\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/v1/search/suggestions",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"query\":\"\",\"suggestions\":[]},\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.301Z\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/v1/sellers/{sellerId}/products",
+    "role": "seller",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":[{\"id\":\"cat_pro_01M0SXG384GTP1DNMCNMC9YDNY\",\"name\":\"SSUG Sisal\",\"price\":{\"amount\":1000000,\"currency\":\"TZS\"},\"categoryId\":\"cat_agriculture\",\"categoryName\":\"Ag"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/v1/products/search",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":[{\"id\":\"cat_pro_01M0SXG384GTP1DNMCNMC9YDNY\",\"name\":\"SSUG Sisal\",\"description\":\"SSUG Sisal by Maysar Sisal is listed in Agriculture. This listing is prepared "
+   },
+   {
+    "method": "GET",
+    "path": "/api/chat/health",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"ok\",\"service\":\"chat-service\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/chat/v1/admin/blocklist/domains",
+    "role": "admin",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"domains\":[]}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/chat/v1/conversations",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"conversations\":[{\"id\":\"cha_con_01M29EABN21KAKEBKKTE5H2H1C\",\"type\":\"BUYER_SELLER\",\"moderationStatus\":\"ACTIVE\",\"relatedProductId\":null,\"relatedOrderId\":\"MSR-"
+   },
+   {
+    "method": "GET",
+    "path": "/api/checkout/health",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"healthy\",\"service\":\"checkout-service\",\"timestamp\":\"2026-09-20T17:45:51.224Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/checkout/health/live",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"alive\",\"service\":\"checkout-service\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/checkout/health/ready",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"ready\",\"service\":\"checkout-service\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/checkout/metrics",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "# HELP analytics_service_process_cpu_user_seconds_total Total user CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_user_seconds_total counter\nanalytics_service_proc"
+   },
+   {
+    "method": "GET",
+    "path": "/api/community/challenges",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"challenges\":[],\"pagination\":{\"page\":1,\"limit\":20,\"total\":0}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/community/discussions",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"threads\":[],\"pagination\":{\"page\":1,\"limit\":20,\"total\":0},\"filters\":{}}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/community/discussions/{threadId}",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"thread\":null,\"answers\":[]}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/community/health",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"healthy\",\"service\":\"community-service\",\"timestamp\":\"2026-09-20T17:45:51.537Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/community/knowledge/articles",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"articles\":[],\"pagination\":{\"page\":1,\"limit\":20,\"total\":0}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/community/knowledge/articles/{articleId}",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"article\":null}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/community/metrics",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "# HELP analytics_service_process_cpu_user_seconds_total Total user CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_user_seconds_total counter\nanalytics_service_proc"
+   },
+   {
+    "method": "GET",
+    "path": "/api/community/posts/authors/{authorId}",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"posts\":[],\"pagination\":{\"limit\":20,\"offset\":0,\"count\":0}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/community/posts/published",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"posts\":[],\"pagination\":{\"limit\":50,\"offset\":0,\"count\":0}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/community/posts/users/{userId}/feed",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"includeFollowed\":true,\"posts\":[],\"count\":0}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/community/posts/trending",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"topics\":[],\"timeWindowHours\":24}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/enabler/hub/products",
+    "role": "enabler",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"message\":\"Browse Enabler Hub - Active Products\",\"data\":{\"products\":[],\"total\":0,\"page\":1,\"limit\":20}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/inventory/analytics/stock-levels",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"analytics\":[{\"variantId\":\"cat_01M0K348EZDC1H402AJGVCRKKJ\",\"warehouseId\":\"wh_seed_dar_central_01\",\"warehouseName\":\"Dar es Salaam Seed Warehouse\",\"available\":4,\"reserved\":0,\"reorde"
+   },
+   {
+    "method": "GET",
+    "path": "/api/inventory/health",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"healthy\",\"service\":\"inventory-service\",\"timestamp\":\"2026-09-20T17:45:52.006Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/inventory/health/live",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"alive\",\"service\":\"inventory-service\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/inventory/health/ready",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"ready\",\"service\":\"inventory-service\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/inventory/materials",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"materials\":[{\"variantId\":\"cat_pro_01M0SXG384GTP1DNMCNMC9YDNY-default-variant\",\"warehouseId\":\"wh_seed_dar_central_01\",\"warehouseName\":\"Dar es Salaam Seed Warehouse\",\"available\":50"
+   },
+   {
+    "method": "GET",
+    "path": "/api/inventory/materials/{variantId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"variantId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"warehouseId\":\"all\",\"materials\":[],\"totalAvailable\":0,\"totalReserved\":0,\"status\":\"OUT_OF_STOCK\"},\"lastUpdated\":"
+   },
+   {
+    "method": "GET",
+    "path": "/api/inventory/metrics",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "# HELP analytics_service_process_cpu_user_seconds_total Total user CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_user_seconds_total counter\nanalytics_service_proc"
+   },
+   {
+    "method": "GET",
+    "path": "/api/inventory/reservations/{orderId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"orderId\":\"MSR-ORD-20260903-204842-402F\",\"reservations\":[],\"totalReserved\":0}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/inventory/warehouses",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"warehouses\":[{\"id\":\"wh_seed_dar_central_01\",\"code\":\"DSM-SEED-01\",\"name\":\"Dar es Salaam Seed Warehouse\",\"type\":\"central\",\"status\":\"active\",\"address\":{\"city\":\"Dar es Salaam\",\"regio"
+   },
+   {
+    "method": "GET",
+    "path": "/api/kyc/status",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"kycStatus\":\"verified\",\"kycLevel\":3,\"limits\":{\"maxListings\":100,\"maxTransactions\":1000,\"maxEarnings\":10000000},\"re"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/courier/{courierId}",
+    "role": "courier",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"courierId\":\"no-fixture\",\"name\":\"Fallback Courier\",\"phone\":\"+255700000000\",\"vehicle\":\"motorbike\",\"rating\":5,\"status\":\"online\",\"currentLocation\":{\"lat\":-6.79"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/courier",
+    "role": "courier",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"couriers\":[],\"total\":0}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/analytics/performance",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"platform\":{\"totalCouriers\":0,\"activeCouriers\":0,\"averageOnTimeDeliveryRate\":0,\"averageCustomerSatisfaction\":4.5,\"averageCourierRating\":4.6},\"period\":\"month"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/analytics",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"overview\":{\"totalDeliveries\":0,\"completedDeliveries\":0,\"pendingDeliveries\":0,\"averageDeliveryTime\":0,\"successRate\":0},\"performance\":{\"onTimeDeliveryRate\":0"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/couriers",
+    "role": "courier",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"couriers\":[],\"total\":0}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/deliveries/{deliveryId}/history",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"deliveryId\":\"no-fixture\",\"history\":[{\"status\":\"created\",\"timestamp\":\"2026-09-20T15:45:52.574Z\",\"location\":\"Order placed\"},{\"status\":\"assigned\",\"timestamp\":"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/analytics/courier/{courierId}",
+    "role": "courier",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"courierId\":\"no-fixture\",\"kpis\":{\"deliveriesCompleted\":0,\"averageRating\":5,\"onTimeDeliveryRate\":0,\"customerSatisfaction\":4.5,\"earnings\":0,\"efficiency\":0},\"p"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/couriers/{courierId}",
+    "role": "courier",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"courierId\":\"no-fixture\",\"name\":\"Fallback Courier\",\"phone\":\"+255700000000\",\"vehicle\":\"motorbike\",\"rating\":5,\"status\":\"online\",\"currentLocation\":{\"lat\":-6.79"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/earnings",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"summary\":{\"totalEarnings\":0,\"totalCommissions\":0,\"netEarnings\":0,\"pendingPayments\":0},\"breakdown\":{\"deliveryFees\":0,\"bonuses\":0,\"tips\":0,\"deductions\":0},\"p"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/deliveries",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"deliveries\":[],\"total\":0,\"page\":1,\"limit\":10,\"totalPages\":0,\"filters\":{}},\"message\":\"Deliveries retrieved successfully\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/engines/status",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"engines\":[{\"name\":\"logistics\",\"status\":\"healthy\",\"version\":\"1.0.0\"},{\"name\":\"route-optimization\",\"status\":\"healthy\",\"version\":\"1.0.0\"},{\"name\":\"real-time-t"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/health",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:52.651Z\",\"uptime\":4920.491626,\"checks\":{\"circuitBreakers\":{\"total\":0,\"healthy\":0,\"degraded\":0,\"unhealthy\":0,\"metrics\":[]},\"alerts\""
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/metrics",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"current\":{\"timestamp\":\"2026-09-20T17:45:52.661Z\",\"overallStatus\":\"healthy\",\"circuitBreakers\":{\"total\":0,\"healthy\":0,\"degraded\":0,\"unhealthy\":0,\"metrics\":[]"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/qa/architecture",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"mode\":\"fast\",\"summary\":\"Fast QA mode enabled - architectural analysis skipped.\",\"constitutionCompliance\":{\"section1\":true,\"section2\":true,\"section3\":true,\""
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/qa/performance",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"mode\":\"fast\",\"summary\":\"Fast QA mode enabled - performance benchmarks skipped.\",\"benchmarks\":[],\"totals\":{\"tests\":0,\"passed\":0,\"failed\":0}},\"timestamp\":\"20"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/earnings/courier/{courierId}",
+    "role": "courier",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"courierId\":\"no-fixture\",\"period\":\"today\",\"todayEarnings\":0,\"totalEarnings\":0,\"deliveriesCount\":0,\"averagePerDelivery\":0,\"lastUpdated\":\"2026-09-20T17:45:52."
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/qa/security",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"mode\":\"fast\",\"summary\":\"Fast QA mode enabled - security audit skipped.\",\"findings\":[]},\"timestamp\":\"2026-09-20T17:45:52.711Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/qa/dashboard",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"architectural\":{\"status\":\"success\",\"data\":{\"mode\":\"fast\"}},\"performance\":{\"status\":\"success\",\"data\":{\"mode\":\"fast\"}},\"security\":{\"status\":\"success\",\"data\":"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/stats/performance",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"service\":\"logistics-service\",\"uptime\":4920.5966767,\"memory\":{\"rss\":374829056,\"heapTotal\":342724608,\"heapUsed\":258183720,\"external\":11180430,\"arrayBuffers\":"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/earnings/summary",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"period\":\"month\",\"totalEarnings\":0,\"totalDeliveries\":0,\"averagePerDelivery\":0,\"topPerformers\":[]}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/test/all-engines",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"testResults\":[{\"engine\":\"logistics\",\"status\":\"success\",\"result\":{\"engineTests\":{\"costCalculation\":{\"distanceKm\":25,\"weightKg\":2.5,\"priority\":\"standard\",\"co"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/tracking/courier/{courierId}/history",
+    "role": "courier",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"courierId\":\"no-fixture\",\"locations\":[],\"period\":\"day\",\"pagination\":{\"page\":1,\"limit\":500,\"total\":0,\"pages\":0}}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/tracking/{trackingNumber}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"trackingNumber\":\"test-000\",\"status\":\"unknown\",\"delivery\":null,\"currentLocation\":\"Unknown\",\"estimatedDelivery\":null,\"history\":[],\"pagination\":{\"page\":1,\"lim"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/health",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"healthy\",\"service\":\"logistics-service\",\"timestamp\":\"2026-09-20T17:45:52.886Z\",\"eventBus\":{\"subscribers\":{\"DeliveryCreated\":0,\"DeliveryAssigned\":0,\"DeliveryCompleted\":0},"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/health/live",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"alive\",\"service\":\"logistics-service\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/health/ready",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"ready\",\"service\":\"logistics-service\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/maps/health",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"healthy\",\"service\":\"maps-service\",\"timestamp\":\"2026-09-20T17:45:52.936Z\",\"circuitBreakers\":{\"total\":1,\"closed\":1,\"open\":0,\"halfOpen\":0,\"unhealthy\":0},\"details\":{\"provide"
+   },
+   {
+    "method": "GET",
+    "path": "/api/maps/health/live",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"alive\",\"service\":\"maps-service\",\"timestamp\":\"2026-09-20T17:45:52.942Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/maps/health/ready",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"ready\",\"service\":\"maps-service\",\"timestamp\":\"2026-09-20T17:45:52.949Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/notification/health-summary",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"ok\",\"service\":\"notification-service\",\"modules\":[\"notification\",\"sms\"],\"timestamp\":\"2026-09-20T17:45:52.967Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/notification/health/live",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"alive\",\"timestamp\":\"2026-09-20T17:45:52.975Z\",\"uptime\":\"4920s\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/notification/health",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"healthy\",\"service\":\"notification-service\",\"version\":\"1.0.0\",\"timestamp\":\"2026-09-20T17:45:53.029Z\",\"uptime\":\"4920s\",\"environment\":\"development\",\"checks\":{\"database\":{\"st"
+   },
+   {
+    "method": "GET",
+    "path": "/api/notification/health/ready",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"ready\",\"timestamp\":\"2026-09-20T17:45:53.031Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/notification/notifications",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"items\":[],\"total\":0,\"page\":1,\"limit\":20,\"hasMore\":false}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/notification/notifications/unread-count",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"unreadCount\":0}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/notification/preferences/{userId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":[]}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/notification/sms/health",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"status\":\"healthy\",\"service\":\"sms-service\",\"timestamp\":\"2026-09-20T17:45:53.130Z\",\"uptime\":\"4920s\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/notification/sms/health/live",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"status\":\"alive\",\"service\":\"sms-service\",\"timestamp\":\"2026-09-20T17:45:53.161Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/notification/sms/health/ready",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"status\":\"ready\",\"service\":\"sms-service\",\"timestamp\":\"2026-09-20T17:45:53.192Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/notification/sms/statistics",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"total\":0,\"queued\":0,\"sending\":0,\"sent\":0,\"delivered\":0,\"failed\":0,\"cancelled\":0,\"undelivered\":0,\"deliveryRate\":0,\"failureRate\":0}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/order/health/circuit-breakers",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"service\":\"order-service\",\"timestamp\":\"2026-09-20T17:45:53.295Z\",\"circuitBreakers\":{\"redis-cache\":{\"state\":\"CLOSED\",\"failures\":0,\"successes\":0,\"requests\":0,\"lastFailureTime\":null,"
+   },
+   {
+    "method": "GET",
+    "path": "/api/order/health/live",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"service\":\"order-service\",\"status\":\"alive\",\"timestamp\":\"2026-09-20T17:45:53.331Z\",\"uptime\":4921.1716096}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/order/health/metrics",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "# HELP order_service_process_cpu_user_seconds_total Total user CPU time spent in seconds.\n# TYPE order_service_process_cpu_user_seconds_total counter\norder_service_process_cpu_user"
+   },
+   {
+    "method": "GET",
+    "path": "/api/order/health/ping",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"service\":\"order-service\",\"status\":\"pong\",\"timestamp\":\"2026-09-20T17:45:53.358Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/order/health",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"service\":\"order-service\",\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:53.389Z\",\"version\":\"1.0.0\",\"environment\":\"development\",\"uptime\":4921.2295846,\"database\":{\"prisma\":true,\""
+   },
+   {
+    "method": "GET",
+    "path": "/api/order/health/detailed",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"service\":\"order-service\",\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:53.394Z\",\"checks\":{\"database\":{\"prisma\":true,\"details\":{\"prisma\":{\"status\":\"healthy\",\"latency\":7}}},\"cir"
+   },
+   {
+    "method": "GET",
+    "path": "/api/order/health/ready",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"service\":\"order-service\",\"status\":\"ready\",\"timestamp\":\"2026-09-20T17:45:53.453Z\",\"database\":{\"prisma\":true,\"details\":{\"prisma\":{\"status\":\"healthy\",\"latency\":48}}}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/order/orders",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"orders\":[{\"orderSource\":\"CART\",\"codCommitmentPaid\":false,\"codEligibilityChecked\":false,\"id\":\"MSR-ORD-20260912-025448-96FC\",\"trackingNumber\":\"MYS-TZ-ORD-20260912-0Q5N\",\"buyerId\":\""
+   },
+   {
+    "method": "GET",
+    "path": "/api/order/orders/search",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"orders\":[],\"total\":0}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/order/orders/analytics/stats",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"totalOrders\":2,\"confirmedOrders\":0,\"deliveredOrders\":0,\"totalRevenue\":0,\"period\":\"daily\",\"dateRange\":{}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/payment/health/live",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"alive\",\"service\":\"payment-service\",\"timestamp\":\"2026-09-20T17:45:53.524Z\",\"alive\":true,\"uptime\":\"4921s\",\"memory\":{\"rss\":\"363MB\",\"heapUsed\":\"279MB\",\"heapTotal\":\"327MB\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/payment/health/ready",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"ready\",\"ready\":true,\"service\":\"payment-service\",\"timestamp\":\"2026-09-20T17:45:53.562Z\",\"checks\":{\"database\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:53.562Z\",\"l"
+   },
+   {
+    "method": "GET",
+    "path": "/api/payment/health",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"healthy\",\"service\":\"payment-service\",\"timestamp\":\"2026-09-20T17:45:53.594Z\",\"uptime\":\"4921s\",\"dependencies\":{\"database\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45"
+   },
+   {
+    "method": "GET",
+    "path": "/api/payment/metrics",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "# HELP analytics_service_process_cpu_user_seconds_total Total user CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_user_seconds_total counter\nanalytics_service_proc"
+   },
+   {
+    "method": "GET",
+    "path": "/api/payout/payouts",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":[]}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/support/disputes",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"items\":[],\"total\":0,\"page\":1,\"limit\":10}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/support/tickets",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"items\":[],\"total\":0,\"page\":1,\"limit\":10}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/training/api/health",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"UP\",\"timestamp\":\"2026-09-20T17:45:53.874Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/training/api/v1/modules",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":[{\"id\":\"platform-overview\",\"name\":\"Understanding the Maysar Platform 🌍\",\"description\":\"A comprehensive overview of how Maysar works — the technology, the pe"
+   },
+   {
+    "method": "GET",
+    "path": "/api/training/api/v1/modules/badges/{learnerId}",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":[]}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/training/api/v1/modules/leaderboard",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":[]}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/training/api/v1/training/available",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"modules\":[{\"id\":\"module-default\",\"name\":\"Getting Started\",\"description\":\"Fallback training module (in-memory)\",\"contentType\":\"TEXT\",\"content\":{\"type\":\"TEXT"
+   },
+   {
+    "method": "GET",
+    "path": "/api/training/api/v1/training/eligibility/{learnerId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"eligible\":true,\"completionPercentage\":100,\"missingRequirements\":[],\"completedModules\":[],\"inProgressModules\":[],\"learnerId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8"
+   },
+   {
+    "method": "GET",
+    "path": "/api/training/api/v1/training/progress/{learnerId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"completed\":[],\"inProgress\":[],\"required\":[],\"eligible\":true,\"learnerId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/training/metrics",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "# HELP analytics_service_process_cpu_user_seconds_total Total user CPU time spent in seconds.\n# TYPE analytics_service_process_cpu_user_seconds_total counter\nanalytics_service_proc"
+   },
+   {
+    "method": "GET",
+    "path": "/api/user/health/live",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"alive\",\"service\":\"user-service\",\"timestamp\":\"2026-09-20T17:45:54.261Z\",\"uptime\":\"4922s\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/user/health/ping",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"ok\",\"service\":\"user-service\",\"timestamp\":\"2026-09-20T17:45:54.271Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/user/health",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"healthy\",\"service\":\"user-service\",\"version\":\"1.0.0\",\"timestamp\":\"2026-09-20T17:45:54.293Z\",\"uptime\":\"4922s\",\"environment\":\"development\",\"checks\":{\"database\":{\"status\":\"h"
+   },
+   {
+    "method": "GET",
+    "path": "/api/user/health/ready",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"ready\",\"service\":\"user-service\",\"timestamp\":\"2026-09-20T17:45:54.331Z\",\"checks\":{\"database\":{\"status\":\"ready\",\"responseTime\":\"31ms\"}}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/user/health/metrics",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"error\",\"service\":\"user-service\",\"timestamp\":\"2026-09-20T17:45:54.616Z\",\"error\":\"Failed to collect metrics\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/user/profile",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"id\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"email\":\"buyer@maysar.co.tz\",\"phoneNumber\":\"+255700000002\",\"firstName\":\"Amina\",\"lastName\":\"Hassan\",\"fullName\":\"Amina H"
+   },
+   {
+    "method": "GET",
+    "path": "/api/user/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"id\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"email\":\"buyer@maysar.co.tz\",\"phoneNumber\":\"+255700000002\",\"firstName\":\"Amina\",\"lastName\":\"Hassan\",\"fullName\":\"Amina H"
+   },
+   {
+    "method": "GET",
+    "path": "/api/user/{userId}/cod-reputation",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"codEnabled\":true,\"reputationScore\":0,\"successfulOrders\":0,\"failedOrders\":0,\"totalOrders\":0,\"permanentlyDisabled\":"
+   },
+   {
+    "method": "GET",
+    "path": "/api/wallet/health",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"healthy\",\"service\":\"wallet-service\",\"timestamp\":\"2026-09-20T17:45:54.478Z\",\"uptime\":\"4922s\",\"memory\":{\"rss\":\"384MB\",\"heapUsed\":\"309MB\"},\"eventBus\":{\"subscribers\":{\"Walle"
+   },
+   {
+    "method": "GET",
+    "path": "/api/wallet/health/live",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"alive\",\"service\":\"wallet-service\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/wallet/health/ready",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"ready\",\"service\":\"wallet-service\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/wallet/wallets/{userId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"id\":\"wal_01M0K33BP68D4E139QMPQVFSMW\",\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"balance\":100000,\"currency\":\"TZS\",\"status\":\"ACTIVE\",\"frozenAmount\":0,\"create"
+   },
+   {
+    "method": "GET",
+    "path": "/api/wallet/wallets/{userId}/balance",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"walletId\":\"wal_01M0K33BP68D4E139QMPQVFSMW\",\"balance\":100000,\"availableBalance\":100000,\"frozenAmount\":0,\"currency\":\"TZS\",\"success\":true,\""
+   },
+   {
+    "method": "GET",
+    "path": "/api/wallet/wallets/{userId}/payout",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"payouts\":[],\"total\":0,\"message\":\"No payout history available\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/wallet/wallets/{userId}/holds",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"holds\":[],\"total\":0}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/wallet/wallets/{userId}/statement",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"transactions\":[{\"id\":\"wal_tra_01M0K33BPBP4W6V4EWCX8ZG8VD\",\"walletId\":\"wal_01M0K33BP68D4E139QMPQVFSMW\",\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"type\":\"CREDIT\",\"amount\":100000,\"c"
+   },
+   {
+    "method": "GET",
+    "path": "/api/wallet/wallets/{userId}/transactions",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"transactions\":[{\"id\":\"wal_tra_01M0K33BPBP4W6V4EWCX8ZG8VD\",\"walletId\":\"wal_01M0K33BP68D4E139QMPQVFSMW\",\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"type\":\"CREDIT\",\"amount\":100000,\"c"
+   },
+   {
+    "method": "GET",
+    "path": "/debug-sentry",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"disabled\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/health",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"ok\",\"uptime\":4922.6893266,\"timestamp\":\"2026-09-20T17:45:54.848Z\",\"memoryUsage\":{\"rss\":412729344,\"heapTotal\":374706176,\"heapUsed\":336022032,\"external\":13078608,\"arrayBuff"
+   },
+   {
+    "method": "GET",
+    "path": "/ready",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"status\":\"ready\",\"checks\":{\"database\":\"connected\",\"redis\":\"connected\"}}"
+   }
+  ]
+ },
+ "FAILING_5XX": {
+  "count": 6,
+  "examples": [
+   {
+    "method": "PATCH",
+    "path": "/api/analytics/action-items/{actionId}/resolve",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 500,
+    "body": "{\"error\":\"Failed to resolve action item\"}"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/catalog/v1/admin/buy-box/anomaly-flags/{flagId}",
+    "role": "admin",
+    "anon": 401,
+    "authed": 500,
+    "body": "{\"success\":false,\"error\":{\"code\":\"INTERNAL_ERROR\",\"message\":\"An internal error occurred.\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/enabler/enablers/{id}",
+    "role": "enabler",
+    "anon": 401,
+    "authed": 500,
+    "body": "{\"error\":\"\\nInvalid `prisma.enabler_Profile.findUnique()` invocation in\\nC:\\\\Users\\\\abdal\\\\Desktop\\\\maysar-express-backend\\\\services\\\\enabler-service\\\\src\\\\infrastructure\\\\reposito"
+   },
+   {
+    "method": "GET",
+    "path": "/api/payment/payments/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 500,
+    "body": "{\"success\":false,\"error\":\"Internal server error\",\"message\":\"\\nInvalid `this.paymentDelegate.findUnique()` invocation in\\nC:\\\\Users\\\\abdal\\\\Desktop\\\\maysar-express-backend\\\\services"
+   },
+   {
+    "method": "GET",
+    "path": "/api/payment/payments/{id}/status",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 500,
+    "body": "{\"success\":false,\"error\":\"Internal server error\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/payment/payments/order/{orderId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 500,
+    "body": "{\"success\":false,\"error\":\"Internal server error\",\"message\":\"\\nInvalid `this.paymentDelegate.findFirst()` invocation in\\nC:\\\\Users\\\\abdal\\\\Desktop\\\\maysar-express-backend\\\\services\\"
+   }
+  ]
+ },
+ "VERIFIED_WRITE": {
+  "count": 27,
+  "examples": [
+   {
+    "method": "POST",
+    "path": "/api/analytics/sellers/{sellerId}/sla/evaluate",
+    "role": "seller",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"report\":{\"sellerId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"evaluatedAt\":\"2026-09-20T17:45:46.742Z\",\"periodStart\":\"2026-08-21T17:45:46.742Z\",\"periodEnd\":\"2026-09-20T17:45:46.742Z\",\"sta"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/admin/discovery/refresh",
+    "role": "admin",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"message\":\"Service discovery refreshed successfully\"}"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/auth/admin/users/{userId}/sessions",
+    "role": "admin",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"terminatedCount\":0,\"timestamp\":\"2026-09-20T17:45:47.989Z\"},\"message\":\"User sessions terminated successfully\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/logout",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"message\":\"Logged out\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/sessions",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 201,
+    "body": "{\"success\":true,\"message\":\"Session created\",\"data\":{\"sessionId\":\"ses_01M2ZYS5HKWJBC9NPEY1KZ8JWH\"}}"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/auth/sessions/{sessionId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 204,
+    "body": ""
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/match",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"matchFound\":false,\"confidence\":0,\"candidates\":[],\"reason\":\"existing.getFingerprint is not a function\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/sellers/{sellerId}/share-url",
+    "role": "seller",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"shareUrl\":\"http://localhost:3000/seller/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"shortUrl\":\"http://localhost:3000/s/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"qrCode\":\"data:"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/v1/pricing/calculate",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"basePrice\":0,\"discount\":0,\"finalPrice\":0},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.941Z\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/v1/pricing/validate-rule",
+    "role": "buyer",
+    "anon": 200,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"valid\":false,\"errors\":[\"Rule name is required\"]},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.962Z\"}}"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/chat/v1/admin/blocklist/domains/{domain}",
+    "role": "admin",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"ok\":true}}"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/chat/v1/users/{userId}/block",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"ok\":true}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/chat/v1/users/{userId}/block",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"ok\":true}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/community/challenges/{challengeId}/solutions",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 201,
+    "body": "{\"message\":\"Solution submitted\"}"
+   },
+   {
+    "method": "PATCH",
+    "path": "/api/community/discussions/{threadId}/accept/{answerId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"message\":\"Answer accepted\",\"data\":{\"threadId\":\"no-fixture\",\"answerId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"acceptedBy\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\"}}"
+   },
+   {
+    "method": "PATCH",
+    "path": "/api/community/discussions/{threadId}/close",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"message\":\"Thread closed\",\"data\":{\"threadId\":\"no-fixture\",\"closedBy\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/community/knowledge/articles/{articleId}/publish",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"message\":\"Article published\",\"data\":{\"articleId\":\"no-fixture\",\"publishedBy\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/community/knowledge/articles/{articleId}/reviews",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 201,
+    "body": "{\"success\":true,\"message\":\"Review submitted\",\"data\":{\"articleId\":\"no-fixture\",\"reviewerId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/notification/notifications/bulk",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"results\":[]},\"message\":\"Bulk send completed\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/notification/notifications/mark-all-read",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"updatedCount\":0},\"message\":\"Notifications marked as read\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/notification/sms/retry/failed",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"totalProcessed\":0,\"totalRetried\":0,\"totalFailed\":0,\"results\":[]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/training/api/v1/training/{id}/complete",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"message\":\"Training completed\",\"data\":{\"trainingRecordId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"status\":\"COMPLETED\",\"completedAt\":\"2026-09-20T17:45:54.010Z\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/training/api/v1/training/{id}/progress",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"message\":\"Training progress recorded\",\"data\":{\"trainingRecordId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"status\":\"NOT_STARTED\",\"updatedAt\":\"2026-09-20T17:45:54.016Z\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/training/api/v1/training/start",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 201,
+    "body": "{\"success\":true,\"message\":\"Training started\",\"trainingRecordId\":\"trn_rec_01M2ZYSB6QZD3AM9WN5WDKM6ZJ\",\"data\":{\"trainingRecordId\":\"trn_rec_01M2ZYSB6QZD3AM9WN5WDKM6ZJ\",\"status\":\"IN_PR"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/user/profile",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"id\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"email\":\"buyer@maysar.co.tz\",\"phoneNumber\":\"+255700000002\",\"firstName\":\"Amina\",\"lastName\":\"Hassan\",\"fullName\":\"Amina H"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/user/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"message\":\"Account deletion initiated. Data will be anonymized within 24 hours.\",\"deletionScheduledAt\":\"2026-09-20T17:45:54.241Z\"}"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/user/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 200,
+    "body": "{\"success\":true,\"data\":{\"id\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"email\":\"buyer@maysar.co.tz\",\"phoneNumber\":\"+255700000002\",\"firstName\":\"Amina\",\"lastName\":\"Hassan\",\"fullName\":\"Amina H"
+   }
+  ]
+ },
+ "VERIFIED_VALIDATION": {
+  "count": 143,
+  "examples": [
+   {
+    "method": "POST",
+    "path": "/api/auth/2fa/backup",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"userId\\\" is required\",\"\\\"code\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/2fa/backup-codes/regenerate",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"userId\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/2fa/verify",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"secret\\\" is required\",\"\\\"totpCode\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/2fa/verify-setup",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"userId\\\" is required\",\"\\\"code\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/2fa/setup",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":\"\\nInvalid `this.prisma.user_TwoFactorAuth.upsert()` invocation in\\nC:\\\\Users\\\\abdal\\\\Desktop\\\\maysar-express-backend\\\\services\\\\auth-service\\\\src\\\\2fa\\\\in"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/auth/admin/sessions/{sessionId}",
+    "role": "admin",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"INVALID_ID\",\"message\":\"sessionId must be a valid ID\"}}"
+   },
+   {
+    "method": "PATCH",
+    "path": "/api/auth/admin/users/{userId}/role",
+    "role": "admin",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"role\\\" is required\"]}"
+   },
+   {
+    "method": "PATCH",
+    "path": "/api/auth/admin/users/{userId}/status",
+    "role": "admin",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"status\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/blacklist-token",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"token\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/check-blacklist",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"token\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/check-brute-force",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"identifier\\\" is required\",\"\\\"type\\\" is required\"]}"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/auth/device/{deviceId}",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"userId\\\" must be a valid ID\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/extend-session",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"sessionId\\\" is required\",\"\\\"userId\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/forgot-password",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"email\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/generate-api-key",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"serviceId\\\" is required\",\"\\\"permissions\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/invalidate-session",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"sessionId\\\" is required\",\"\\\"userId\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/login",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"email\\\" is required\",\"\\\"password\\\" is required\"]}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/auth/oauth/callback",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Authorization code is required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/oauth/refresh",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"refreshToken\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/oauth/revoke",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"token\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/phone/send-otp",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"INVALID_PHONE_NUMBER\",\"message\":\"phoneNumber is required.\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/phone/verify-otp",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"MISSING_FIREBASE_TOKEN\",\"message\":\"firebaseIdToken is required.\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/record-failure",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"identifier\\\" is required\",\"\\\"type\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/register",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"email\\\" is required\",\"\\\"phoneNumber\\\" is required\",\"\\\"firstName\\\" is required\",\"\\\"lastName\\\" is required\",\"\\\"password\\\" "
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/report-suspicious",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"activity\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/reset-brute-force",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"identifier\\\" is required\",\"\\\"type\\\" is required\",\"\\\"adminReason\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/reset-password",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"token\\\" is required\",\"\\\"newPassword\\\" is required\",\"\\\"confirmPassword\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/revoke-api-key",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"apiKey\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/role-requests",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"role\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/switch-role",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"role\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/track-device",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"userId\\\" is required\",\"\\\"deviceId\\\" is required\",\"\\\"deviceInfo\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/validate-api-key",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"apiKey\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/validate-token",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"token\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/verify-otp",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"userId\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/verify",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"userId\\\" is required\"]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/business-registry/businesses",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"\\\"name\\\" is required\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/business-registry/businesses/{id}/compliance-records",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"\\\"type\\\" is required\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/business-registry/businesses/{id}/documents",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"\\\"type\\\" is required\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/business-registry/businesses/{id}/suspend",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"\\\"suspendedBy\\\" is required\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/business-registry/businesses/{id}/verify",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"\\\"verifiedBy\\\" is required\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/businesses/sellers",
+    "role": "seller",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Invalid ID format\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/sellers",
+    "role": "seller",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Invalid ID format\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/business-registry/{id}/suspend",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"\\\"suspendedBy\\\" is required\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/business-registry/{id}/verify",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"\\\"verifiedBy\\\" is required\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/pricing/calculate",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"cost: Required\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/products/{productId}/buy-box/compute",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"error\":\"listings array is required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/v1/admin/buy-box/overrides",
+    "role": "admin",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"productId\",\"message\":\"Required\"},{\"field\":\"sellerId\",\"message\":\"Requi"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/catalog/v1/admin/buy-box/strategies/{categoryId}",
+    "role": "admin",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"weights\",\"message\":\"Required\"},{\"field\":\"explorationBudget\",\"message\""
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/v1/products/{id}/reviews",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"rating\",\"message\":\"Required\"}]}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/chat/v1/admin/blocklist/domains",
+    "role": "admin",
+    "anon": 401,
+    "authed": 422,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Required\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/chat/v1/conversations",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 422,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Required\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/chat/v1/conversations/{id}/messages",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 422,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Required\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/chat/v1/conversations/search",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 422,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Required\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/chat/v1/messages/{messageId}/report",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 422,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Required\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/chat/v1/media/upload",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 422,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"No file uploaded\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/checkout/initiate",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Checkout validation failed\",\"details\":{\"cartId\":\"Cart ID is required\",\"userId\":\"User ID is required\",\"shippingAddress"
+   },
+   {
+    "method": "POST",
+    "path": "/api/community/challenges",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"ValidationError\",\"message\":\"Challenge validation failed\",\"details\":[{\"field\":\"title\",\"message\":\"Title is required\"},{\"field\":\"description\",\"message\":\"Description is requi"
+   },
+   {
+    "method": "POST",
+    "path": "/api/community/discussions",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"ValidationError\",\"message\":\"Discussion validation failed\",\"details\":[{\"field\":\"topic\",\"message\":\"Topic is required\"},{\"field\":\"content\",\"message\":\"Content is required\"},{"
+   },
+   {
+    "method": "POST",
+    "path": "/api/community/discussions/{threadId}/answers",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"ValidationError\",\"message\":\"Answer validation failed\",\"details\":[{\"field\":\"content\",\"message\":\"Answer content is required\"}]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/community/expertise/validate",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"ValidationError\",\"message\":\"Expertise validation failed\",\"details\":[{\"field\":\"expertiseArea\",\"message\":\"Expertise area is required\"},{\"field\":\"targetLevel\",\"message\":\"\\\"t"
+   },
+   {
+    "method": "POST",
+    "path": "/api/community/knowledge/articles",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"ValidationError\",\"message\":\"Article validation failed\",\"details\":[{\"field\":\"title\",\"message\":\"Title is required\"},{\"field\":\"summary\",\"message\":\"Summary is required\"},{\"fi"
+   },
+   {
+    "method": "POST",
+    "path": "/api/community/posts",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"ValidationError\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"authorId\",\"message\":\"Author ID is required\"},{\"field\":\"content\",\"message\":\"Content is required"
+   },
+   {
+    "method": "GET",
+    "path": "/api/community/posts/{postId}",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"error\":\"ValidationError\",\"message\":\"Post ID must be a valid ID\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/community/posts/{postId}/related",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"error\":\"ValidationError\",\"message\":\"Post ID must be a valid ID\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/community/posts/search",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"error\":\"ValidationError\",\"message\":\"Search query is required\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/enabler/enablers/{enablerId}/earnings",
+    "role": "enabler",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails t"
+   },
+   {
+    "method": "GET",
+    "path": "/api/enabler/enablers/{enablerId}/earnings/summary",
+    "role": "enabler",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails t"
+   },
+   {
+    "method": "GET",
+    "path": "/api/enabler/enablers/{enablerId}/listings",
+    "role": "enabler",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails t"
+   },
+   {
+    "method": "POST",
+    "path": "/api/enabler/enablers/{enablerId}/listings",
+    "role": "enabler",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails t"
+   },
+   {
+    "method": "GET",
+    "path": "/api/enabler/enablers/{enablerId}/orders",
+    "role": "enabler",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails t"
+   },
+   {
+    "method": "POST",
+    "path": "/api/enabler/enablers/{enablerId}/orders",
+    "role": "enabler",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails t"
+   },
+   {
+    "method": "GET",
+    "path": "/api/enabler/enablers/{enablerId}/orders/{orderId}/commission",
+    "role": "enabler",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails t"
+   },
+   {
+    "method": "GET",
+    "path": "/api/enabler/enablers/{enablerId}/promotion-jobs",
+    "role": "enabler",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails t"
+   },
+   {
+    "method": "POST",
+    "path": "/api/enabler/enablers/{enablerId}/promotion-jobs/{jobId}/accept",
+    "role": "enabler",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails t"
+   },
+   {
+    "method": "POST",
+    "path": "/api/enabler/enablers/{enablerId}/referral-link",
+    "role": "enabler",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails t"
+   },
+   {
+    "method": "GET",
+    "path": "/api/enabler/enablers/{enablerId}/referral-link",
+    "role": "enabler",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails t"
+   },
+   {
+    "method": "POST",
+    "path": "/api/enabler/enablers/{enablerId}/referral-link/events",
+    "role": "enabler",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"enablerId\",\"message\":\"\\\"enablerId\\\" with value \\\"no-fixture\\\" fails t"
+   },
+   {
+    "method": "POST",
+    "path": "/api/enabler/enablers/{id}/approve",
+    "role": "enabler",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"\\nInvalid `prisma.enabler_Profile.findUnique()` invocation in\\nC:\\\\Users\\\\abdal\\\\Desktop\\\\maysar-express-backend\\\\services\\\\enabler-service\\\\src\\\\infrastructure\\\\reposito"
+   },
+   {
+    "method": "POST",
+    "path": "/api/enabler/enablers/register",
+    "role": "enabler",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"userId\",\"message\":\"\\\"userId\\\" is required\"},{\"field\":\"businessName\",\""
+   },
+   {
+    "method": "PUT",
+    "path": "/api/inventory/inventory-counts/{countId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for PUT requests\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/inventory/inventory-counts",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/inventory/materials/{variantId}/warehouses/{warehouseId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for PUT requests\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/inventory/reservations",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/inventory/reservations/{orderId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for DELETE requests\"}"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/inventory/stock/{variantId}/{warehouseId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for PUT requests\"}"
+   },
+   {
+    "method": "PATCH",
+    "path": "/api/kyc/admin/{userId}",
+    "role": "admin",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"action\",\"message\":\"\\\"action\\\" is required\"}]}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/kyc/submit",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"fullName\",\"message\":\"\\\"fullName\\\" is required\"},{\"field\":\"nationalId\""
+   },
+   {
+    "method": "PUT",
+    "path": "/api/logistics/api/courier/{courierId}/status",
+    "role": "courier",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for PUT requests\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/logistics/api/v1/cod/{deliveryId}/otp",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/logistics/api/v1/cod/{deliveryId}/verify",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/logistics/api/v1/couriers/{courierId}/status",
+    "role": "courier",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for PUT requests\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/logistics/api/v1/deliveries",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/deliveries/{deliveryId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"errors\":[{\"type\":\"field\",\"value\":\"no-fixture\",\"msg\":\"Delivery ID must be a valid ID\",\"path\":\"deliveryId\",\"location\":\"params\"}]}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/logistics/api/v1/deliveries/{deliveryId}/status",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/logistics/api/v1/earnings",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/logistics/api/v1/earnings/calculate",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/logistics/api/v1/qa/load-test",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/logistics/api/v1/routes/{routeId}/alternatives",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/logistics/api/v1/routes/{routeId}/progress",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for PUT requests\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/logistics/api/v1/routes/optimize",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/logistics/api/v1/tracking/location",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/maps/geocoding/geocode",
+    "role": "buyer",
+    "anon": 422,
+    "authed": 422,
+    "body": "{\"success\":false,\"error\":{\"code\":\"INVALID_ADDRESS\",\"message\":\"address must be a non-empty string\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/maps/routing/calculate",
+    "role": "buyer",
+    "anon": 422,
+    "authed": 422,
+    "body": "{\"success\":false,\"error\":{\"code\":\"INVALID_COORDINATES\",\"message\":\"origin and destination must have numeric lat and lng fields\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/notification/notifications",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"UserId is required\"}}"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/notification/preferences/{userId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"channel\",\"message\":\"\\\"channel\\\" is required\"}]}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/notification/preferences/{userId}/opt-out",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"channel\",\"message\":\"\\\"channel\\\" is required\"}]}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/notification/sms/send",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"\\\"phoneNumber\\\" is required\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/notification/templates",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"name\",\"message\":\"\\\"name\\\" is required\"}]}}"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/notification/templates/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"value\",\"message\":\"\\\"value\\\" must have at least 1 key\"}]}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/order/orders",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/order/orders/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for PUT requests\"}"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/order/orders/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for DELETE requests\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/order/orders/{id}/confirm-delivery",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"INVALID_DELIVERY_CODE\",\"message\":\"deliveryCode must be a 6-digit number.\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/order/orders/{id}/status",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/order/orders/{id}/cancel",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/order/orders/tracking/{trackingNumber}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"INVALID_TRACKING_NUMBER\",\"message\":\"Tracking number format is invalid\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/order/orders/cod/validate",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/order/orders/disputes/{id}/resolve",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/payment/payments",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"orderId\",\"message\":\"Required\"},{\"field\":\"amount\",\"message\":\"Required\""
+   },
+   {
+    "method": "POST",
+    "path": "/api/payment/payments/{id}/refund",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"reason\",\"message\":\"Required\"}]}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/support/disputes",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"path\":\"reason\",\"message\":\"Required\"},{\"path\":\"description\",\"message\":\"Require"
+   },
+   {
+    "method": "POST",
+    "path": "/api/support/disputes/{id}/evidence",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"path\":\"attachments\",\"message\":\"At least one attachment or note is required\"}]"
+   },
+   {
+    "method": "POST",
+    "path": "/api/support/tickets",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"path\":\"subject\",\"message\":\"Required\"},{\"path\":\"description\",\"message\":\"Requir"
+   },
+   {
+    "method": "POST",
+    "path": "/api/support/tickets/{id}/messages",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"path\":\"content\",\"message\":\"Required\"}]}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/user",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"email\",\"message\":\"\\\"email\\\" is required\"},{\"field\":\"phoneNumber\",\"mes"
+   },
+   {
+    "method": "POST",
+    "path": "/api/user/request-password-reset",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"email\",\"message\":\"\\\"email\\\" is required\"}]}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/user/reset-password/{token}",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"userId\",\"message\":\"\\\"userId\\\" is required\"},{\"field\":\"token\",\"message"
+   },
+   {
+    "method": "POST",
+    "path": "/api/user/security/breaches/report",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"userId\",\"message\":\"\\\"userId\\\" is required\"},{\"field\":\"breachType\",\"me"
+   },
+   {
+    "method": "POST",
+    "path": "/api/user/verify-email/{token}",
+    "role": "buyer",
+    "anon": 400,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"userId\",\"message\":\"\\\"userId\\\" is required\"}]}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/user/{id}/2fa/setup",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"method\",\"message\":\"\\\"method\\\" is required\"}]}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/user/{id}/phone/verify",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"phoneNumber\",\"message\":\"\\\"phoneNumber\\\" is required\"},{\"field\":\"otp\","
+   },
+   {
+    "method": "POST",
+    "path": "/api/user/{id}/role",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"newRole\",\"message\":\"\\\"newRole\\\" is required\"}]}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/user/{id}/suspend",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"reason\",\"message\":\"\\\"reason\\\" is required\"}]}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/user/{id}/password",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"currentPassword\",\"message\":\"\\\"currentPassword\\\" is required\"},{\"field"
+   },
+   {
+    "method": "POST",
+    "path": "/api/wallet/wallets/{userId}/credit",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Validation failed\",\"timestamp\":\"2026-09-20T17:45:54.636Z\",\"path\":\"/api/wallet/wallets/usr_01KRFXQZC36NK3CDEWJJS21RP8/"
+   },
+   {
+    "method": "POST",
+    "path": "/api/wallet/wallets/{userId}/debit",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Validation failed\",\"timestamp\":\"2026-09-20T17:45:54.668Z\",\"path\":\"/api/wallet/wallets/usr_01KRFXQZC36NK3CDEWJJS21RP8/"
+   },
+   {
+    "method": "POST",
+    "path": "/api/wallet/wallets/{userId}/freeze",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Validation failed\",\"timestamp\":\"2026-09-20T17:45:54.671Z\",\"path\":\"/api/wallet/wallets/usr_01KRFXQZC36NK3CDEWJJS21RP8/"
+   },
+   {
+    "method": "POST",
+    "path": "/api/wallet/wallets/{userId}/hold",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Validation failed\",\"timestamp\":\"2026-09-20T17:45:54.693Z\",\"path\":\"/api/wallet/wallets/usr_01KRFXQZC36NK3CDEWJJS21RP8/"
+   },
+   {
+    "method": "POST",
+    "path": "/api/wallet/wallets/{userId}/hold/{holdId}/capture",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Validation failed\",\"timestamp\":\"2026-09-20T17:45:54.696Z\",\"path\":\"/api/wallet/wallets/usr_01KRFXQZC36NK3CDEWJJS21RP8/"
+   },
+   {
+    "method": "POST",
+    "path": "/api/wallet/wallets/{userId}/hold/{holdId}/release",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Validation failed\",\"timestamp\":\"2026-09-20T17:45:54.718Z\",\"path\":\"/api/wallet/wallets/usr_01KRFXQZC36NK3CDEWJJS21RP8/"
+   },
+   {
+    "method": "POST",
+    "path": "/api/wallet/wallets/{userId}/topup",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Validation failed\",\"timestamp\":\"2026-09-20T17:45:54.772Z\",\"path\":\"/api/wallet/wallets/usr_01KRFXQZC36NK3CDEWJJS21RP8/"
+   },
+   {
+    "method": "POST",
+    "path": "/api/wallet/wallets/{userId}/transaction/{transactionId}/reverse",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Validation failed\",\"timestamp\":\"2026-09-20T17:45:54.792Z\",\"path\":\"/api/wallet/wallets/usr_01KRFXQZC36NK3CDEWJJS21RP8/"
+   },
+   {
+    "method": "POST",
+    "path": "/api/wallet/wallets/{userId}/unfreeze",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 400,
+    "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Validation failed\",\"timestamp\":\"2026-09-20T17:45:54.823Z\",\"path\":\"/api/wallet/wallets/usr_01KRFXQZC36NK3CDEWJJS21RP8/"
+   }
+  ]
+ },
+ "PERMISSION_BOUNDARY": {
+  "count": 42,
+  "examples": [
+   {
+    "method": "POST",
+    "path": "/api/auth/2fa/enable",
+    "role": "buyer",
+    "anon": 403,
+    "authed": 403,
+    "body": "{\"success\":false,\"message\":\"CSRF token missing\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/2fa/disable",
+    "role": "buyer",
+    "anon": 403,
+    "authed": 403,
+    "body": "{\"success\":false,\"message\":\"CSRF token missing\"}"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/business-registry/businesses/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"User ID (x-user-id header) is required for update\"}}"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/business-registry/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"User ID (x-user-id header) is required for update\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/campaigns",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/catalog/campaigns/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/campaigns/{id}/complete",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/campaigns/{id}/launch",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/campaigns/{id}/pause",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/campaigns/{id}/resume",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/campaigns/{id}/cancel",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/v1/categories",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/catalog/v1/categories/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/catalog/v1/categories/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/v1/pricing/bulk-update",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/v1/pricing/rules",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/v1/products",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/catalog/v1/products/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/catalog/v1/products/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/catalog/v1/products/{id}/category",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/v1/products/{id}/media",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/v1/products/{id}/publish",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/catalog/v1/products/{productId}/pricing",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/v1/products/bulk",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/catalog/v1/products/bulk",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/catalog/v1/products/bulk",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/v1/products/{id}/unpublish",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/v1/products/preview-description",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/catalog/v1/reviews/{reviewId}/moderate",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/chat/v1/conversations/{id}/messages",
+    "role": "buyer+admin",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"CHAT_ACCESS_DENIED\",\"message\":\"Access denied to this conversation\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/chat/v1/conversations/{id}/mute",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"CHAT_ACCESS_DENIED\",\"message\":\"Access denied to this conversation\"}}"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/chat/v1/conversations/{id}/mute",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"CHAT_ACCESS_DENIED\",\"message\":\"Access denied to this conversation\"}}"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/chat/v1/conversations/{id}/read",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"CHAT_ACCESS_DENIED\",\"message\":\"Access denied to this conversation\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/payout/payouts",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Role buyer is not authorized for this operation\",\"details\":{\"requiredRoles\":[\"seller\",\"supplier\",\"courier\",\"enabler\",\"system"
+   },
+   {
+    "method": "POST",
+    "path": "/api/support/agents",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"error\":\"Forbidden: Insufficient permissions\"}"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/support/agents/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"error\":\"Forbidden: Insufficient permissions\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/support/disputes/{id}/escalate",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"error\":\"Forbidden: Insufficient permissions\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/support/tickets/{id}/assign",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"error\":\"Forbidden: Insufficient permissions\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/support/tickets/{id}/resolve",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"error\":\"Forbidden: Insufficient permissions\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/user/lookup",
+    "role": "buyer+admin",
+    "anon": 403,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Internal endpoint\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/user/search",
+    "role": "buyer+admin",
+    "anon": 403,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Internal endpoint\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/wallet/wallets/{userId}/payout",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 403,
+    "body": "{\"success\":false,\"error\":{\"code\":\"INSUFFICIENT_PERMISSIONS\",\"message\":\"Insufficient permissions\",\"timestamp\":\"2026-09-20T17:45:54.742Z\",\"path\":\"/api/wallet/wallets/usr_01KRFXQZC36N"
+   }
+  ]
+ },
+ "AUTH_BLOCKED": {
+  "count": 33,
+  "examples": [
+   {
+    "method": "POST",
+    "path": "/api/auth/refresh",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"message\":\"Refresh token required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/system/maintenance/cleanup/auth",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":{\"code\":\"MISSING_SERVICE_KEY\",\"message\":\"Service key required\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/system/maintenance/cleanup/auth/report",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":{\"code\":\"MISSING_SERVICE_KEY\",\"message\":\"Service key required\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/system/maintenance/cleanup/outbox",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":{\"code\":\"MISSING_SERVICE_KEY\",\"message\":\"Service key required\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/auth/system/maintenance/cleanup/outbox/report",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":{\"code\":\"MISSING_SERVICE_KEY\",\"message\":\"Service key required\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/business-registry/system/maintenance/cleanup/outbox/report",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/business-registry/system/maintenance/cleanup/outbox",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/checkout/system/maintenance/cleanup/checkout-sessions",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/checkout/system/maintenance/cleanup/checkout-sessions/report",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/community/system/maintenance/cleanup/outbox",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/community/system/maintenance/cleanup/outbox/report",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/enabler/system/maintenance/cleanup/outbox/report",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/enabler/system/maintenance/cleanup/outbox",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/inventory/system/maintenance/cleanup/outbox",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/inventory/system/maintenance/cleanup/outbox/report",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/logistics/system/maintenance/cleanup/outbox",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/logistics/system/maintenance/cleanup/outbox/report",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/notification/system/maintenance/cleanup/sms",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/notification/system/maintenance/cleanup/sms/report",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/order/system/maintenance/cleanup/outbox",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/order/system/maintenance/cleanup/outbox/report",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/payment/system/maintenance/cleanup/outbox",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/payment/system/maintenance/cleanup/outbox/report",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/payout/system/maintenance/cleanup/outbox",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/payout/system/maintenance/cleanup/outbox/report",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/support/system/maintenance/cleanup/outbox",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/support/system/maintenance/cleanup/outbox/report",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/user/system/maintenance/cleanup/outbox",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/user/system/maintenance/cleanup/outbox/report",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/wallet/system/maintenance/cleanup/idempotency",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/wallet/system/maintenance/cleanup/idempotency/report",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/wallet/system/maintenance/cleanup/outbox",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/wallet/system/maintenance/cleanup/outbox/report",
+    "role": "admin",
+    "anon": 401,
+    "authed": 401,
+    "body": "{\"success\":false,\"error\":\"Service key required\"}"
+   }
+  ]
+ },
+ "RESOURCE_ABSENT": {
+  "count": 101,
+  "examples": [
+   {
+    "method": "GET",
+    "path": "/api/auth/session/{sessionId}",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"SESSION_NOT_FOUND\",\"message\":\"Session not found\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/business-registry",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/business-registry not found\",\"timestamp\":\"2026-09-20T17:45:48.555Z\",\"path\":\"/api/business-registry\""
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/businesses/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"BUSINESS_NOT_FOUND\",\"message\":\"Business not found\"}}"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/business-registry/businesses/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"BUSINESS_NOT_FOUND\",\"message\":\"Business not found\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/businesses/{id}/documents",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"BUSINESS_NOT_FOUND\",\"message\":\"Business not found\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/businesses/{id}/compliance-records",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"BUSINESS_NOT_FOUND\",\"message\":\"Business not found\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/business-registry/businesses/{id}/reactivate",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"BUSINESS_NOT_FOUND\",\"message\":\"Business not found\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/businesses/industries/{industry}/sellers",
+    "role": "seller",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/businesses/industries/test-000/sellers not found\",\"timestamp\":\"2026-09-20T17:45:48"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/businesses/sellers/{sellerId}",
+    "role": "seller",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/businesses/sellers/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z not found\",\"timestamp\":\"2026-09-"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/businesses/sellers/{sellerId}/industries",
+    "role": "seller",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/businesses/sellers/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z/industries not found\",\"timestamp"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/industries/{industry}/sellers",
+    "role": "seller",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/industries/test-000/sellers not found\",\"timestamp\":\"2026-09-20T17:45:48.950Z\",\"pat"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/public/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\",\"timestamp\":\"2026-09-20T17:45:48."
+   },
+   {
+    "method": "PUT",
+    "path": "/api/business-registry/public/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route PUT /api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\",\"timestamp\":\"2026-09-20T17:45:49."
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/business-registry/public/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route DELETE /api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\",\"timestamp\":\"2026-09-20T17:45:"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/public/{id}/compliance-records",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/compliance-records not found\",\"timestamp\":\"2"
+   },
+   {
+    "method": "POST",
+    "path": "/api/business-registry/public/{id}/compliance-records",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/compliance-records not found\",\"timestamp\":\""
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/public/{id}/documents",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/documents not found\",\"timestamp\":\"2026-09-20"
+   },
+   {
+    "method": "POST",
+    "path": "/api/business-registry/public/{id}/documents",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/documents not found\",\"timestamp\":\"2026-09-2"
+   },
+   {
+    "method": "POST",
+    "path": "/api/business-registry/public/{id}/reactivate",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/reactivate not found\",\"timestamp\":\"2026-09-"
+   },
+   {
+    "method": "POST",
+    "path": "/api/business-registry/public/{id}/suspend",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/suspend not found\",\"timestamp\":\"2026-09-20T"
+   },
+   {
+    "method": "POST",
+    "path": "/api/business-registry/public/{id}/verify",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/verify not found\",\"timestamp\":\"2026-09-20T1"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/public/owner/{ownerId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/public/owner/usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\",\"timestamp\":\"2026-09-20T17:"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/public/search",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/public/search not found\",\"timestamp\":\"2026-09-20T17:45:49.192Z\",\"path\":\"/api/busin"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/public/sellers/{sellerId}",
+    "role": "seller",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"BUSINESS_NOT_FOUND\",\"message\":\"Seller not found\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/public/sellers/{sellerId}/industries",
+    "role": "seller",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"BUSINESS_NOT_FOUND\",\"message\":\"Seller not found\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/sellers/{sellerId}",
+    "role": "seller",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/sellers/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z not found\",\"timestamp\":\"2026-09-20T17:45:49"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/sellers/{sellerId}/industries",
+    "role": "seller",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/sellers/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z/industries not found\",\"timestamp\":\"2026-09-"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/{id}/compliance-records",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/usr_01KRFXQZC36NK3CDEWJJS21RP8/compliance-records not found\",\"timestamp\":\"2026-09-"
+   },
+   {
+    "method": "POST",
+    "path": "/api/business-registry/{id}/compliance-records",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/business-registry/usr_01KRFXQZC36NK3CDEWJJS21RP8/compliance-records not found\",\"timestamp\":\"2026-09"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/{id}/documents",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/usr_01KRFXQZC36NK3CDEWJJS21RP8/documents not found\",\"timestamp\":\"2026-09-20T17:45:"
+   },
+   {
+    "method": "GET",
+    "path": "/api/business-registry/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"BUSINESS_NOT_FOUND\",\"message\":\"Business not found\"}}"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/business-registry/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"BUSINESS_NOT_FOUND\",\"message\":\"Business not found\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/business-registry/{id}/documents",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/business-registry/usr_01KRFXQZC36NK3CDEWJJS21RP8/documents not found\",\"timestamp\":\"2026-09-20T17:45"
+   },
+   {
+    "method": "POST",
+    "path": "/api/business-registry/{id}/reactivate",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"BUSINESS_NOT_FOUND\",\"message\":\"Business not found\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/campaigns/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"error\":\"Campaign with ID usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/match/confirm/{confirmationId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"error\":\"Confirmation not found\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/system/maintenance/cleanup/event-store/report",
+    "role": "admin",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Health endpoint /api/catalog/system/maintenance/cleanup/event-store/report not found\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/system/maintenance/cleanup/event-store",
+    "role": "admin",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Health endpoint /api/catalog/system/maintenance/cleanup/event-store not found\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.707"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/system/maintenance/cleanup/outbox",
+    "role": "admin",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Health endpoint /api/catalog/system/maintenance/cleanup/outbox not found\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.716Z\",\"r"
+   },
+   {
+    "method": "POST",
+    "path": "/api/catalog/system/maintenance/cleanup/outbox/report",
+    "role": "admin",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Health endpoint /api/catalog/system/maintenance/cleanup/outbox/report not found\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.7"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/v1/products/{id}",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Product not found\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.075Z\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/v1/products/{id}/metrics",
+    "role": "buyer+admin",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Product not found\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.144Z\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/v1/products/{id}/media",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Product not found\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.148Z\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/chat/v1/conversations/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"CHAT_NOT_FOUND\",\"message\":\"Conversation not found\"}}"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/chat/v1/conversations/{id}/messages/{messageId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"CHAT_NOT_FOUND\",\"message\":\"Message not found\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/checkout/current",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"CHECKOUT_SESSION_NOT_FOUND\",\"message\":\"Session not found\"},\"timestamp\":\"2026-09-20T17:45:51.211Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/checkout/{cartId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"CHECKOUT_SESSION_NOT_FOUND\",\"message\":\"Session not found\"},\"timestamp\":\"2026-09-20T17:45:51.178Z\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/checkout/{id}/confirm",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"CHECKOUT_SESSION_NOT_FOUND\",\"message\":\"Session not found\"},\"timestamp\":\"2026-09-20T17:45:51.209Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/checkout/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"CHECKOUT_SESSION_NOT_FOUND\",\"message\":\"Session not found\"},\"timestamp\":\"2026-09-20T17:45:51.212Z\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/commission/calculate",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/commission/calculate not found\",\"timestamp\":\"2026-09-20T17:45:51.345Z\",\"path\":\"/api/commission/calc"
+   },
+   {
+    "method": "GET",
+    "path": "/api/commission/health",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/commission/health not found\",\"timestamp\":\"2026-09-20T17:45:51.359Z\",\"path\":\"/api/commission/health\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/commission/health/live",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/commission/health/live not found\",\"timestamp\":\"2026-09-20T17:45:51.369Z\",\"path\":\"/api/commission/hea"
+   },
+   {
+    "method": "GET",
+    "path": "/api/commission/health/ready",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/commission/health/ready not found\",\"timestamp\":\"2026-09-20T17:45:51.378Z\",\"path\":\"/api/commission/he"
+   },
+   {
+    "method": "GET",
+    "path": "/api/commission/sellers/{sellerId}",
+    "role": "seller",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/commission/sellers/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z not found\",\"timestamp\":\"2026-09-20T17:45:51.381Z\","
+   },
+   {
+    "method": "GET",
+    "path": "/api/commission/sellers/{sellerId}/summary",
+    "role": "seller",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/commission/sellers/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z/summary not found\",\"timestamp\":\"2026-09-20T17:45:5"
+   },
+   {
+    "method": "PUT",
+    "path": "/api/commission/{id}/approve",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route PUT /api/commission/usr_01KRFXQZC36NK3CDEWJJS21RP8/approve not found\",\"timestamp\":\"2026-09-20T17:45:51.342Z\","
+   },
+   {
+    "method": "GET",
+    "path": "/api/commission/{id}",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/commission/usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\",\"timestamp\":\"2026-09-20T17:45:51.425Z\",\"path\":\""
+   },
+   {
+    "method": "GET",
+    "path": "/api/community/articles",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/community/articles not found\",\"timestamp\":\"2026-09-20T17:45:51.396Z\",\"path\":\"/api/community/articles"
+   },
+   {
+    "method": "POST",
+    "path": "/api/community/articles",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/community/articles not found\",\"timestamp\":\"2026-09-20T17:45:51.415Z\",\"path\":\"/api/community/article"
+   },
+   {
+    "method": "GET",
+    "path": "/api/community/articles/{articleId}",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/community/articles/no-fixture not found\",\"timestamp\":\"2026-09-20T17:45:51.420Z\",\"path\":\"/api/communi"
+   },
+   {
+    "method": "POST",
+    "path": "/api/community/articles/{articleId}/publish",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/community/articles/no-fixture/publish not found\",\"timestamp\":\"2026-09-20T17:45:51.441Z\",\"path\":\"/ap"
+   },
+   {
+    "method": "POST",
+    "path": "/api/community/articles/{articleId}/reviews",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/community/articles/no-fixture/reviews not found\",\"timestamp\":\"2026-09-20T17:45:51.445Z\",\"path\":\"/ap"
+   },
+   {
+    "method": "GET",
+    "path": "/api/community/discover",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"User business profile not found\",\"timestamp\":\"2026-09-20T17:45:51.506Z\",\"path\":\"/api/community/discover\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/community/knowledge/challenges",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/community/knowledge/challenges not found\",\"timestamp\":\"2026-09-20T17:45:51.591Z\",\"path\":\"/api/commun"
+   },
+   {
+    "method": "POST",
+    "path": "/api/community/knowledge/challenges",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/community/knowledge/challenges not found\",\"timestamp\":\"2026-09-20T17:45:51.604Z\",\"path\":\"/api/commu"
+   },
+   {
+    "method": "POST",
+    "path": "/api/community/knowledge/challenges/{challengeId}/solutions",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/community/knowledge/challenges/no-fixture/solutions not found\",\"timestamp\":\"2026-09-20T17:45:51.616"
+   },
+   {
+    "method": "GET",
+    "path": "/api/community/knowledge/discover",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/community/knowledge/discover not found\",\"timestamp\":\"2026-09-20T17:45:51.619Z\",\"path\":\"/api/communit"
+   },
+   {
+    "method": "POST",
+    "path": "/api/community/knowledge/expertise/validate",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/community/knowledge/expertise/validate not found\",\"timestamp\":\"2026-09-20T17:45:51.624Z\",\"path\":\"/a"
+   },
+   {
+    "method": "GET",
+    "path": "/api/governance/constitution",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/governance/constitution not found\",\"timestamp\":\"2026-09-20T17:45:51.919Z\",\"path\":\"/api/governance/co"
+   },
+   {
+    "method": "GET",
+    "path": "/api/governance/dashboard",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/governance/dashboard not found\",\"timestamp\":\"2026-09-20T17:45:51.927Z\",\"path\":\"/api/governance/dashb"
+   },
+   {
+    "method": "GET",
+    "path": "/api/governance/reports/latest",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/governance/reports/latest not found\",\"timestamp\":\"2026-09-20T17:45:51.933Z\",\"path\":\"/api/governance/"
+   },
+   {
+    "method": "GET",
+    "path": "/api/governance/runs",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/governance/runs not found\",\"timestamp\":\"2026-09-20T17:45:51.949Z\",\"path\":\"/api/governance/runs\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/governance/runs/{runId}",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/governance/runs/usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\",\"timestamp\":\"2026-09-20T17:45:51.968Z\",\"pa"
+   },
+   {
+    "method": "GET",
+    "path": "/api/governance/runs/{runId}/evidence/{gateId}",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/governance/runs/usr_01KRFXQZC36NK3CDEWJJS21RP8/evidence/usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\",\"t"
+   },
+   {
+    "method": "POST",
+    "path": "/api/governance/runs",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/governance/runs not found\",\"timestamp\":\"2026-09-20T17:45:52.072Z\",\"path\":\"/api/governance/runs\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/governance/summary",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/governance/summary not found\",\"timestamp\":\"2026-09-20T17:45:51.987Z\",\"path\":\"/api/governance/summary"
+   },
+   {
+    "method": "GET",
+    "path": "/api/inventory/stock/{variantId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"error\":\"Stock not found\",\"variantId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"warehouseId\":\"all\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/inventory/warehouses/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"error\":\"Warehouse not found\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/routes/{routeId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"ROUTE_NOT_FOUND\",\"message\":\"Failed to find route\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/routes/courier/{courierId}",
+    "role": "courier",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"ROUTE_NOT_FOUND\",\"message\":\"Failed to find routes\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/logistics/api/v1/routes",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"ROUTE_NOT_FOUND\",\"message\":\"Failed to find routes\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/notification/notifications/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Notification not found\"}}"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/notification/notifications/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Notification not found\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/notification/notifications/{id}/retry",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Notification usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\"}}"
+   },
+   {
+    "method": "PATCH",
+    "path": "/api/notification/notifications/{id}/status",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Notification not found\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/notification/sms/retry/{messageId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"messageId\":\"no-fixture\",\"success\":false,\"newStatus\":\"NOT_FOUND\",\"retryCount\":0,\"message\":\"Message not found\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/notification/sms/webhook/africastalking",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/notification/sms/webhook/africastalking not found\",\"timestamp\":\"2026-09-20T17:45:53.237Z\",\"path\":\"/"
+   },
+   {
+    "method": "GET",
+    "path": "/api/notification/sms/status/{messageId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"error\":{\"message\":\"SMS message not found: no-fixture\",\"status\":404,\"timestamp\":\"2026-09-20T17:45:53.281Z\",\"path\":\"/api/notification/sms/status/no-fixture\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/notification/templates/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Template not found\"}}"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/notification/templates/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Template not found\"}}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/notification/templates/{id}/render",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Template not found\"}}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/order/orders/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"error\":\"ORDER_NOT_FOUND\",\"message\":\"Order with ID usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/payment/payments/webhooks/paymentGateway",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/payment/payments/webhooks/paymentGateway not found\",\"timestamp\":\"2026-09-20T17:45:53.610Z\",\"path\":\""
+   },
+   {
+    "method": "POST",
+    "path": "/api/payment/webhooks/paymentGateway",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/payment/webhooks/paymentGateway not found\",\"timestamp\":\"2026-09-20T17:45:53.633Z\",\"path\":\"/api/paym"
+   },
+   {
+    "method": "GET",
+    "path": "/api/payout/payouts/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":\"Payout not found\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/payout/payouts/{id}/cancel",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":\"Payout not found\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/support/disputes/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":\"Dispute not found\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/support/tickets/{id}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":\"Ticket not found: usr_01KRFXQZC36NK3CDEWJJS21RP8\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/support/tickets/{id}/close",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 404,
+    "body": "{\"success\":false,\"error\":\"Ticket not found: usr_01KRFXQZC36NK3CDEWJJS21RP8\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/training/api/v1/modules/{id}",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"error\":\"TrainingModule with identifier usr_01KRFXQZC36NK3CDEWJJS21RP8 was not found\",\"timestamp\":\"2026-09-20T17:45:53.942Z\"}"
+   },
+   {
+    "method": "GET",
+    "path": "/api/training/api/v1/modules/{id}/content",
+    "role": "buyer",
+    "anon": 404,
+    "authed": 404,
+    "body": "{\"error\":\"TrainingModule with identifier usr_01KRFXQZC36NK3CDEWJJS21RP8 was not found\",\"timestamp\":\"2026-09-20T17:45:53.946Z\"}"
+   }
+  ]
+ },
+ "METHOD_NOT_ALLOWED": {
+  "count": 6,
+  "examples": [
+   {
+    "method": "POST",
+    "path": "/api/business-registry/public",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 405,
+    "body": "{\"error\":\"Method Not Allowed\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/checkout/items",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 405,
+    "body": "{\"error\":\"Method Not Allowed\"}"
+   },
+   {
+    "method": "PATCH",
+    "path": "/api/checkout/items",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 405,
+    "body": "{\"error\":\"Method Not Allowed\"}"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/checkout/items",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 405,
+    "body": "{\"error\":\"Method Not Allowed\"}"
+   },
+   {
+    "method": "POST",
+    "path": "/api/checkout/merge",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 405,
+    "body": "{\"error\":\"Method Not Allowed\"}"
+   },
+   {
+    "method": "DELETE",
+    "path": "/api/checkout/{cartId}",
+    "role": "buyer",
+    "anon": 401,
+    "authed": 405,
+    "body": "{\"error\":\"Method Not Allowed\"}"
+   }
+  ]
+ },
+ "REDIRECT": {
+  "count": 2,
+  "examples": [
+   {
+    "method": "GET",
+    "path": "/api/catalog/v1/search",
+    "role": "buyer",
+    "anon": 301,
+    "authed": 301,
+    "body": "Moved Permanently. Redirecting to /api/catalog/v1/products/search?q="
+   },
+   {
+    "method": "GET",
+    "path": "/api/catalog/v1/search/products",
+    "role": "buyer",
+    "anon": 301,
+    "authed": 301,
+    "body": "Moved Permanently. Redirecting to /api/catalog/v1/products/search"
+   }
+  ]
+ }
+}

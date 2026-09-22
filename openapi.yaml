@@ -45874,6 +45874,56 @@ paths:
               schema: {}
       security:
         - BearerAuth: []
+  '/api/wallet/wallets/{userId}/holds':
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+    get:
+      tags:
+        - Wallet
+      summary: List active holds for the wallet
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
   '/api/wallet/wallets/{userId}/payout':
     parameters:
       - name: userId
@@ -46146,6 +46196,43 @@ paths:
               metadata:
                 source: contract-test
             x-codex-generated-example: true
+    get:
+      tags:
+        - Wallet
+      summary: List payouts initiated from the wallet
+      description: Returns pending and completed payouts for the wallet. The endpoint currently responds with an empty collection until wallet payout history is persisted.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: {}
+            text/plain:
+              schema: {}
+      security:
+        - BearerAuth: []
+
   '/api/wallet/wallets/{userId}/statement':
     parameters:
       - name: userId

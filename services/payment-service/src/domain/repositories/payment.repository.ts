@@ -73,4 +73,9 @@ export interface IPaymentRepository {
    * Find pending payments older than specified date
    */
   findPendingOlderThan(date: Date): Promise<Payment[]>;
+
+  /**
+   * List payments newest-first (admin summary roster view)
+   */
+  findAll(limit?: number, offset?: number): Promise<Payment[]>;
 }

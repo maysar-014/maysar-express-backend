@@ -2,11 +2,29 @@ export const Enabler_Status = {
   PENDING: 'PENDING',
   APPROVED: 'APPROVED',
   ACTIVE: 'ACTIVE',
+  /**
+   * Capability-limited: the enabler keeps discovery/sharing but the backend
+   * refuses order-draft creation and customer-link generation (spec §5).
+   */
+  RESTRICTED: 'RESTRICTED',
   SUSPENDED: 'SUSPENDED',
   REJECTED: 'REJECTED',
+  DEACTIVATED: 'DEACTIVATED',
 } as const;
 
 export type Enabler_Status = (typeof Enabler_Status)[keyof typeof Enabler_Status];
+
+/**
+ * Training status values used by the activation requirement gate (spec §6).
+ * Training truth itself lives in the shared training domain; this mirrors it.
+ */
+export const Enabler_TrainingStatus = {
+  NOT_STARTED: 'not_started',
+  IN_PROGRESS: 'in_progress',
+  COMPLETED: 'completed',
+} as const;
+
+export type Enabler_TrainingStatus = (typeof Enabler_TrainingStatus)[keyof typeof Enabler_TrainingStatus];
 
 export const Enabler_Tier = {
   BRONZE: 'BRONZE',

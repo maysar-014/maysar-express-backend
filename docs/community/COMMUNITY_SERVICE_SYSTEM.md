@@ -200,3 +200,17 @@ Mounted at `/api/community` (module name `community-service` → strip `-service
 - [ ] Deep-link from feed item to full article/discussion
 - [ ] Show "New" badge on unread articles since last visit
 - [ ] Allow users to follow topics/tags for personalized feed
+
+
+---
+
+## System Maintenance Routes
+
+Mounted at `/api/community/system/maintenance`. Guards: `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/community/system/maintenance/cleanup/outbox/report` | Dry-run count of deletable community outbox events |
+| POST | `/api/community/system/maintenance/cleanup/outbox` | Batched deletion of expired outbox events. Body: `{ "dryRun": true }` to simulate |
+
+**Retention defaults:** sent/processed → 7 days, failed → 30 days. Batch size: 1000. Max runtime: 20 s.

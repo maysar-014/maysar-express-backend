@@ -1,0 +1,28 @@
+[
+ {
+  "module": "api/catalog/sellers",
+  "path": "/api/catalog/sellers/{sellerId}/share-url",
+  "method": "POST",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"shareUrl\":\"http://localhost:3000/seller/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"shortUrl\":\"http://localhost:3000/s/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"qrCode\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAYAAAB5fY51AAAAAklEQVR4AewaftIAAAjcSURBVO3BQXIjSRIEQfMQ/P/Lvn1bmUtmzxQBYZCmmv6BJC0wSNISgyQtMUjSEoMkLTFI0hKDJC0xSNISgyQt8eIvJOE3actNEt6tLTdJeKotn5CEp9pykoRPaMsnJOE3acvJIElLDJK0xCBJSwyStMQgSUsMkrTEIElLDJK0xIsv0pYNkrBFEm7acpKEmyTctOUkCTdtOUnCTRKeastNEp5KwklbnmrLFkl4apCkJQZJWmKQpCUGSVpikKQlBklaYpCkJV58SBI+oS1btOWnaMt30Bb9UxI+oS3vNkjSEoMkLTFI0hKDJC0xSNISgyQtMUjSEoMkLfFC/0lbTpJwk4R3a8tNEm6S8FRbnmrLSRI+IQn6vEGSlhgkaYlBkpYYJGmJQZKWGCRpiUGSlnih/yQJT7XlO2jLTRK+gyQ81ZabJJy05SY"
+ },
+ {
+  "module": "api/catalog/sellers",
+  "path": "/api/catalog/sellers/{sellerId}/storefront",
+  "method": "GET",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"id\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"name\":\"Seller usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"description\":\"Seller storefront\",\"logo\":null,\"shareUrl\":\"http://localhost:3000/seller/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"shortUrl\":\"http://loc",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"id\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"name\":\"Seller usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"description\":\"Seller storefront\",\"logo\":null,\"shareUrl\":\"http://localhost:3000/seller/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"shortUrl\":\"http://localhost:3000/s/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"qrCode\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAYAAAB5fY51AAAAAklEQVR4AewaftIAAAjcSURBVO3BQXIjSRIEQfMQ/P/Lvn1bmUtmzxQBYZCmmv6BJC0wSNISgyQtMUjSEoMkLTFI0hKDJC0xSNISgyQt8eIvJOE3actNEt6tLTdJeKotn5CEp9pykoRPaMsnJOE3acvJIElLDJK0xCBJSwyStMQgSUsMkrTEIElLDJK0xIsv0pYNkrBFEm7acpKEmyTctOUkCTdtOUnCTRKeastNEp5KwklbnmrLFkl4apCkJQZJWmKQpCUGSVpikKQlBklaYpCkJV58SBI+oS1btOWnaMt30Bb9UxI+oS3vNkjSEoMkLTFI"
+ }
+]

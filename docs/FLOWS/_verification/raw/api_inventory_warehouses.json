@@ -1,0 +1,28 @@
+[
+ {
+  "module": "api/inventory/warehouses",
+  "path": "/api/inventory/warehouses",
+  "method": "GET",
+  "tags": [
+   "Inventory"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"warehouses\":[{\"id\":\"wh_seed_dar_central_01\",\"code\":\"DSM-SEED-01\",\"name\":\"Dar es Salaam Seed Warehouse\",\"type\":\"central\",\"status\":\"active\",\"address\":{\"city\":\"Dar es Salaam\",\"region\":\"Dar es Salaam\",\"country\":\"Tanzania\"},\"operatingHours\":{\"fri\":\"08:00-17:00\",\"mon\":\"08:00-17:00\"}}],\"total\":1}"
+ },
+ {
+  "module": "api/inventory/warehouses",
+  "path": "/api/inventory/warehouses/{id}",
+  "method": "GET",
+  "tags": [
+   "Inventory"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"error\":\"Warehouse not found\"}"
+ }
+]

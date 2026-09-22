@@ -148,3 +148,10 @@ Mounted at `/api/analytics` (module name `analytics-service` → strip `-service
 - [ ] Show return rate and cancellation rate as warning indicators when above threshold
 - [ ] Admin dashboard: show platform KPIs with period comparison (vs. previous period)
 - [ ] Enabler dashboard: show attributed GMV and conversion funnel
+
+
+---
+
+## System Maintenance Routes
+
+The analytics service does not currently expose outbox maintenance routes (no `maintenance.routes.ts` file exists in `services/analytics-service/`). If an outbox is added in future, the standard pattern applies: mount at `/api/analytics/system/maintenance` behind `requireRoleOrService(['admin','system'])` and `x-service-key`.

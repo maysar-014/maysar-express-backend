@@ -1,4 +1,5 @@
 import {
+  loadPaymentEnvironment,
   PAYMENT_METHOD_CODES,
   PaymentMethodConfigService,
   PaymentConfigurationError,
@@ -119,14 +120,18 @@ describe("PaymentMethodConfigService", () => {
     });
   });
 
-  describe("sandbox mode requires sandbox credentials", () => {
-    it("sandbox without credentials is non-operational", () => {
+  describe("sandbox mode is credential-free (simulated provider)", () => {
+    it("sandbox without any provider credentials is operational", () => {
       const service = new PaymentMethodConfigService(
         { NODE_ENV: "test", PAYMENT_MPESA_MODE: "sandbox" },
         false,
       );
       expect(service.getMode("MPESA")).toBe("sandbox");
-      expect(service.isOperational("MPESA")).toBe(false);
+      expect(service.isOperational("MPESA")).toBe(true);
+      const runtime = service.getRuntimeConfig("MPESA");
+      expect(runtime.environment).toBe("SANDBOX");
+      // No provider credentials are required for the simulated provider.
+      expect(runtime.credentials).toEqual({});
     });
 
     it("sandbox with sandbox credentials is operational", () => {
@@ -235,6 +240,40 @@ describe("PaymentMethodConfigService", () => {
       expect(service.normalizeMethodCode("MNO")).toBe("MPESA");
       expect(service.normalizeMethodCode("MPESA")).toBe("MPESA");
       expect(service.normalizeMethodCode("UNKNOWN")).toBeNull();
+    });
+  });
+
+  describe("declared environment schema (loadPaymentEnvironment)", () => {
+    it("accepts a fully declared .env with valid values", () => {
+      expect(() =>
+        loadPaymentEnvironment({
+          PAYMENT_MPESA_MODE: "sandbox",
+          PAYMENT_WALLET_MODE: "live",
+          PAYMENT_SELCOM_SANDBOX_BASE_URL:
+            "https://apigwtest.selcommobile.com/v1",
+        }),
+      ).not.toThrow();
+    });
+
+    it("rejects an undeclared/invalid mode value and names the variable", () => {
+      expect(() =>
+        loadPaymentEnvironment({ PAYMENT_MPESA_MODE: "banana" }),
+      ).toThrow(/PAYMENT_MPESA_MODE/);
+    });
+
+    it("rejects malformed URLs and names the variable", () => {
+      expect(() =>
+        loadPaymentEnvironment({ PAYMENT_SELCOM_LIVE_BASE_URL: "not-a-url" }),
+      ).toThrow(/PAYMENT_SELCOM_LIVE_BASE_URL/);
+    });
+
+    it("treats empty-string values (e.g. bare `VAR=` in .env) as unset", () => {
+      expect(() =>
+        loadPaymentEnvironment({
+          PAYMENT_MPESA_MODE: "",
+          PAYMENT_SELCOM_SANDBOX_API_KEY: "",
+        }),
+      ).not.toThrow();
     });
   });
 });

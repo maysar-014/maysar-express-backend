@@ -76,4 +76,52 @@ describe("PaymentMethodProviderRegistry", () => {
       /CARD|Card|not operational/,
     );
   });
+
+  it("routes a sandbox method to the sandbox simulator when a factory is provided", () => {
+    const config = new PaymentMethodConfigService(
+      {
+        NODE_ENV: "test",
+        PAYMENT_MPESA_MODE: "sandbox", // no credentials — simulator runs it
+      },
+      false,
+    );
+    const fakeSimulator = {
+      getProviderName: () => "sandbox-simulator:mpesa",
+    };
+    const registry = new PaymentMethodProviderRegistry(
+      config,
+      undefined,
+      undefined,
+      (_methodCode, channel) => {
+        expect(channel).toBe("MPESA");
+        return fakeSimulator as any;
+      },
+    );
+
+    expect(registry.getProvider("MPESA")).toBe(fakeSimulator);
+  });
+
+  it("always uses the REAL provider for live methods even when a factory is provided", () => {
+    const config = new PaymentMethodConfigService(
+      {
+        NODE_ENV: "production",
+        PAYMENT_MPESA_MODE: "live",
+        PAYMENT_SELCOM_LIVE_API_KEY: "a-key",
+        PAYMENT_SELCOM_LIVE_MERCHANT_CODE: "m-code",
+        PAYMENT_SELCOM_LIVE_BASE_URL: "https://api.selcom.example",
+      },
+      true,
+    );
+    const neverCalled = jest.fn();
+    const registry = new PaymentMethodProviderRegistry(
+      config,
+      undefined,
+      undefined,
+      neverCalled as any,
+    );
+
+    const provider = registry.getProvider("MPESA");
+    expect(provider).toBeInstanceOf(SelcomPesaAdapter);
+    expect(neverCalled).not.toHaveBeenCalled();
+  });
 });

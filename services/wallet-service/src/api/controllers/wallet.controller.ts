@@ -11,6 +11,7 @@ import { GetWalletStatementUseCase } from '../../application/use-cases/get-walle
 import { TopUpWalletUseCase } from '../../application/use-cases/top-up-wallet.use-case';
 import { InitiatePayoutFromWalletUseCase } from '../../application/use-cases/initiate-payout-from-wallet.use-case';
 import { IWalletRepository } from '../../domain/repositories/wallet.repository';
+import { IHoldRepository } from '../../domain/repositories/hold.repository';
 import { AuditInfo } from '../../domain/value-objects/audit-info.value-object';
 
 export class WalletController {
@@ -26,7 +27,8 @@ export class WalletController {
         private readonly getStatementUseCase: GetWalletStatementUseCase,
         private readonly topUpUseCase: TopUpWalletUseCase,
         private readonly walletRepository: IWalletRepository,
-        private readonly initiatePayoutUseCase: InitiatePayoutFromWalletUseCase
+        private readonly initiatePayoutUseCase: InitiatePayoutFromWalletUseCase,
+        private readonly holdRepository: IHoldRepository
     ) { }
 
     private getAuditInfo(req: Request): AuditInfo {
@@ -284,6 +286,50 @@ export class WalletController {
         } catch (error: unknown) {
             const message = this.getErrorMessage(error);
             res.status(this.mapWalletErrorStatus(message)).json({ success: false, error: message });
+        }
+    }
+
+    async listHolds(req: Request, res: Response): Promise<void> {
+        try {
+            const wallet = await this.walletRepository.findByUserId(req.params.userId);
+
+            if (!wallet) {
+                res.status(200).json({ success: true, data: { holds: [], total: 0 } });
+                return;
+            }
+
+            const holds = await this.holdRepository.findActiveByWalletId(wallet.id);
+
+            const serialized = holds.map((hold) => {
+                const props = hold.toObject();
+                return {
+                    holdId: props.id,
+                    walletId: props.walletId,
+                    userId: props.userId,
+                    amount: Number(hold.amount?.amount ?? 0),
+                    currency: (hold.amount as unknown as { currency?: string })?.currency ?? 'TZS',
+                    reason: props.reason,
+                    status: props.status,
+                    isCaptured: props.isCaptured,
+                    isReleased: props.isReleased,
+                    expiresAt: props.expiresAt,
+                    createdAt: props.createdAt,
+                    updatedAt: props.updatedAt
+                };
+            });
+
+            res.status(200).json({
+                success: true,
+                data: {
+                    holds: serialized,
+                    total: serialized.length
+                }
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: this.getErrorMessage(error)
+            });
         }
     }
 

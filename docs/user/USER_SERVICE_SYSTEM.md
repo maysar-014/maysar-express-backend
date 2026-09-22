@@ -203,3 +203,17 @@ Display this in the user's profile and in the COD checkout flow.
 - [ ] Display COD tier and exposure limits in profile and checkout
 - [ ] Handle role change flow — user may need to complete additional verification
 - [ ] Show account deletion warning about PII anonymization (irreversible)
+
+
+---
+
+## System Maintenance Routes
+
+Mounted at `/api/user/system/maintenance`. Guards: `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/user/system/maintenance/cleanup/outbox/report` | Dry-run count of deletable user outbox events |
+| POST | `/api/user/system/maintenance/cleanup/outbox` | Batched deletion of expired outbox events. Body: `{ "dryRun": true }` to simulate |
+
+**Retention defaults:** sent/processed → 7 days, failed → 30 days. Batch size: 1000. Max runtime: 20 s.

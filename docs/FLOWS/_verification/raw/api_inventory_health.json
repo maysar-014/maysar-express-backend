@@ -1,0 +1,41 @@
+[
+ {
+  "module": "api/inventory/health",
+  "path": "/api/inventory/health",
+  "method": "GET",
+  "tags": [
+   "Inventory"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"healthy\",\"service\":\"inventory-service\",\"timestamp\":\"2026-09-20T17:45:51.997Z\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"healthy\",\"service\":\"inventory-service\",\"timestamp\":\"2026-09-20T17:45:52.006Z\"}"
+ },
+ {
+  "module": "api/inventory/health",
+  "path": "/api/inventory/health/live",
+  "method": "GET",
+  "tags": [
+   "Inventory"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"alive\",\"service\":\"inventory-service\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"alive\",\"service\":\"inventory-service\"}"
+ },
+ {
+  "module": "api/inventory/health",
+  "path": "/api/inventory/health/ready",
+  "method": "GET",
+  "tags": [
+   "Inventory"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"ready\",\"service\":\"inventory-service\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"ready\",\"service\":\"inventory-service\"}"
+ }
+]

@@ -7,6 +7,7 @@ import {
 import { SelcomPesaAdapter } from "./selcom-pesa.adapter";
 import { InternalWalletAdapter } from "./internal-wallet.adapter";
 import { InternalBankTransferAdapter } from "./internal-bank-transfer.adapter";
+import { SandboxSimulatorAdapter } from "./sandbox-simulation";
 
 /**
  * Concrete payment-method provider registry.
@@ -17,6 +18,12 @@ import { InternalBankTransferAdapter } from "./internal-bank-transfer.adapter";
  * active environment; internal methods (Wallet, Bank Transfer) get their
  * dedicated internal adapters. No method ever shares another method's
  * credentials or adapter.
+ *
+ * In SANDBOX mode, selcom-backed methods are routed to the dedicated sandbox
+ * simulator (infrastructure/providers/sandbox-simulation) which exercises the
+ * same complete lifecycle without any provider credentials — while LIVE mode
+ * always uses the real provider integration with strictly required live
+ * credentials.
  */
 export class PaymentMethodProviderRegistry implements IPaymentMethodProviderRegistry {
   private readonly walletAdapter: InternalWalletAdapter;
@@ -26,6 +33,11 @@ export class PaymentMethodProviderRegistry implements IPaymentMethodProviderRegi
     private readonly configService: PaymentMethodConfigService,
     walletAdapter?: InternalWalletAdapter,
     bankTransferAdapter?: InternalBankTransferAdapter,
+    /** Late-bound factory for per-method sandbox simulator adapters. */
+    private readonly sandboxAdapterFactory?: (
+      methodCode: PaymentMethodCode,
+      channel: string,
+    ) => IPaymentProvider,
   ) {
     this.walletAdapter = walletAdapter ?? new InternalWalletAdapter();
     this.bankTransferAdapter =
@@ -44,6 +56,10 @@ export class PaymentMethodProviderRegistry implements IPaymentMethodProviderRegi
       case "internal_bank_transfer":
         return this.bankTransferAdapter;
       case "selcom": {
+        // SANDBOX → simulated provider, same lifecycle, no credentials.
+        if (runtime.mode === "sandbox" && this.sandboxAdapterFactory) {
+          return this.sandboxAdapterFactory(methodCode, runtime.providerChannel);
+        }
         return new SelcomPesaAdapter({
           merchantCode: runtime.credentials.MERCHANT_CODE,
           apiKey: runtime.credentials.API_KEY,

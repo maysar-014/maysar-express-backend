@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/auth/report-suspicious",
+  "path": "/api/auth/report-suspicious",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"activity\\\" is required\"]}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"message\":\"Validation failed\",\"errors\":[\"\\\"activity\\\" is required\"]}"
+ }
+]

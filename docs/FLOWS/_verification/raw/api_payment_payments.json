@@ -1,0 +1,80 @@
+[
+ {
+  "module": "api/payment/payments",
+  "path": "/api/payment/payments",
+  "method": "POST",
+  "tags": [
+   "Payments"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"orderId\",\"message\":\"Required\"},{\"field\":\"amount\",\"message\":\"Required\"},{\"field\":\"method\",\"message\":\"Required\"}]}}"
+ },
+ {
+  "module": "api/payment/payments",
+  "path": "/api/payment/payments/{id}/refund",
+  "method": "POST",
+  "tags": [
+   "Payments"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"reason\",\"message\":\"Required\"}]}}"
+ },
+ {
+  "module": "api/payment/payments",
+  "path": "/api/payment/payments/webhooks/paymentGateway",
+  "method": "POST",
+  "tags": [
+   "Payments"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/payment/payments/webhooks/paymentGateway not found\",\"timestamp\":\"2026-09-20T17:45:53.610Z\",\"path\":\"/api/payment/payments/webhooks/paymentGateway\"}}"
+ },
+ {
+  "module": "api/payment/payments",
+  "path": "/api/payment/payments/{id}",
+  "method": "GET",
+  "tags": [
+   "Payments"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 500,
+  "authBody": "{\"success\":false,\"error\":\"Internal server error\",\"message\":\"\\nInvalid `this.paymentDelegate.findUnique()` invocation in\\nC:\\\\Users\\\\abdal\\\\Desktop\\\\maysar-express-backend\\\\services\\\\payment-service\\\\src\\\\infrastructure\\\\repositories\\\\payment.repository.ts:97:48\\n\\n  94 }\\n  95 \\n  96 async findById(id: string): Promise<Payment | null> {\\n→ 97   const payment = await this.paymentDelegate.findUnique(\\nThe column `payments.environment` does not exist in the current database.\"}"
+ },
+ {
+  "module": "api/payment/payments",
+  "path": "/api/payment/payments/{id}/status",
+  "method": "GET",
+  "tags": [
+   "Payments"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 500,
+  "authBody": "{\"success\":false,\"error\":\"Internal server error\"}"
+ },
+ {
+  "module": "api/payment/payments",
+  "path": "/api/payment/payments/order/{orderId}",
+  "method": "GET",
+  "tags": [
+   "Payments"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 500,
+  "authBody": "{\"success\":false,\"error\":\"Internal server error\",\"message\":\"\\nInvalid `this.paymentDelegate.findFirst()` invocation in\\nC:\\\\Users\\\\abdal\\\\Desktop\\\\maysar-express-backend\\\\services\\\\payment-service\\\\src\\\\infrastructure\\\\repositories\\\\payment.repository.ts:105:48\\n\\n  102 }\\n  103 \\n  104 async findByOrderId(orderId: string): Promise<Payment | null> {\\n→ 105   const payment = await this.paymentDelegate.findFirst(\\nThe column `payments.environment` does not exist in the current database.\"}"
+ }
+]

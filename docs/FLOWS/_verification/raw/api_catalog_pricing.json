@@ -1,0 +1,54 @@
+[
+ {
+  "module": "api/catalog/pricing",
+  "path": "/api/catalog/pricing/calculate",
+  "method": "POST",
+  "tags": [
+   "Pricing"
+  ],
+  "anonStatus": 400,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"cost: Required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"cost: Required\"}}"
+ },
+ {
+  "module": "api/catalog/pricing",
+  "path": "/api/catalog/pricing/health",
+  "method": "GET",
+  "tags": [
+   "Pricing"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"healthy\",\"service\":\"pricing-service\",\"timestamp\":\"2026-09-20T17:45:49.463Z\",\"uptime\":\"4917s\",\"dependencies\":{\"database\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:49.463Z\",\"details\":{\"connection\":\"not_configured\",\"note\":\"Database no",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"healthy\",\"service\":\"pricing-service\",\"timestamp\":\"2026-09-20T17:45:49.466Z\",\"uptime\":\"4917s\",\"dependencies\":{\"database\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:49.466Z\",\"details\":{\"connection\":\"not_configured\",\"note\":\"Database not yet configured for pricing-service\"}},\"messaging\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:49.466Z\",\"details\":{\"connection\":\"not_implemented\",\"note\":\"Messaging health check not yet implemented - stub only\"}},\"cache\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:49.466Z\",\"details\":{\"connection\":\"not_implemented\",\"note\":\"Cache health check not yet implemented - stub only\"}}}}"
+ },
+ {
+  "module": "api/catalog/pricing",
+  "path": "/api/catalog/pricing/health/live",
+  "method": "GET",
+  "tags": [
+   "Pricing"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"alive\",\"service\":\"pricing-service\",\"timestamp\":\"2026-09-20T17:45:49.469Z\",\"alive\":true,\"uptime\":\"4917s\",\"memory\":{\"rss\":\"344MB\",\"heapUsed\":\"289MB\",\"heapTotal\":\"315MB\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"alive\",\"service\":\"pricing-service\",\"timestamp\":\"2026-09-20T17:45:49.474Z\",\"alive\":true,\"uptime\":\"4917s\",\"memory\":{\"rss\":\"345MB\",\"heapUsed\":\"290MB\",\"heapTotal\":\"315MB\"}}"
+ },
+ {
+  "module": "api/catalog/pricing",
+  "path": "/api/catalog/pricing/health/ready",
+  "method": "GET",
+  "tags": [
+   "Pricing"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"ready\",\"service\":\"pricing-service\",\"timestamp\":\"2026-09-20T17:45:49.477Z\",\"checks\":{\"database\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:49.477Z\",\"details\":{\"connection\":\"not_configured\",\"note\":\"Database not yet configured for pric",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"ready\",\"service\":\"pricing-service\",\"timestamp\":\"2026-09-20T17:45:49.488Z\",\"checks\":{\"database\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:49.488Z\",\"details\":{\"connection\":\"not_configured\",\"note\":\"Database not yet configured for pricing-service\"}}}}"
+ }
+]

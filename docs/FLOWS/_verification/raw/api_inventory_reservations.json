@@ -1,0 +1,41 @@
+[
+ {
+  "module": "api/inventory/reservations",
+  "path": "/api/inventory/reservations",
+  "method": "POST",
+  "tags": [
+   "Inventory"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+ },
+ {
+  "module": "api/inventory/reservations",
+  "path": "/api/inventory/reservations/{orderId}",
+  "method": "GET",
+  "tags": [
+   "Inventory"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"orderId\":\"MSR-ORD-20260903-204842-402F\",\"reservations\":[],\"totalReserved\":0}"
+ },
+ {
+  "module": "api/inventory/reservations",
+  "path": "/api/inventory/reservations/{orderId}",
+  "method": "DELETE",
+  "tags": [
+   "Inventory"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for DELETE requests\"}"
+ }
+]

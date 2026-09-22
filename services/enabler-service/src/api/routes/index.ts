@@ -11,5 +11,3 @@ router.use('/hub', hubRoutes);
 router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
 
 export default router;
-
-

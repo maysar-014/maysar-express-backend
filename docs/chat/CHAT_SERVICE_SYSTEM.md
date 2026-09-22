@@ -229,3 +229,10 @@ Stored in S3 via `S3MediaStore`. `thumbnailUrl` generated for images (300×300, 
 | Messages sent | 200 | 60 minutes |
 
 Enforced per `userId` via `RedisRateLimiter`. Both return HTTP 429 when exceeded.
+
+
+---
+
+## System Maintenance Routes
+
+Check whether the chat service exposes maintenance routes — no `maintenance.routes.ts` was found in `services/chat-service/src/api/routes/`. If the chat service adds an outbox in future, the standard pattern applies: mount at `/api/chat/system/maintenance` behind `requireRoleOrService(['admin','system'])` and `x-service-key`.

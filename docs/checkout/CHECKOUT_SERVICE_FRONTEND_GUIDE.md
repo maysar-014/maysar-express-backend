@@ -119,8 +119,16 @@ POST /api/checkout/cart/merge
 POST /api/checkout/delivery-options
 ```
 ```jsonc
-{ "cartId": "cart_01J...", "deliveryAddress": { "city": "Dar es Salaam", "region": "Kinondoni" } }
+{
+  "sessionId": "cks_01J...",
+  "buyerLat": -6.7924,
+  "buyerLng": 39.2083,
+  "buyerAddress": "123 Uhuru Street, Dar es Salaam",
+  "buyerAddressId": "addr_01J..."
+}
 ```
+
+> ⚠️ The body requires `sessionId` (not `cartId`). `buyerLat`, `buyerLng`, `buyerAddress`, and `buyerAddressId` are all optional. `sessionId` is required — missing it returns `400` with code `SESSION_ID_REQUIRED`.
 
 ```jsonc
 // Response 200
@@ -209,11 +217,13 @@ Session statuses and what the frontend should do:
 | Status | Meaning | Frontend action |
 |---|---|---|
 | `initiated` | Session active, awaiting confirmation | Show order summary, countdown timer |
+| `PENDING_SELLER_VERIFICATION` | Awaiting seller stock confirmation | Show seller verification flow |
+| `payment_pending` | Awaiting payment processing | Show payment in-progress state |
 | `CONFIRMED` | Checkout confirmed, order created | Navigate to order tracking |
 | `EXPIRED` | 1-hour TTL elapsed, inventory released | Show expiry message, restart checkout |
 | `ABANDONED` | Session inactive, cleaned up by sweeper | Treat same as EXPIRED |
 
-When `status === 'EXPIRED'` or `status === 'ABANDONED'`: restart from `POST /delivery-options`.
+> Note: status values are mixed-case as set by the server. Use exact string comparison — `'PENDING_SELLER_VERIFICATION'` and `'payment_pending'` are both valid mid-flow statuses. `'CONFIRMED'` is the terminal success state.
 
 ---
 
@@ -233,11 +243,13 @@ POST /api/checkout/:id/confirm
 ```jsonc
 {
   "sellerQuotes": {
-    "usr_seller_01J...": "lqt_01J...",
-    "usr_seller_02J...": "lqt_02J..."
+    "usr_seller_01J...": { "quoteId": "lqt_01J..." },
+    "usr_seller_02J...": { "quoteId": "lqt_02J..." }
   }
 }
 ```
+
+> ⚠️ Each value in `sellerQuotes` is an **object** `{ "quoteId": "..." }`, not a plain string. Passing a bare string will be ignored.
 
 **All-or-nothing validation:** If one seller's quote is invalid, expired, or consumed, the entire checkout fails. The error response includes which `sellerId` caused the failure:
 
@@ -344,9 +356,29 @@ POST /api/checkout/:id/confirm
 2. User selects delivery option per seller
 3. POST /initiate  { quoteId (primary seller), deliveryWindowPreference }
    →  session created
-4. POST /:id/confirm  { sellerQuotes: { "sellerId1": "quoteId1", "sellerId2": "quoteId2" } }
+4. POST /:id/confirm  { sellerQuotes: { "sellerId1": { "quoteId": "lqt1" }, "sellerId2": { "quoteId": "lqt2" } } }
    →  all-or-nothing validation; if one quote fails → 422 with sellerId
    →  masterOrderId + sellerOrders[]
 5. Navigate to order tracking (show per-seller status)
 ```
 
+
+
+---
+
+## System Maintenance (internal/ops)
+
+These endpoints are for ops/admin use only. They are not called from the frontend.
+
+```
+POST /api/checkout/system/maintenance/cleanup/outbox/report
+POST /api/checkout/system/maintenance/cleanup/outbox
+```
+
+**Auth:** `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+### Outbox cleanup report
+`POST /api/checkout/system/maintenance/cleanup/outbox/report` → **200** — dry-run count of deletable outbox events.
+
+### Outbox cleanup
+`POST /api/checkout/system/maintenance/cleanup/outbox` → **200** — batched deletion. Body: `{ "dryRun": true }` to simulate. `maxRuntimeMs` defaults to 20 seconds.

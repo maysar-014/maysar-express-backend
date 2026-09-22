@@ -251,10 +251,44 @@ Use the `code` value from the discovery endpoint as the `method` field (send upp
 
 `failureCode` is populated on `FAILED` status. **Never show to user** — use generic failure message. See error codes section below.
 
+### Get payment status (lightweight)
+`GET /api/payment/payments/:id/status` — requires auth
+
+Returns a slimmed-down status view without the full payment object:
+
+```jsonc
+{
+  "success": true,
+  "data": {
+    "status": "COMPLETED",
+    "amount": 33000,
+    "currency": "TZS",
+    "completedAt": "2026-09-01T10:05:00Z",
+    "failureReason": null
+  }
+}
+```
+
+Use this for efficient polling instead of `GET /payments/:id` when you only need the status field.
+
 ### Get payment by order ID
 `GET /api/payment/payments/order/:orderId`
 
-Convenience endpoint — returns the payment record for a given order. Returns `data: null` for wallet-only orders (no external payment record).
+Returns the payment record for a given order. If no payment record exists (e.g. wallet-deferred or direct orders), returns **200** with a synthesized stub:
+
+```jsonc
+{
+  "success": true,
+  "data": {
+    "orderId": "ORD-01J...",
+    "status": "cancelled",
+    "paymentMethod": "WALLET",
+    "message": "Order was paid via wallet debit — no payment service record exists"
+  }
+}
+```
+
+This is not an error — it means the order was fulfilled through a path that doesn't create a payment-service record (e.g. internal wallet debit). Do not treat `status: "cancelled"` here as a payment failure.
 
 ### Refund payment
 `POST /api/payment/payments/:paymentId/refund`
@@ -341,7 +375,7 @@ Async — user makes manual bank transfer. Poll `GET /payments/:id` every **30 s
 | Code | HTTP | Meaning | UI action |
 |---|---|---|---|
 | `METHOD_DISABLED` | 409 | Method is set to `off` in ops config | Refresh payment methods, remove option |
-| `METHOD_MISCONFIGURED` | 503 | Method credentials incomplete (ops issue) | Show "method temporarily unavailable", hide option |
+| `METHOD_MISCONFIGURED` | 503 | Live method credentials incomplete (ops issue) — sandbox methods are credential-free and never return this | Show "method temporarily unavailable", hide option |
 | `METHOD_NOT_FOUND` | 404 | Unknown method code sent | Check discovery endpoint, use correct code |
 | `PAYMENT_DECLINED` | 402 | Fraud score triggered auto-decline | Show generic "Payment declined" message |
 | `PAYMENT_FAILED` | 400 | Generic provider failure | Show `failureReason` if safe, offer retry |
@@ -354,6 +388,15 @@ Async — user makes manual bank transfer. Poll `GET /payments/:id` every **30 s
 | `EXCEEDS_TRANSACTION_LIMIT` | 400 | Amount exceeds per-method max | Show limit for selected method |
 | `EXCEEDS_DAILY_LIMIT` | 400 | Daily limit reached | Show reset time |
 | `UNSUPPORTED_CURRENCY` | 400 | Currency not supported | Switch to TZS |
+
+## Sandbox methods behave exactly like real ones
+
+A method in `sandbox` mode returns `available: true` **without any provider credentials** — the payment service runs the complete payment flow (initiation, provider reference, callback/webhook, status update, order sync) against its in-service simulator. From the buyer's perspective nothing changes:
+
+- The method appears, is selectable, and processes normally.
+- Status polling works the same as live (`PROCESSING` → `COMPLETED` / `FAILED` / `CANCELLED`).
+- The only visible difference is the `environment: "SANDBOX"` badge in non-production UIs (see §Payment Response).
+- Sandbox transactions can never become live: provider references are `sbx_`-prefixed and resolved by the sandbox ledger.
 
 ---
 
@@ -383,25 +426,41 @@ Async — user makes manual bank transfer. Poll `GET /payments/:id` every **30 s
       "name": "HaloPesa",
       "type": "mobile_money",
       "provider": "selcom",
-      "environment": "off",
-      "operationalStatus": "disabled",
-      "configurationStatus": "missing_credentials",
-      "missingKeys": ["PAYMENT_SELCOM_LIVE_API_KEY"],
+      "environment": "sandbox",
+      "operationalStatus": "operational",
+      "configurationStatus": "not_required",
+      "missingKeys": [],
       "credentialsPresent": { "API_KEY": false, "MERCHANT_CODE": false, "BASE_URL": false },
-      "lastValidatedAt": "2026-09-06T10:00:00Z"
+      "lastValidatedAt": "2026-09-13T10:00:00Z"
+    },
+    {
+      "code": "card",
+      "name": "Card",
+      "type": "card",
+      "provider": "selcom",
+      "environment": "live",
+      "operationalStatus": "configuration_error",
+      "configurationStatus": "missing_credentials",
+      "missingKeys": [
+        "PAYMENT_SELCOM_LIVE_API_KEY",
+        "PAYMENT_SELCOM_LIVE_MERCHANT_CODE",
+        "PAYMENT_SELCOM_LIVE_BASE_URL"
+      ],
+      "credentialsPresent": { "API_KEY": false, "MERCHANT_CODE": false, "BASE_URL": false },
+      "lastValidatedAt": "2026-09-13T10:00:00Z"
     }
   ],
   "meta": {
-    "misconfiguredCodes": ["halopesa"],
+    "misconfiguredCodes": ["card"],
     "misconfiguredCount": 1
   }
 }
 ```
 
 `operationalStatus` values:
-- `operational` — method is live/sandbox and credentials are complete
+- `operational` — method is enabled and its required configuration is present. `sandbox` requires **no credentials** (simulated provider); `live` requires the complete live credential set
 - `disabled` — method is `off`
-- `configuration_error` — method is enabled but credentials are missing/invalid
+- `configuration_error` — method is `live` but credentials are missing/invalid (sandbox can never be in this state)
 
 **Credential values are never returned** — only presence booleans (`credentialsPresent`).
 
@@ -421,3 +480,23 @@ Async — user makes manual bank transfer. Poll `GET /payments/:id` every **30 s
 - [ ] Wallet: no polling needed — show success immediately on 201
 - [ ] Never expose `failureCode` to users — it's for ops/debugging only
 - [ ] Never calculate total from provider fees in the UI — always display server-returned amounts
+
+
+---
+
+## System Maintenance (internal/ops)
+
+These endpoints are for ops/admin use only. They are not called from the frontend.
+
+```
+POST /api/payment/system/maintenance/cleanup/outbox/report
+POST /api/payment/system/maintenance/cleanup/outbox
+```
+
+**Auth:** `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+### Outbox cleanup report
+`POST /api/payment/system/maintenance/cleanup/outbox/report` → **200** — dry-run count of deletable outbox events.
+
+### Outbox cleanup
+`POST /api/payment/system/maintenance/cleanup/outbox` → **200** — batched deletion. Body: `{ "dryRun": true }` to simulate. `maxRuntimeMs` defaults to 20 seconds.

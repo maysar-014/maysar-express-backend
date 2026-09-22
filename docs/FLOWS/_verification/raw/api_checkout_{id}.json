@@ -1,0 +1,28 @@
+[
+ {
+  "module": "api/checkout/{id}",
+  "path": "/api/checkout/{id}/confirm",
+  "method": "POST",
+  "tags": [
+   "Checkout"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"CHECKOUT_SESSION_NOT_FOUND\",\"message\":\"Session not found\"},\"timestamp\":\"2026-09-20T17:45:51.209Z\"}"
+ },
+ {
+  "module": "api/checkout/{id}",
+  "path": "/api/checkout/{id}",
+  "method": "GET",
+  "tags": [
+   "Checkout"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"CHECKOUT_SESSION_NOT_FOUND\",\"message\":\"Session not found\"},\"timestamp\":\"2026-09-20T17:45:51.212Z\"}"
+ }
+]

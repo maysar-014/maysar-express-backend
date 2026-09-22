@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/auth/device-history",
+  "path": "/api/auth/device-history/{userId}",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"devices\":[],\"total\":0,\"limit\":10,\"offset\":0}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"devices\":[],\"total\":0,\"limit\":10,\"offset\":0}}"
+ }
+]

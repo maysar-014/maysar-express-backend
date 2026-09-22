@@ -224,6 +224,18 @@ export class PaymentRepository implements IPaymentRepository {
     );
   }
 
+  async findAll(limit: number = 50, offset: number = 0): Promise<Payment[]> {
+    const payments = await this.paymentDelegate.findMany({
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      skip: offset,
+    });
+
+    return payments.map((paymentRecord: unknown) =>
+      this.toDomain(paymentRecord),
+    );
+  }
+
   async findPendingOlderThan(date: Date): Promise<Payment[]> {
     const payments = await this.paymentDelegate.findMany({
       where: {

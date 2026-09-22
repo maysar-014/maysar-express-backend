@@ -1,0 +1,67 @@
+[
+ {
+  "module": "api/user/health",
+  "path": "/api/user/health/live",
+  "method": "GET",
+  "tags": [
+   "Users"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"alive\",\"service\":\"user-service\",\"timestamp\":\"2026-09-20T17:45:54.252Z\",\"uptime\":\"4922s\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"alive\",\"service\":\"user-service\",\"timestamp\":\"2026-09-20T17:45:54.261Z\",\"uptime\":\"4922s\"}"
+ },
+ {
+  "module": "api/user/health",
+  "path": "/api/user/health/ping",
+  "method": "GET",
+  "tags": [
+   "Users"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"ok\",\"service\":\"user-service\",\"timestamp\":\"2026-09-20T17:45:54.265Z\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"ok\",\"service\":\"user-service\",\"timestamp\":\"2026-09-20T17:45:54.271Z\"}"
+ },
+ {
+  "module": "api/user/health",
+  "path": "/api/user/health",
+  "method": "GET",
+  "tags": [
+   "Users"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"healthy\",\"service\":\"user-service\",\"version\":\"1.0.0\",\"timestamp\":\"2026-09-20T17:45:54.246Z\",\"uptime\":\"4922s\",\"environment\":\"development\",\"checks\":{\"database\":{\"status\":\"healthy\",\"responseTime\":\"18ms\",\"connectionInfo\":{\"database\":\"maysar_dev",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"healthy\",\"service\":\"user-service\",\"version\":\"1.0.0\",\"timestamp\":\"2026-09-20T17:45:54.293Z\",\"uptime\":\"4922s\",\"environment\":\"development\",\"checks\":{\"database\":{\"status\":\"healthy\",\"responseTime\":\"11ms\",\"connectionInfo\":{\"database\":\"maysar_dev\",\"provider\":\"postgresql\"}},\"rateLimiting\":{\"status\":\"healthy\"},\"memory\":{\"status\":\"healthy\",\"rss\":\"380MB\",\"heapUsed\":\"304MB\",\"heapTotal\":\"344MB\",\"external\":\"12MB\"},\"system\":{\"status\":\"healthy\",\"platform\":\"win32\",\"arch\":\"x64\",\"nodeVersion\":\"v20.19.0\",\"pid\":20728}},\"eventBus\":{\"subscribers\":{\"UserCreated\":0,\"UserUpdated\":0,\"UserVerified\":0},\"dlqSizes\":{\"UserCreated\":0,\"UserUpdated\":0,\"UserVerified\":0}},\"responseTime\":\"11ms\"}"
+ },
+ {
+  "module": "api/user/health",
+  "path": "/api/user/health/ready",
+  "method": "GET",
+  "tags": [
+   "Users"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"ready\",\"service\":\"user-service\",\"timestamp\":\"2026-09-20T17:45:54.285Z\",\"checks\":{\"database\":{\"status\":\"ready\",\"responseTime\":\"9ms\"}}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"ready\",\"service\":\"user-service\",\"timestamp\":\"2026-09-20T17:45:54.331Z\",\"checks\":{\"database\":{\"status\":\"ready\",\"responseTime\":\"31ms\"}}}"
+ },
+ {
+  "module": "api/user/health",
+  "path": "/api/user/health/metrics",
+  "method": "GET",
+  "tags": [
+   "Users"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"error\",\"service\":\"user-service\",\"timestamp\":\"2026-09-20T17:45:54.419Z\",\"error\":\"Failed to collect metrics\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"error\",\"service\":\"user-service\",\"timestamp\":\"2026-09-20T17:45:54.616Z\",\"error\":\"Failed to collect metrics\"}"
+ }
+]

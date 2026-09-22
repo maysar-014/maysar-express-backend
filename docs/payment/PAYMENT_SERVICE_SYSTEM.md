@@ -1,6 +1,6 @@
 # Maysar Payment Service — Implementation Reference (As-Built)
 
-> **Status:** Live and verified — multi-method payment processing, environment-driven method control, fraud scoring, webhook handling, refunds, saga-based settlement.
+> **Status:** Live and verified — multi-method payment processing, environment-driven method control, credential-free sandbox simulation, fraud scoring, webhook handling, refunds, saga-based settlement.
 > **Last updated:** September 2026
 > **Scope:** `services/payment-service` + `prisma/schema.prisma` (`Payment_*` models)
 
@@ -22,6 +22,9 @@
 | **Secrets never leave the config module** | `listPublic()` and `listAdminStatus()` never include credential values — only presence booleans |
 | **Environment is stamped on every payment** | `Payment.environment: SANDBOX | LIVE` is set at creation from `PaymentMethodConfigService.getRuntimeConfig()` |
 | **Explicit failure codes** | `PaymentFailureCode` enum distinguishes `METHOD_DISABLED`, `PROVIDER_UNAVAILABLE`, `PAYMENT_DECLINED`, etc. — never collapsed into a generic failure |
+| **Sandbox simulates the full lifecycle — no shortcuts** | `SandboxSimulatorAdapter` runs initiation → provider → callback → verify → state transition → notification exactly like a real provider; only the provider's network side is simulated in-process (see §7) |
+| **Sandbox needs no provider credentials** | `buildState()` marks any `sandbox` method operational regardless of credentials; only `live` is strictly gated on `PAYMENT_SELCOM_LIVE_*` |
+| **Sandbox and live never mix** | `sbx_`-prefixed references are verified against the simulation ledger; everything else goes to the real gateway — a sandbox transaction can never silently become live |
 
 ---
 
@@ -65,6 +68,22 @@ PAYMENT_SELCOM_SANDBOX_MERCHANT_CODE=...
 PAYMENT_SELCOM_SANDBOX_BASE_URL=...
 ```
 
+**Declared & validated:** every payment variable the service reads is declared explicitly in `paymentEnvSchema` (`config/payment-methods.config.ts`) and validated through zod before it is used:
+- `PAYMENT_<METHOD>_MODE` — `sandbox | live | off`. A malformed value fails fast with the variable name; an empty string is treated as *unset*.
+- `PAYMENT_SELCOM_{SANDBOX,LIVE}_{API_KEY,MERCHANT_CODE,BASE_URL}` — optional; empty means unset.
+- Legacy `SELCOM_PESA_*` vars are accepted by the schema for backward compatibility.
+- `PAYMENT_SANDBOX_COMPLETION_DELAY_MS` — simulator completion delay (default `2000`, clamped 0–60 000).
+
+Invalid values abort configuration with a precise message:
+```text
+Invalid payment method environment configuration:
+  - PAYMENT_MPESA_MODE: Invalid enum value. Expected 'sandbox' | 'live' | 'off'
+```
+
+**Sandbox is credential-free:** in `sandbox` mode the method is powered by the in-service simulator (`infrastructure/providers/sandbox-simulation/`) — **no provider credentials are required or consulted**. Sandbox credential vars that happen to be present are tolerated but never gate operation and are never used in `live`.
+
+**Live strictly requires live credentials:** `live` mode demands a complete `PAYMENT_SELCOM_LIVE_*` set; `getRuntimeConfig()` throws `PaymentConfigurationError` naming the missing keys. There is no fallback to sandbox, development, hard-coded, or another provider's credentials.
+
 **Production default:** When `NODE_ENV=production`, methods without an explicit `MODE` var default to `off` (never silently operational).
 
 ### 2.3 `PaymentMethodConfigService`
@@ -75,7 +94,7 @@ Key methods:
 |---|---|
 | `listPublic()` | Buyer-facing list — all 7 methods with `available: boolean`. `off` methods are included but `available: false`. |
 | `listAvailableCodes()` | Array of operational method codes only. Used internally before processing. |
-| `isOperational(code)` | Returns true when mode ≠ `off` AND credentials are complete. |
+| `isOperational(code)` | Returns true when the method is enabled AND its required configuration is present — `sandbox` needs no credentials (simulator), `live` needs the complete live credential set |
 | `getRuntimeConfig(code)` | Returns provider, channel, environment, credentials. Throws `PaymentConfigurationError` if not operational. |
 | `validateAll()` | Returns codes of methods that are enabled but misconfigured (for startup health check). |
 | `normalizeMethodCode(raw)` | Resolves deprecated aliases; returns `null` for unknown codes. |
@@ -184,7 +203,7 @@ Pipeline: method availability check → fraud check → route to provider → ha
 
 ## 6. Selcom Adapter (`infrastructure/providers/selcom-pesa.adapter.ts`)
 
-Primary mobile money and card adapter. Routes MPESA, AIRTEL_MONEY, MIXX_BY_YAS, HALOPESA, and CARD through Selcom's aggregator API. Handles:
+Primary mobile money and card adapter. Routes MPESA, AIRTEL_MONEY, MIXX_BY_YAS, HALOPESA, and CARD through Selcom's aggregator API in **`live` mode only** (sandbox-mode methods are routed to the sandbox simulator instead — see §7). Handles:
 - USSD push payment initiation
 - Webhook signature verification (HMAC-SHA256)
 - Transaction status polling
@@ -192,7 +211,72 @@ Primary mobile money and card adapter. Routes MPESA, AIRTEL_MONEY, MIXX_BY_YAS, 
 
 ---
 
-## 7. HTTP Surface
+## 7. Sandbox Simulation System
+
+Dedicated, provider-free payment simulation. Lives in `services/payment-service/src/infrastructure/providers/sandbox-simulation/` — cleanly separated from the live provider integrations so it can never be mistaken for (or reused as) a real gateway.
+
+### 7.1 When it activates
+
+A method uses the simulator **iff** its mode is `sandbox`. `live` and `off` never touch it:
+
+| Mode | Provider adapter |
+|---|---|
+| `sandbox` | Per-channel `SandboxSimulatorAdapter` bound to a shared `SandboxLedger` |
+| `live` | Real `SelcomPesaAdapter` (live credentials strictly required) |
+| `off` | Never resolved — rejected by the availability gate before a provider exists |
+
+The switch happens in `PaymentMethodProviderRegistry.getProvider()`. A unit test asserts the live path **never** calls the sandbox factory.
+
+### 7.2 Components
+
+| File | Role |
+|---|---|
+| `sandbox-simulator.adapter.ts` | `IPaymentProvider` implementation — one instance per method channel. Initiation creates a ledger transaction (PENDING → PROCESSING), returns a provider reference, schedules deterministic completion, and dispatches a real webhook through `HandlePaymentWebhookUseCase` on terminal resolution. |
+| `sandbox-ledger.ts` | In-process source of truth. **Terminal states are immutable** — a repeated callback can never double-process or change an outcome. All references are prefixed `sbx_`. |
+| `sandbox-behavior.ts` | Outcome model + completion delay. Outcomes are explicit (never random). |
+| `sandbox-webhook-router.ts` | `SandboxAwareProviderRouter` — webhook/status verifiers delegate `sbx_*` references to the ledger and everything else to the live gateway. |
+
+Per-channel instances share **one** ledger, so a transaction initiated via the M-Pesa channel is verifiable by the webhook pipeline and by any status poll.
+
+### 7.3 The lifecycle it exercises (identical to live)
+
+```text
+Checkout → method gate → create internal payment → simulator initiation →
+provider-style reference → asynchronous processing → webhook dispatch through
+HandlePaymentWebhookUseCase → ledger verification → payment state transition →
+payment.completed / payment.failed events → order synchronization
+```
+
+Only the provider's network side is simulated in-process; every other stage runs the production code path.
+
+### 7.4 Deterministic outcomes (testing control)
+
+Driven by `metadata.sandboxOutcome` on the initiation request — lets integration tests exercise declines, timeouts, and cancellations **through the real pipeline**:
+
+| Outcome (metadata) | Terminal state | Failure reason |
+|---|---|---|
+| `SUCCESS` (default) | `COMPLETED` | — |
+| `INSUFFICIENT_FUNDS` | `FAILED` | `PAYMENT_DECLINED: insufficient funds (simulated)` |
+| `DECLINED` | `FAILED` | `PAYMENT_DECLINED: declined by provider (simulated)` |
+| `TIMEOUT` | `FAILED` | `PAYMENT_EXPIRED: provider timeout (simulated)` |
+| `CANCELLED` | `CANCELLED` | — |
+
+Completion delay: `PAYMENT_SANDBOX_COMPLETION_DELAY_MS` (default `2000` ms, clamped 0–60 000).
+
+### 7.5 Idempotency & integrity
+
+- Every sandbox transaction has an internal Maysar payment ID, independent of the `sbx_` provider reference.
+- The ledger enforces terminal immutability; each inbound callback is counted exactly once.
+- Unknown `sbx_*` references resolve to `PAYMENT_VERIFICATION_FAILED` — the system never fabricates a success.
+- Sandbox webhooks are verified against the ledger before any payment state change, mirroring live signature/status verification.
+
+### 7.6 What sandbox is **not**
+
+Not a frontend-only "pretend success" path; not a mock injected into the use-case layer; not a bypass of validation, callbacks, state transitions, events, or reconciliation. It is the same Maysar payment architecture with the provider adapter swapped for an in-process simulator.
+
+---
+
+## 8. HTTP Surface
 
 Mounted at `/api/payment` (module name `payment-service` → strip `-service` → `/api/payment`).
 
@@ -200,20 +284,21 @@ Mounted at `/api/payment` (module name `payment-service` → strip `-service` �
 |---|---|---|---|
 | GET | `/api/payment/payment-methods` | none | Buyer-facing method discovery |
 | GET | `/api/payment/admin/payment-methods` | admin/system JWT | Ops view of method config state |
+| GET | `/api/payment/admin/payments` | admin/system JWT | Payment summary roster (`?limit=&offset=`, max limit 200) |
 | POST | `/api/payment/payments` | JWT | Initiate payment |
 | GET | `/api/payment/payments/:paymentId` | JWT | Payment status |
 | GET | `/api/payment/payments/order/:orderId` | JWT | Payment by order ID |
 | POST | `/api/payment/payments/:paymentId/refund` | JWT | Initiate refund |
 | POST | `/api/payment/payments/:paymentId/block` | admin JWT | Block transaction |
 | POST | `/api/payment/payments/:paymentId/flag` | admin JWT | Flag for review |
-| POST | `/api/payment/payments/webhooks/payment-gateway` | webhook sig | Selcom/gateway webhook |
+| POST | `/api/payment/payments/webhooks/payment-gateway` | webhook sig | Selcom/gateway webhook — `sbx_*` references resolve against the simulation ledger (sandbox callbacks), everything else against the real gateway |
 | GET | `/api/payment/health` | none | Health check |
 | GET | `/api/payment/health/ready` | none | Readiness probe |
 | GET | `/api/payment/health/live` | none | Liveness probe |
 
 ---
 
-## 8. Events
+## 9. Events
 
 | Event | Emitted by | Payload |
 |---|---|---|
@@ -229,14 +314,31 @@ Events consumed:
 
 ---
 
-## 9. Verification Evidence
+## 10. Verification Evidence
 
 | Artifact | What it proves |
 |---|---|
-| `config/__tests__/payment-methods.config.test.ts` | Method mode resolution, `off` behavior, credential validation, alias normalization |
+| `config/__tests__/payment-methods.config.test.ts` | Method mode resolution, `off` behavior, credential-free sandbox, live credential enforcement, alias normalization |
+| `infrastructure/providers/sandbox-simulation/__tests__/sandbox-behavior.test.ts` | Outcome resolution, terminal mapping, delay clamping |
+| `infrastructure/providers/sandbox-simulation/__tests__/sandbox-ledger.test.ts` | Ledger lifecycle, terminal immutability (duplicate-callback protection) |
+| `infrastructure/providers/sandbox-simulation/__tests__/sandbox-simulator.adapter.test.ts` | Initiation → ledger → webhook through the real pipeline; deterministic declines; router delegation (`sbx_*` vs live) |
 | `domain/engines/__tests__/fraud.engine.test.ts` | All 5 fraud checks, risk scoring, recommendation thresholds |
 | `domain/entities/__tests__/payment.entity.test.ts` | Status transition matrix, refund arithmetic, `failureCode` stamping |
 | `application/use-cases/__tests__/process-payment.use-case.test.ts` | Full processing pipeline including method availability gate |
 | `application/use-cases/__tests__/refund-payment.use-case.test.ts` | Refund validation, partial refund |
 | `infrastructure/providers/__tests__/selcom-pesa.adapter.test.ts` | Webhook signature verification |
 | `tests/integration/payment-flow.test.ts` | End-to-end payment flow |
+
+
+---
+
+## System Maintenance Routes
+
+Mounted at `/api/payment/system/maintenance`. Guards: `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/payment/system/maintenance/cleanup/outbox/report` | Dry-run count of deletable payment outbox events |
+| POST | `/api/payment/system/maintenance/cleanup/outbox` | Batched deletion of expired outbox events. Body: `{ "dryRun": true }` to simulate |
+
+**Retention defaults:** sent/processed → 7 days, failed → 30 days. Batch size: 1000. Max runtime: 20 s.

@@ -1,0 +1,164 @@
+[
+ {
+  "label": "D01-openapi-declared",
+  "method": "POST",
+  "path": "/api/checkout/items",
+  "role": "buyer",
+  "status": 405,
+  "body": "{\"error\":\"Method Not Allowed\"}",
+  "tokenPresent": true
+ },
+ {
+  "label": "D01-implementation",
+  "method": "POST",
+  "path": "/api/checkout/cart/items",
+  "role": "buyer",
+  "status": 400,
+  "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Cart validation failed\",\"details\":{\"productId\":\"Product ID must be a valid ID\",\"quantity\":\"Quantity must be greater than 0\",\"priceAtTime\":\"Price must be non-negative\"}},\"timestamp\":\"2026-09-20T17:49:14.017Z\"}",
+  "tokenPresent": true
+ },
+ {
+  "label": "D01-openapi-declared-merge",
+  "method": "POST",
+  "path": "/api/checkout/merge",
+  "role": "buyer",
+  "status": 405,
+  "body": "{\"error\":\"Method Not Allowed\"}",
+  "tokenPresent": true
+ },
+ {
+  "label": "D01-implementation-merge",
+  "method": "POST",
+  "path": "/api/checkout/cart/merge",
+  "role": "buyer",
+  "status": 400,
+  "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Cart merge validation failed\",\"details\":{\"sourceCartId\":\"Source cart ID must be a valid cart ID\",\"targetCartId\":\"Target cart ID must be a valid cart ID\",\"userId\":\"User ID must be a valid ID\"}},\"timestamp\":\"2026-09-20T17:49:14.028Z\"}",
+  "tokenPresent": true
+ },
+ {
+  "label": "D01-cart-current",
+  "method": "GET",
+  "path": "/api/checkout/cart/current",
+  "role": "buyer",
+  "status": 200,
+  "body": "{\"success\":true,\"data\":{\"id\":\"chk_cart_01M1M5ZKXJ4GKYB4RDF9YADFKE\",\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"items\":[{\"productId\":\"cat_01M0K348PYMH70B2N2ZREEQRFK\",\"quantity\":4,\"priceAtTime\":0},{\"productId\":\"cat_pro_01M0SXG384GTP1DNMCNMC9YDNY\",\"quantity\":26,\"priceAtTime\":0}],\"totalItems\":30,\"subtotal\":0},\"timestamp\":\"2026-09-20T17:49:14.037Z\"}",
+  "tokenPresent": true
+ },
+ {
+  "label": "D01-openapi-cartid",
+  "method": "DELETE",
+  "path": "/api/checkout/chk_cart_01M1M5ZKXJ4GKYB4RDF9YADFKE",
+  "role": "buyer",
+  "status": 405,
+  "body": "{\"error\":\"Method Not Allowed\"}",
+  "tokenPresent": true
+ },
+ {
+  "label": "D01-impl-cartid",
+  "method": "DELETE",
+  "path": "/api/checkout/cart/chk_cart_01M1M5ZKXJ4GKYB4RDF9YADFKE",
+  "role": "buyer",
+  "status": 200,
+  "body": "{\"success\":true,\"data\":{\"id\":\"chk_cart_01M1M5ZKXJ4GKYB4RDF9YADFKE\",\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"items\":[],\"totalItems\":0,\"subtotal\":0},\"timestamp\":\"2026-09-20T17:49:14.065Z\"}",
+  "tokenPresent": true
+ },
+ {
+  "label": "D02-payment-bogus-id",
+  "method": "GET",
+  "path": "/api/payment/payments/pay_DOES_NOT_EXIST",
+  "role": "buyer",
+  "status": 400,
+  "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"id\",\"message\":\"Invalid ID format\"}]}}",
+  "tokenPresent": true
+ },
+ {
+  "label": "D02-payment-order",
+  "method": "GET",
+  "path": "/api/payment/payments/order/MSR-ORD-20260903-204842-402F",
+  "role": "buyer",
+  "status": 500,
+  "body": "{\"success\":false,\"error\":\"Internal server error\",\"message\":\"\\nInvalid `this.paymentDelegate.findFirst()` invocation in\\nC:\\\\Users\\\\abdal\\\\Desktop\\\\maysar-express-backend\\\\services\\\\payment-service\\\\src\\\\infrastructure\\\\repositories\\\\payment.repository.ts:105:48\\n\\n  102 }\\n  103 \\n  104 async findByOrderId(orderId: string): Promise<Payment | null> {\\n→ 105   const payment = await this.paymentDelegate.findFirst(\\nThe column `payments.environment` does not exist in the current database.\"}",
+  "tokenPresent": true
+ },
+ {
+  "label": "D02-payment-list",
+  "method": "GET",
+  "path": "/api/payment/payments",
+  "role": "buyer",
+  "status": 405,
+  "body": "{\"error\":\"Method Not Allowed\"}",
+  "tokenPresent": true
+ },
+ {
+  "label": "D02-payment-status",
+  "method": "GET",
+  "path": "/api/payment/payments/pay_DOES_NOT_EXIST/status",
+  "role": "buyer",
+  "status": 400,
+  "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"id\",\"message\":\"Invalid ID format\"}]}}",
+  "tokenPresent": true
+ },
+ {
+  "label": "D03-enabler-bogus",
+  "method": "GET",
+  "path": "/api/enabler/enablers/enr_DOES_NOT_EXIST",
+  "role": "enabler",
+  "status": 400,
+  "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"id\",\"message\":\"\\\"id\\\" with value \\\"enr_DOES_NOT_EXIST\\\" fails to match the required pattern: /^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$/\"}]}}",
+  "tokenPresent": true
+ },
+ {
+  "label": "D03-enabler-list",
+  "method": "GET",
+  "path": "/api/enabler/enablers",
+  "role": "enabler",
+  "status": 404,
+  "body": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/enabler/enablers not found\",\"timestamp\":\"2026-09-20T17:49:14.098Z\",\"path\":\"/api/enabler/enablers\"}}",
+  "tokenPresent": true
+ },
+ {
+  "label": "D03-enabler-me",
+  "method": "GET",
+  "path": "/api/enabler/enablers/me",
+  "role": "enabler",
+  "status": 400,
+  "body": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"id\",\"message\":\"\\\"id\\\" with value \\\"me\\\" fails to match the required pattern: /^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$/\"}]}}",
+  "tokenPresent": true
+ },
+ {
+  "label": "D04-actionitem-bogus",
+  "method": "PATCH",
+  "path": "/api/analytics/action-items/ai_DOES_NOT_EXIST/resolve",
+  "role": "admin",
+  "status": 500,
+  "body": "{\"error\":\"Failed to resolve action item\"}",
+  "tokenPresent": true
+ },
+ {
+  "label": "D05-search-canonical",
+  "method": "GET",
+  "path": "/api/catalog/v1/products/search?q=test",
+  "role": "buyer",
+  "status": 200,
+  "body": "{\"success\":true,\"data\":[{\"id\":\"cat_pro_01KWW9MF1M7D7XZDJ0BFV5J5BH\",\"name\":\"Playwright Test Headphones\",\"description\":\"Playwright Test Headphones is a premium general offered by Playwright. Type: over-ear Specifications:  Suitable for general purposes. Available from verified suppliers on Maysar marketplace across Tanzania.\",\"price\":{\"amount\":29999,\"currency\":\"TZS\"},\"categoryId\":\"cmr3zmde90000qhui1xo6t2ta\",\"sellerId\":\"usr_01KWJA1ZN2P0G54F9D7QR1PR7A\",\"type\":\"physical\",\"tags\":[],\"status\":\"published\",\"thumbnailUrl\":null,\"mediaUrls\":[],\"attributes\":{},\"inventoryStatus\":\"out_of_stock\",\"inventoryAvailable\":0,\"codAccepted\":false,\"freeDelivery\":false,\"condition\":\"new\",\"averageRating\":null,\"reviewCount\":0,\"createdAt\":\"2026-07-06T18:04:19.893Z\",\"slug\":null,\"brand\":null,\"variantId\":null,\"sku\":null,\"compareAtPrice\":null,\"weight\":null,\"campaign\":null},{\"id\":\"cat_pro_01KWWKRMA70RH5KE6WDM5A2TBW\",\"name\":",
+  "tokenPresent": true
+ },
+ {
+  "label": "D06-refresh-no-cookie",
+  "method": "POST",
+  "path": "/api/auth/refresh",
+  "role": "buyer",
+  "status": 401,
+  "body": "{\"success\":false,\"message\":\"Refresh token required\"}",
+  "tokenPresent": true
+ },
+ {
+  "label": "D07-user-lookup",
+  "method": "GET",
+  "path": "/api/user/lookup?email=buyer@maysar.co.tz",
+  "role": "admin",
+  "status": 403,
+  "body": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Internal endpoint\"}}",
+  "tokenPresent": true
+ }
+]

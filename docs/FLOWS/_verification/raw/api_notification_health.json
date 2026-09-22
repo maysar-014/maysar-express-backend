@@ -1,0 +1,41 @@
+[
+ {
+  "module": "api/notification/health",
+  "path": "/api/notification/health/live",
+  "method": "GET",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"alive\",\"timestamp\":\"2026-09-20T17:45:52.971Z\",\"uptime\":\"4920s\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"alive\",\"timestamp\":\"2026-09-20T17:45:52.975Z\",\"uptime\":\"4920s\"}"
+ },
+ {
+  "module": "api/notification/health",
+  "path": "/api/notification/health",
+  "method": "GET",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"healthy\",\"service\":\"notification-service\",\"version\":\"1.0.0\",\"timestamp\":\"2026-09-20T17:45:52.981Z\",\"uptime\":\"4920s\",\"environment\":\"development\",\"checks\":{\"database\":{\"status\":\"healthy\",\"responseTime\":\"22ms\",\"connectionInfo\":{\"database\":\"ma",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"healthy\",\"service\":\"notification-service\",\"version\":\"1.0.0\",\"timestamp\":\"2026-09-20T17:45:53.029Z\",\"uptime\":\"4920s\",\"environment\":\"development\",\"checks\":{\"database\":{\"status\":\"healthy\",\"responseTime\":\"13ms\",\"connectionInfo\":{\"database\":\"maysar_dev\",\"provider\":\"postgresql\"}},\"memory\":{\"status\":\"healthy\",\"rss\":\"361MB\",\"heapUsed\":\"261MB\"}},\"eventBus\":{\"subscribers\":{\"NotificationRequested\":0,\"NotificationSent\":0,\"NotificationFailed\":0},\"dlqSizes\":{\"NotificationRequested\":0,\"NotificationSent\":0,\"NotificationFailed\":0}}}"
+ },
+ {
+  "module": "api/notification/health",
+  "path": "/api/notification/health/ready",
+  "method": "GET",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"ready\",\"timestamp\":\"2026-09-20T17:45:53.009Z\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"ready\",\"timestamp\":\"2026-09-20T17:45:53.031Z\"}"
+ }
+]

@@ -1,0 +1,41 @@
+[
+ {
+  "module": "api/logistics/health",
+  "path": "/api/logistics/health",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"healthy\",\"service\":\"logistics-service\",\"timestamp\":\"2026-09-20T17:45:52.882Z\",\"eventBus\":{\"subscribers\":{\"DeliveryCreated\":0,\"DeliveryAssigned\":0,\"DeliveryCompleted\":0},\"dlqSizes\":{\"DeliveryCreated\":0,\"DeliveryAssigned\":0,\"DeliveryComplete",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"healthy\",\"service\":\"logistics-service\",\"timestamp\":\"2026-09-20T17:45:52.886Z\",\"eventBus\":{\"subscribers\":{\"DeliveryCreated\":0,\"DeliveryAssigned\":0,\"DeliveryCompleted\":0},\"dlqSizes\":{\"DeliveryCreated\":0,\"DeliveryAssigned\":0,\"DeliveryCompleted\":0}}}"
+ },
+ {
+  "module": "api/logistics/health",
+  "path": "/api/logistics/health/live",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"alive\",\"service\":\"logistics-service\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"alive\",\"service\":\"logistics-service\"}"
+ },
+ {
+  "module": "api/logistics/health",
+  "path": "/api/logistics/health/ready",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"ready\",\"service\":\"logistics-service\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"ready\",\"service\":\"logistics-service\"}"
+ }
+]

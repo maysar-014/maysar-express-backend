@@ -1,0 +1,282 @@
+
+
+########## Analytics ##########
+BE mounted: 25 (business 21, internal 4) | FE defined: 29
+Aligned: 23 | FE-only (broken/404 risk): 6 | BE-only (unconsumed): 1
+Compliance (aligned/union): 77%
+-- FE-only paths --
+  FE> /api/analytics/events
+  FE> /api/analytics/search/trends
+  FE> /api/analytics/logistics/heatmap
+  FE> /api/analytics/platform/stats
+  FE> /api/analytics/product/performance
+  FE> /api/analytics/sellers/{p}/analytics
+-- BE-only (business) --
+  BE> GET /api/analytics/analytics/sales/{p}
+-- Aligned --
+  OK> /api/analytics/admin/dashboard/red-flags
+  OK> /api/analytics/health
+  OK> /api/analytics/metrics
+  OK> /api/analytics/seller-profitability/financial
+  OK> /api/analytics/seller-profitability/growth-indicators
+  OK> /api/analytics/seller-profitability/happiness
+  OK> /api/analytics/seller-profitability/retention
+  OK> /api/analytics/seller-profitability/revenue-health
+  OK> /api/analytics/seller-profitability/dashboard
+  OK> /api/analytics/seller-profitability/dashboard/{p}
+  OK> /api/analytics/courier/analytics/{p}
+  OK> /api/analytics/action-items/{p}/resolve
+  OK> /api/analytics/sellers/{p}/dashboard/action-center
+  OK> /api/analytics/sellers/{p}/dashboard
+  OK> /api/analytics/analytics/dashboard/{p}
+  OK> /api/analytics/sellers/{p}/sla
+  OK> /api/analytics/sellers/{p}/sla/breaches
+  OK> /api/analytics/sellers/{p}/sla/readiness
+  OK> /api/analytics/sellers/{p}/sla/evaluate
+  OK> /api/analytics/sellers/{p}/dashboard/money-snapshot
+  OK> /api/analytics/sellers/{p}/dashboard/profitability-score
+  OK> /api/analytics/sellers/{p}/dashboard/sales-trend
+  OK> /api/analytics/supplier/analytics/{p}
+
+
+########## Business Registry ##########
+BE mounted: 56 (business 51, internal 5) | FE defined: 24
+Aligned: 24 | FE-only (broken/404 risk): 0 | BE-only (unconsumed): 26
+Compliance (aligned/union): 55%
+-- BE-only (business) --
+  BE> POST /api/business-registry
+  BE> GET /api/business-registry/{p}/compliance-records
+  BE> POST /api/business-registry/{p}/compliance-records
+  BE> GET /api/business-registry/{p}/documents
+  BE> POST /api/business-registry/{p}/documents
+  BE> GET /api/business-registry/businesses/industries/{p}/sellers
+  BE> GET /api/business-registry/businesses/sellers
+  BE> GET /api/business-registry/businesses/sellers/{p}
+  BE> GET /api/business-registry/businesses/sellers/{p}/industries
+  BE> GET /api/business-registry/industries/{p}/sellers
+  BE> POST /api/business-registry/public
+  BE> DELETE /api/business-registry/public/{p}
+  BE> GET /api/business-registry/public/{p}
+  BE> PUT /api/business-registry/public/{p}
+  BE> GET /api/business-registry/public/{p}/compliance-records
+  BE> POST /api/business-registry/public/{p}/compliance-records
+  BE> GET /api/business-registry/public/{p}/documents
+  BE> POST /api/business-registry/public/{p}/documents
+  BE> POST /api/business-registry/public/{p}/reactivate
+  BE> POST /api/business-registry/public/{p}/suspend
+  BE> POST /api/business-registry/public/{p}/verify
+  BE> GET /api/business-registry/public/owner/{p}
+  BE> GET /api/business-registry/public/search
+  BE> GET /api/business-registry/sellers
+  BE> GET /api/business-registry/sellers/{p}
+  BE> GET /api/business-registry/sellers/{p}/industries
+-- Aligned --
+  OK> /api/business-registry/businesses
+  OK> /api/business-registry/businesses/search
+  OK> /api/business-registry/public/sellers
+  OK> /api/business-registry/health
+  OK> /api/business-registry/health/live
+  OK> /api/business-registry/health/ready
+  OK> /api/business-registry/search
+  OK> /api/business-registry/system/maintenance/cleanup/outbox
+  OK> /api/business-registry/system/maintenance/cleanup/outbox/report
+  OK> /api/business-registry/businesses/{p}
+  OK> /api/business-registry/{p}
+  OK> /api/business-registry/businesses/{p}/compliance-records
+  OK> /api/business-registry/businesses/{p}/documents
+  OK> /api/business-registry/businesses/owner/{p}
+  OK> /api/business-registry/businesses/{p}/reactivate
+  OK> /api/business-registry/businesses/{p}/suspend
+  OK> /api/business-registry/businesses/{p}/verify
+  OK> /api/business-registry/owner/{p}
+  OK> /api/business-registry/public/industries/{p}/sellers
+  OK> /api/business-registry/public/sellers/{p}
+  OK> /api/business-registry/public/sellers/{p}/industries
+  OK> /api/business-registry/{p}/reactivate
+  OK> /api/business-registry/{p}/suspend
+  OK> /api/business-registry/{p}/verify
+
+
+########## Catalog ##########
+BE mounted: 86 (business 71, internal 15) | FE defined: 59
+Aligned: 56 | FE-only (broken/404 risk): 3 | BE-only (unconsumed): 12
+Compliance (aligned/union): 80%
+-- FE-only paths --
+  FE> /api/catalog/v1/products/{p}/buy-box
+  FE> /api/catalog/v1/sellers/{p}/storefront
+  FE> /api/catalog/v1/products/{p}/buy-box/compute
+-- BE-only (business) --
+  BE> POST /api/catalog/pricing/calculate
+  BE> GET /api/catalog/products/{p}/buy-box
+  BE> POST /api/catalog/products/{p}/buy-box/compute
+  BE> PATCH /api/catalog/seller-locations/{p}/activate
+  BE> PATCH /api/catalog/seller-locations/{p}/deactivate
+  BE> GET /api/catalog/sellers/{p}/storefront
+  BE> DELETE /api/catalog/v1/admin/buy-box/anomaly-flags/{p}
+  BE> GET /api/catalog/v1/admin/buy-box/history/{p}
+  BE> POST /api/catalog/v1/admin/buy-box/overrides
+  BE> PUT /api/catalog/v1/admin/buy-box/strategies/{p}
+  BE> DELETE /api/catalog/v1/categories/{p}
+  BE> PUT /api/catalog/v1/categories/{p}
+-- Aligned --
+  OK> /api/catalog/v1/products
+  OK> /api/catalog/seller-locations
+  OK> /api/catalog/seller-locations/transfers
+  OK> /api/catalog/v1/categories
+  OK> /api/catalog/v1/products/search
+  OK> /api/catalog/v1/products/preview-description
+  OK> /api/catalog/v1/products/bulk
+  OK> /api/catalog/v1/pricing/bulk-update
+  OK> /api/catalog/v1/pricing/calculate
+  OK> /api/catalog/campaigns
+  OK> /api/catalog/health
+  OK> /api/catalog/health/live
+  OK> /api/catalog/health/ready
+  OK> /api/catalog/v1/search/products
+  OK> /api/catalog/v1/search
+  OK> /api/catalog/match
+  OK> /api/catalog/match/pending
+  OK> /api/catalog/v1/search/popular
+  OK> /api/catalog/v1/pricing/analytics
+  OK> /api/catalog/pricing/health
+  OK> /api/catalog/pricing/health/live
+  OK> /api/catalog/pricing/health/ready
+  OK> /api/catalog/v1/pricing/rules
+  OK> /api/catalog/v1/media/upload
+  OK> /api/catalog/v1/search/analytics
+  OK> /api/catalog/v1/search/suggestions
+  OK> /api/catalog/system/maintenance/cleanup/event-store
+  OK> /api/catalog/system/maintenance/cleanup/event-store/report
+  OK> /api/catalog/system/maintenance/cleanup/outbox
+  OK> /api/catalog/system/maintenance/cleanup/outbox/report
+  OK> /api/catalog/v1/pricing/validate-rule
+  OK> /api/catalog/seller-locations/{p}
+  OK> /api/catalog/seller-locations/{p}/products/{p}
+  OK> /api/catalog/seller-locations/{p}/products/{p}/stock
+  OK> /api/catalog/seller-locations/products/{p}
+  OK> /api/catalog/v1/sellers/{p}/products
+  OK> /api/catalog/v1/products/{p}
+  OK> /api/catalog/v1/categories/{p}/attributes
+  OK> /api/catalog/campaigns/{p}
+  OK> /api/catalog/campaigns/{p}/cancel
+  OK> /api/catalog/campaigns/{p}/complete
+  OK> /api/catalog/campaigns/{p}/launch
+  OK> /api/catalog/campaigns/{p}/pause
+  OK> /api/catalog/campaigns/{p}/resume
+  OK> /api/catalog/match/confirm/{p}
+  OK> /api/catalog/sellers/{p}/share-url
+  OK> /api/catalog/match/audit/{p}
+  OK> /api/catalog/v1/products/{p}/analytics
+  OK> /api/catalog/v1/products/{p}/media
+  OK> /api/catalog/v1/products/{p}/reviews
+  OK> /api/catalog/v1/reviews/{p}/moderate
+  OK> /api/catalog/v1/products/{p}/metrics
+  OK> /api/catalog/v1/products/{p}/publish
+  OK> /api/catalog/v1/products/{p}/unpublish
+  OK> /api/catalog/v1/products/{p}/category
+  OK> /api/catalog/v1/products/{p}/pricing
+
+
+########## Chat ##########
+BE mounted: 30 (business 30, internal 0) | FE defined: 12
+Aligned: 12 | FE-only (broken/404 risk): 0 | BE-only (unconsumed): 13
+Compliance (aligned/union): 55%
+-- BE-only (business) --
+  BE> GET /api/chat/v1/admin/moderation/messages
+  BE> GET /api/chat/v1/admin/moderation/messages/{p}
+  BE> POST /api/chat/v1/admin/moderation/messages/{p}/review
+  BE> GET /api/chat/v1/admin/moderation/patterns
+  BE> DELETE /api/chat/v1/admin/moderation/patterns/{p}
+  BE> POST /api/chat/v1/admin/moderation/patterns/{p}/promote
+  BE> POST /api/chat/v1/admin/moderation/patterns/mine
+  BE> GET /api/chat/v1/admin/moderation/phrases
+  BE> POST /api/chat/v1/admin/moderation/phrases
+  BE> DELETE /api/chat/v1/admin/moderation/phrases/{p}
+  BE> GET /api/chat/v1/admin/moderation/phrases/{p}
+  BE> PUT /api/chat/v1/admin/moderation/phrases/{p}
+  BE> POST /api/chat/v1/admin/moderation/phrases/seed
+-- Aligned --
+  OK> /api/chat/v1/admin/blocklist/domains
+  OK> /api/chat/v1/admin/blocklist/domains/{p}
+  OK> /api/chat/v1/conversations
+  OK> /api/chat/v1/conversations/search
+  OK> /api/chat/v1/conversations/{p}
+  OK> /api/chat/v1/conversations/{p}/read
+  OK> /api/chat/v1/conversations/{p}/mute
+  OK> /api/chat/v1/media/upload
+  OK> /api/chat/v1/conversations/{p}/messages
+  OK> /api/chat/v1/conversations/{p}/messages/{p}
+  OK> /api/chat/v1/messages/{p}/report
+  OK> /api/chat/v1/users/{p}/block
+
+
+########## Checkout ##########
+BE mounted: 17 (business 11, internal 6) | FE defined: 15
+Aligned: 10 | FE-only (broken/404 risk): 5 | BE-only (unconsumed): 5
+Compliance (aligned/union): 56%
+-- FE-only paths --
+  FE> /api/checkout/confirm
+  FE> /api/checkout/cart/current
+  FE> /api/checkout/cart/items
+  FE> /api/checkout/cart/merge
+  FE> /api/checkout/cart/{p}
+-- BE-only (business) --
+  BE> GET /api/checkout/current
+  BE> DELETE /api/checkout/items
+  BE> PATCH /api/checkout/items
+  BE> POST /api/checkout/items
+  BE> POST /api/checkout/merge
+-- Aligned --
+  OK> /api/checkout/initiate
+  OK> /api/checkout/delivery-options
+  OK> /api/checkout/health
+  OK> /api/checkout/health/live
+  OK> /api/checkout/health/ready
+  OK> /api/checkout/metrics
+  OK> /api/checkout/system/maintenance/cleanup/checkout-sessions
+  OK> /api/checkout/system/maintenance/cleanup/checkout-sessions/report
+  OK> /api/checkout/{p}
+  OK> /api/checkout/{p}/confirm
+
+
+########## Commission ##########
+BE mounted: 8 (business 5, internal 3) | FE defined: 8
+Aligned: 8 | FE-only (broken/404 risk): 0 | BE-only (unconsumed): 0
+Compliance (aligned/union): 100%
+-- Aligned --
+  OK> /api/commissions/calculate
+  OK> /api/commissions/health
+  OK> /api/commissions/health/live
+  OK> /api/commissions/health/ready
+  OK> /api/commissions/{p}
+  OK> /api/commissions/sellers/{p}
+  OK> /api/commissions/sellers/{p}/summary
+  OK> /api/commissions/{p}/approve
+
+
+########## Wallet ##########
+BE mounted: 23 (business 16, internal 7) | FE defined: 21
+Aligned: 21 | FE-only (broken/404 risk): 0 | BE-only (unconsumed): 0
+Compliance (aligned/union): 100%
+-- Aligned --
+  OK> /api/wallet/health/live
+  OK> /api/wallet/health/ready
+  OK> /api/wallet/system/maintenance/cleanup/idempotency
+  OK> /api/wallet/system/maintenance/cleanup/idempotency/report
+  OK> /api/wallet/system/maintenance/cleanup/outbox
+  OK> /api/wallet/system/maintenance/cleanup/outbox/report
+  OK> /api/wallet/wallets/{p}
+  OK> /api/wallet/wallets/{p}/balance
+  OK> /api/wallet/wallets/{p}/credit
+  OK> /api/wallet/wallets/{p}/debit
+  OK> /api/wallet/wallets/{p}/statement
+  OK> /api/wallet/wallets/{p}/transactions
+  OK> /api/wallet/wallets/{p}/topup
+  OK> /api/wallet/wallets/{p}/payout
+  OK> /api/wallet/wallets/{p}/freeze
+  OK> /api/wallet/wallets/{p}/unfreeze
+  OK> /api/wallet/wallets/{p}/transaction/{p}/reverse
+  OK> /api/wallet/wallets/{p}/hold/{p}/capture
+  OK> /api/wallet/wallets/{p}/hold
+  OK> /api/wallet/wallets/{p}/hold/{p}/release
+  OK> /api/wallet/wallets/{p}/holds

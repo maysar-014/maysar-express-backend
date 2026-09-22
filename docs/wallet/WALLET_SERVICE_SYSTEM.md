@@ -211,3 +211,17 @@ Events consumed:
 | `application/use-cases/__tests__/debit-wallet.use-case.test.ts` | Debit + velocity + limit checks |
 | `application/sagas/__tests__/cod-settlement.saga.test.ts` | COD capture/release saga |
 | E2E Postman P1 suite | Exact arithmetic: credit X → balance +X; debit X → balance -X; overdraft rejected |
+
+
+---
+
+## System Maintenance Routes
+
+Mounted at `/api/wallet/system/maintenance`. Guards: `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/wallet/system/maintenance/cleanup/outbox/report` | Dry-run count of deletable wallet outbox events |
+| POST | `/api/wallet/system/maintenance/cleanup/outbox` | Batched deletion of expired outbox events. Body: `{ "dryRun": true }` to simulate |
+
+**Retention defaults:** sent/processed → 7 days, failed → 30 days. Batch size: 1000. Max runtime: 20 s.

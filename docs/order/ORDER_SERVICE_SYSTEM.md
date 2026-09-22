@@ -202,3 +202,17 @@ Events consumed:
 | `application/use-cases/__tests__/cancel-order.use-case.test.ts` | Wallet restoration on cancel |
 | `application/sagas/__tests__/order-fulfillment.saga.test.ts` | Full saga + compensation |
 | E2E Postman P0 suite | COD rejection, cancel-restore, end-to-end wallet order |
+
+
+---
+
+## System Maintenance Routes
+
+Mounted at `/api/order/system/maintenance`. Guards: `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/order/system/maintenance/cleanup/outbox/report` | Dry-run count of deletable order outbox events |
+| POST | `/api/order/system/maintenance/cleanup/outbox` | Batched deletion of expired outbox events. Body: `{ "dryRun": true }` to simulate |
+
+**Retention defaults:** sent/processed → 7 days, failed → 30 days. Batch size: 1000. Max runtime: 20 s.

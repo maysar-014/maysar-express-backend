@@ -1,0 +1,28 @@
+[
+ {
+  "module": "api/payout/system",
+  "path": "/api/payout/system/maintenance/cleanup/outbox",
+  "method": "POST",
+  "tags": [
+   "Payouts"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 401,
+  "authBody": "{\"success\":false,\"error\":\"Service key required\"}"
+ },
+ {
+  "module": "api/payout/system",
+  "path": "/api/payout/system/maintenance/cleanup/outbox/report",
+  "method": "POST",
+  "tags": [
+   "Payouts"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 401,
+  "authBody": "{\"success\":false,\"error\":\"Service key required\"}"
+ }
+]

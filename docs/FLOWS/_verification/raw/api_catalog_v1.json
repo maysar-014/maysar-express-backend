@@ -1,0 +1,535 @@
+[
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/admin/buy-box/anomaly-flags/{flagId}",
+  "method": "DELETE",
+  "tags": [
+   "Catalog"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 500,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"INTERNAL_ERROR\",\"message\":\"An internal error occurred.\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/admin/buy-box/history/{productId}",
+  "method": "GET",
+  "tags": [
+   "Catalog"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":[{\"productId\":\"cat_01M0K348375C27XANED7D0BVQH\",\"sellerId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"compositeScore\":82.06936488169364,\"signalValues\":{\"returnRate\":0,\"disputeRate\":0,\"deliverySpeed\":0,\"cancellationRate\":0,\"sellerTrustScore\":0,\"stockReliability\":0,\"priceCompetitiveness\":0,\"fulfillmentReliability\":0,\"customerRetentionImpact\":0},\"signalWeights\":{\"returnRate\":0.04,\"disputeRate\":0.08,\"deliverySpeed\":0.12,\"cancellationRate\":0.05,\"sellerTrustScore\":0.2,\"stockReliability\":0.08,\"priceCompetitiveness\":0.22,\"fulfillmentReliability\":0.18,\"customerRetentionImpact\":0.03},\"assignmentType\":\"MERIT\",\"strategyName\":\"DEFAULT\",\"anomalyFlags\":[],\"computedAt\":\"2026-09-10T18:06:07.341Z"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/admin/buy-box/overrides",
+  "method": "POST",
+  "tags": [
+   "Catalog"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"productId\",\"message\":\"Required\"},{\"field\":\"sellerId\",\"message\":\"Required\"},{\"field\":\"reason\",\"message\":\"Required\"},{\"field\":\"startAt\",\"message\":\"Required\"}]}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/admin/buy-box/strategies/{categoryId}",
+  "method": "PUT",
+  "tags": [
+   "Catalog"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"weights\",\"message\":\"Required\"},{\"field\":\"explorationBudget\",\"message\":\"Required\"}]}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/categories",
+  "method": "POST",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/categories/{id}",
+  "method": "PUT",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/categories/{id}",
+  "method": "DELETE",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/pricing/analytics",
+  "method": "GET",
+  "tags": [
+   "Pricing"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer+admin",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"revenueImpact\":0,\"conversionImpact\":0,\"discountsApplied\":0},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.913Z\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/pricing/bulk-update",
+  "method": "POST",
+  "tags": [
+   "Pricing"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/categories",
+  "method": "GET",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":[{\"id\":\"cat_01M0K3481P9W5VGWY524BXFV5V\",\"label\":\"Simu na Teknolojia\",\"icon\":null},{\"id\":\"cat_01M0K3481Y1R684EB8K6TVGVP4\",\"label\":\"Mavazi na Mitindo\",\"icon\":null},{\"id\":\"cat_01M0K34824DEC92RKBV038RXGK\",\"label\":\"Chakula na Vinywa",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":[{\"id\":\"cat_01M0K3481P9W5VGWY524BXFV5V\",\"label\":\"Simu na Teknolojia\",\"icon\":null},{\"id\":\"cat_01M0K3481Y1R684EB8K6TVGVP4\",\"label\":\"Mavazi na Mitindo\",\"icon\":null},{\"id\":\"cat_01M0K34824DEC92RKBV038RXGK\",\"label\":\"Chakula na Vinywaji\",\"icon\":null},{\"id\":\"cat_01M0K3482AEQV03S6JDBM2GGG2\",\"label\":\"Nyumba na Samani\",\"icon\":null},{\"id\":\"cat_01M0K3482HFH1Z6REA5Z4CRRX0\",\"label\":\"Afya na Uzuri\",\"icon\":null},{\"id\":\"cat_01M0K3482RFNKS9QS7DWD3XN72\",\"label\":\"Kilimo na Mazao\",\"icon\":null},{\"id\":\"cat_01M0K3482YRV2RAAF9SYMAPWAV\",\"label\":\"Magari na Vipande\",\"icon\":null},{\"id\":\"cat_01M0K348331E59N2Q8GNHZX7X4\",\"label\":\"Michezo na Burudani\",\"icon\":null},{\"id\":\"cat_electronics\",\"label\":\"Elect"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/pricing/calculate",
+  "method": "POST",
+  "tags": [
+   "Pricing"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"basePrice\":0,\"discount\":0,\"finalPrice\":0},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.936Z\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"basePrice\":0,\"discount\":0,\"finalPrice\":0},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.941Z\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/pricing/rules",
+  "method": "POST",
+  "tags": [
+   "Pricing"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/pricing/validate-rule",
+  "method": "POST",
+  "tags": [
+   "Pricing"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"valid\":false,\"errors\":[\"Rule name is required\"]},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.956Z\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"valid\":false,\"errors\":[\"Rule name is required\"]},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.962Z\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/products",
+  "method": "POST",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/pricing/rules",
+  "method": "GET",
+  "tags": [
+   "Pricing"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"rules\":[]},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.979Z\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"rules\":[]},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.988Z\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/products/{id}",
+  "method": "PUT",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/products/{id}",
+  "method": "DELETE",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/products/{id}/analytics",
+  "method": "GET",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer+admin",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"productId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"period\":\"30d\",\"metrics\":{\"views\":1250,\"uniqueViews\":890,\"addToCart\":45,\"purchases\":12,\"conversionRate\":0.96,\"revenue\":450}},\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.050Z\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/categories/{categoryId}/attributes",
+  "method": "GET",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"categoryId\":\"cat_electronics\",\"categoryName\":\"Electronics\",\"categorySlug\":\"electronics\",\"attributes\":[{\"id\":\"cat_attr_electronics_product_category\",\"name\":\"product_category\",\"displayLabel\":\"Product category\",\"type\":\"SELECT\",\"",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"categoryId\":\"cat_electronics\",\"categoryName\":\"Electronics\",\"categorySlug\":\"electronics\",\"attributes\":[{\"id\":\"cat_attr_electronics_product_category\",\"name\":\"product_category\",\"displayLabel\":\"Product category\",\"type\":\"SELECT\",\"isRequired\":false,\"options\":[\"Smartphones\",\"Feature phones\",\"Tablets\",\"Laptops\",\"Desktop computers\",\"Televisions\",\"Audio equipment\",\"Cameras\",\"Wearables\",\"Networking equipment\",\"Power & charging\",\"Computer accessories\",\"Phone accessories\",\"Home appliances\"],\"placeholder\":\"Select product category\"},{\"id\":\"cat_attr_electronics_brand\",\"name\":\"brand\",\"displayLabel\":\"Brand\",\"type\":\"TEXT\",\"isRequired\":false,\"placeholder\":\"e.g. Samsung, Apple, TECNO\"},{"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/products/{id}",
+  "method": "GET",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Product not found\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.035Z\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Product not found\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.075Z\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/products/{id}/category",
+  "method": "PUT",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/products/{id}/media",
+  "method": "POST",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/products/{id}/publish",
+  "method": "POST",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/products/{id}/metrics",
+  "method": "GET",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer+admin",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Product not found\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.144Z\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/products/{id}/media",
+  "method": "GET",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Product not found\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.129Z\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Product not found\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.148Z\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/products/{id}/reviews",
+  "method": "POST",
+  "tags": [
+   "Catalog"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"rating\",\"message\":\"Required\"}]}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/products/{productId}/pricing",
+  "method": "PUT",
+  "tags": [
+   "Pricing"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/products/bulk",
+  "method": "POST",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/products/bulk",
+  "method": "PUT",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/products/bulk",
+  "method": "DELETE",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/products/{id}/reviews",
+  "method": "GET",
+  "tags": [
+   "Catalog"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":[],\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.146Z\",\"pagination\":{\"totalCount\":0,\"totalPages\":0,\"currentPage\":1,\"limit\":10}}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":[],\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.208Z\",\"pagination\":{\"totalCount\":0,\"totalPages\":0,\"currentPage\":1,\"limit\":10}}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/products/{id}/unpublish",
+  "method": "POST",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/products/preview-description",
+  "method": "POST",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/reviews/{reviewId}/moderate",
+  "method": "PUT",
+  "tags": [
+   "Catalog"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Insufficient permissions\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/search",
+  "method": "GET",
+  "tags": [
+   "Search"
+  ],
+  "anonStatus": 301,
+  "anonBody": "Moved Permanently. Redirecting to /api/catalog/v1/products/search?q=",
+  "role": "buyer",
+  "authStatus": 301,
+  "authBody": "Moved Permanently. Redirecting to /api/catalog/v1/products/search?q="
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/search/analytics",
+  "method": "GET",
+  "tags": [
+   "Search"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"totalSearches\":0,\"topQueries\":[]},\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.264Z\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"totalSearches\":0,\"topQueries\":[]},\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.275Z\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/search/popular",
+  "method": "GET",
+  "tags": [
+   "Search"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"items\":[]},\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.270Z\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"items\":[]},\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.280Z\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/search/products",
+  "method": "GET",
+  "tags": [
+   "Search"
+  ],
+  "anonStatus": 301,
+  "anonBody": "Moved Permanently. Redirecting to /api/catalog/v1/products/search",
+  "role": "buyer",
+  "authStatus": 301,
+  "authBody": "Moved Permanently. Redirecting to /api/catalog/v1/products/search"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/search/suggestions",
+  "method": "GET",
+  "tags": [
+   "Search"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"query\":\"\",\"suggestions\":[]},\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.288Z\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"query\":\"\",\"suggestions\":[]},\"meta\":{\"timestamp\":\"2026-09-20T17:45:50.301Z\"}}"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/sellers/{sellerId}/products",
+  "method": "GET",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":[{\"id\":\"cat_pro_01M0SXG384GTP1DNMCNMC9YDNY\",\"name\":\"SSUG Sisal\",\"price\":{\"amount\":1000000,\"currency\":\"TZS\"},\"categoryId\":\"cat_agriculture\",\"categoryName\":\"Agriculture\",\"sellerId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"supplierLocati",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":[{\"id\":\"cat_pro_01M0SXG384GTP1DNMCNMC9YDNY\",\"name\":\"SSUG Sisal\",\"price\":{\"amount\":1000000,\"currency\":\"TZS\"},\"categoryId\":\"cat_agriculture\",\"categoryName\":\"Agriculture\",\"sellerId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"supplierLocationId\":\"sloc_01M0R2SD2XG63DN4STH2T486KS\",\"supplierLocation\":\"Kanisani, Sokon 1, Arusha Cbd, Arusha\",\"type\":\"physical\",\"tags\":[],\"status\":\"published\",\"thumbnailUrl\":\"http://127.0.0.1:9000/product-media/products/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z/80a0531b-530d-4fb1-bcdc-a959edfa2650.webp\",\"mediaUrls\":[\"http://127.0.0.1:9000/product-media/products/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z/80a0531b-530d-4fb1-bcdc-a959edfa2650.webp\"],\"brand\":\"Maysar Sisal\",\"inventory"
+ },
+ {
+  "module": "api/catalog/v1",
+  "path": "/api/catalog/v1/products/search",
+  "method": "GET",
+  "tags": [
+   "Search"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":[{\"id\":\"cat_pro_01M0SXG384GTP1DNMCNMC9YDNY\",\"name\":\"SSUG Sisal\",\"description\":\"SSUG Sisal by Maysar Sisal is listed in Agriculture. This listing is prepared from the seller-provided product information so buyers can compare the",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":[{\"id\":\"cat_pro_01M0SXG384GTP1DNMCNMC9YDNY\",\"name\":\"SSUG Sisal\",\"description\":\"SSUG Sisal by Maysar Sisal is listed in Agriculture. This listing is prepared from the seller-provided product information so buyers can compare the item with clear, factual details. Features: Product Category: Harvest produce. Certification: ISO certified. Pack Size: 320 KG. Specifications: Certification: ISO certified, Pack Size: 320 KG.\",\"price\":{\"amount\":1000000,\"currency\":\"TZS\"},\"categoryId\":\"cat_agriculture\",\"categoryName\":\"Agriculture\",\"sellerId\":\"usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\",\"sellerName\":\"Juma Mwangi\",\"supplierLocationId\":\"sloc_01M0R2SD2XG63DN4STH2T486KS\",\"supplierLocation\":\"Kanis"
+ }
+]

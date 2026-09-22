@@ -1,0 +1,210 @@
+[
+ {
+  "module": "api/wallet/wallets",
+  "path": "/api/wallet/wallets/{userId}",
+  "method": "GET",
+  "tags": [
+   "Wallet"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"id\":\"wal_01M0K33BP68D4E139QMPQVFSMW\",\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"balance\":100000,\"currency\":\"TZS\",\"status\":\"ACTIVE\",\"frozenAmount\":0,\"createdAt\":\"2026-08-21T21:19:45.353Z\",\"updatedAt\":\"2026-08-21T21:19:45.353Z\",\"codCommitmentLimit\":500000,\"codCommitmentUsed\":0,\"codCommitmentCount\":0,\"version\":0}}"
+ },
+ {
+  "module": "api/wallet/wallets",
+  "path": "/api/wallet/wallets/{userId}/balance",
+  "method": "GET",
+  "tags": [
+   "Wallet"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"walletId\":\"wal_01M0K33BP68D4E139QMPQVFSMW\",\"balance\":100000,\"availableBalance\":100000,\"frozenAmount\":0,\"currency\":\"TZS\",\"success\":true,\"data\":{\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"walletId\":\"wal_01M0K33BP68D4E139QMPQVFSMW\",\"balance\":100000,\"availableBalance\":100000,\"frozenAmount\":0,\"currency\":\"TZS\"}}"
+ },
+ {
+  "module": "api/wallet/wallets",
+  "path": "/api/wallet/wallets/{userId}/credit",
+  "method": "POST",
+  "tags": [
+   "Wallet"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Validation failed\",\"timestamp\":\"2026-09-20T17:45:54.636Z\",\"path\":\"/api/wallet/wallets/usr_01KRFXQZC36NK3CDEWJJS21RP8/credit\"}}"
+ },
+ {
+  "module": "api/wallet/wallets",
+  "path": "/api/wallet/wallets/{userId}/debit",
+  "method": "POST",
+  "tags": [
+   "Wallet"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Validation failed\",\"timestamp\":\"2026-09-20T17:45:54.668Z\",\"path\":\"/api/wallet/wallets/usr_01KRFXQZC36NK3CDEWJJS21RP8/debit\"}}"
+ },
+ {
+  "module": "api/wallet/wallets",
+  "path": "/api/wallet/wallets/{userId}/freeze",
+  "method": "POST",
+  "tags": [
+   "Wallet"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Validation failed\",\"timestamp\":\"2026-09-20T17:45:54.671Z\",\"path\":\"/api/wallet/wallets/usr_01KRFXQZC36NK3CDEWJJS21RP8/freeze\"}}"
+ },
+ {
+  "module": "api/wallet/wallets",
+  "path": "/api/wallet/wallets/{userId}/hold",
+  "method": "POST",
+  "tags": [
+   "Wallet"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Validation failed\",\"timestamp\":\"2026-09-20T17:45:54.693Z\",\"path\":\"/api/wallet/wallets/usr_01KRFXQZC36NK3CDEWJJS21RP8/hold\"}}"
+ },
+ {
+  "module": "api/wallet/wallets",
+  "path": "/api/wallet/wallets/{userId}/hold/{holdId}/capture",
+  "method": "POST",
+  "tags": [
+   "Wallet"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Validation failed\",\"timestamp\":\"2026-09-20T17:45:54.696Z\",\"path\":\"/api/wallet/wallets/usr_01KRFXQZC36NK3CDEWJJS21RP8/hold/no-fixture/capture\"}}"
+ },
+ {
+  "module": "api/wallet/wallets",
+  "path": "/api/wallet/wallets/{userId}/hold/{holdId}/release",
+  "method": "POST",
+  "tags": [
+   "Wallet"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Validation failed\",\"timestamp\":\"2026-09-20T17:45:54.718Z\",\"path\":\"/api/wallet/wallets/usr_01KRFXQZC36NK3CDEWJJS21RP8/hold/no-fixture/release\"}}"
+ },
+ {
+  "module": "api/wallet/wallets",
+  "path": "/api/wallet/wallets/{userId}/payout",
+  "method": "GET",
+  "tags": [
+   "Wallet"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"payouts\":[],\"total\":0,\"message\":\"No payout history available\"}}"
+ },
+ {
+  "module": "api/wallet/wallets",
+  "path": "/api/wallet/wallets/{userId}/payout",
+  "method": "POST",
+  "tags": [
+   "Wallet"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"INSUFFICIENT_PERMISSIONS\",\"message\":\"Insufficient permissions\",\"timestamp\":\"2026-09-20T17:45:54.742Z\",\"path\":\"/api/wallet/wallets/usr_01KRFXQZC36NK3CDEWJJS21RP8/payout\"}}"
+ },
+ {
+  "module": "api/wallet/wallets",
+  "path": "/api/wallet/wallets/{userId}/holds",
+  "method": "GET",
+  "tags": [
+   "Wallet"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"holds\":[],\"total\":0}}"
+ },
+ {
+  "module": "api/wallet/wallets",
+  "path": "/api/wallet/wallets/{userId}/topup",
+  "method": "POST",
+  "tags": [
+   "Wallet"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Validation failed\",\"timestamp\":\"2026-09-20T17:45:54.772Z\",\"path\":\"/api/wallet/wallets/usr_01KRFXQZC36NK3CDEWJJS21RP8/topup\"}}"
+ },
+ {
+  "module": "api/wallet/wallets",
+  "path": "/api/wallet/wallets/{userId}/statement",
+  "method": "GET",
+  "tags": [
+   "Wallet"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"transactions\":[{\"id\":\"wal_tra_01M0K33BPBP4W6V4EWCX8ZG8VD\",\"walletId\":\"wal_01M0K33BP68D4E139QMPQVFSMW\",\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"type\":\"CREDIT\",\"amount\":100000,\"currency\":\"TZS\",\"balanceBefore\":0,\"balanceAfter\":100000,\"frozenAmountBefore\":0,\"frozenAmountAfter\":0,\"description\":\"Initial seed credit\",\"createdAt\":\"2026-08-21T21:19:45.358Z\",\"correlationId\":\"ee6c8f8c-e0ba-40f3-a1f7-667cf7931b17\",\"idempotencyKey\":\"seed-usr_01KRFXQZC36NK3CDEWJJS21RP8-initial\",\"initiatedBy\":\"seed-script\",\"initiatedByType\":\"SYSTEM\",\"reason\":\"SEED_CREDIT\",\"isReversed\":false,\"isCODRelated\":false,\"codConfirmationRequired\":false}],\"totalCount\":1}"
+ },
+ {
+  "module": "api/wallet/wallets",
+  "path": "/api/wallet/wallets/{userId}/transaction/{transactionId}/reverse",
+  "method": "POST",
+  "tags": [
+   "Wallet"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Validation failed\",\"timestamp\":\"2026-09-20T17:45:54.792Z\",\"path\":\"/api/wallet/wallets/usr_01KRFXQZC36NK3CDEWJJS21RP8/transaction/wal_tra_01M0K33BPBP4W6V4EWCX8ZG8VD/reverse\"}}"
+ },
+ {
+  "module": "api/wallet/wallets",
+  "path": "/api/wallet/wallets/{userId}/unfreeze",
+  "method": "POST",
+  "tags": [
+   "Wallet"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Validation failed\",\"timestamp\":\"2026-09-20T17:45:54.823Z\",\"path\":\"/api/wallet/wallets/usr_01KRFXQZC36NK3CDEWJJS21RP8/unfreeze\"}}"
+ },
+ {
+  "module": "api/wallet/wallets",
+  "path": "/api/wallet/wallets/{userId}/transactions",
+  "method": "GET",
+  "tags": [
+   "Wallet"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"transactions\":[{\"id\":\"wal_tra_01M0K33BPBP4W6V4EWCX8ZG8VD\",\"walletId\":\"wal_01M0K33BP68D4E139QMPQVFSMW\",\"userId\":\"usr_01KRFXQZC36NK3CDEWJJS21RP8\",\"type\":\"CREDIT\",\"amount\":100000,\"currency\":\"TZS\",\"balanceBefore\":0,\"balanceAfter\":100000,\"frozenAmountBefore\":0,\"frozenAmountAfter\":0,\"description\":\"Initial seed credit\",\"createdAt\":\"2026-08-21T21:19:45.358Z\",\"correlationId\":\"ee6c8f8c-e0ba-40f3-a1f7-667cf7931b17\",\"idempotencyKey\":\"seed-usr_01KRFXQZC36NK3CDEWJJS21RP8-initial\",\"initiatedBy\":\"seed-script\",\"initiatedByType\":\"SYSTEM\",\"reason\":\"SEED_CREDIT\",\"isReversed\":false,\"isCODRelated\":false,\"codConfirmationRequired\":false}],\"totalCount\":1}"
+ }
+]

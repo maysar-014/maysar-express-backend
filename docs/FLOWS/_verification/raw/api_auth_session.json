@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/auth/session",
+  "path": "/api/auth/session/{sessionId}",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"SESSION_NOT_FOUND\",\"message\":\"Session not found\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"SESSION_NOT_FOUND\",\"message\":\"Session not found\"}}"
+ }
+]

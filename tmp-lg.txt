@@ -1,0 +1,36 @@
+services/enabler-service/src/application/use-cases/list-product.use-case.ts:49:        if (dto.customPrice || dto.priceMarkup) {
+services/enabler-service/src/application/use-cases/list-product.use-case.ts:50:            const validPricing = ProductListingPolicy.validatePricing(product.price, dto.customPrice || product.price, 0.5);
+services/enabler-service/src/application/use-cases/list-product.use-case.ts:62:            customPrice: dto.customPrice,
+services/enabler-service/src/application/use-cases/list-product.use-case.ts:63:            priceMarkup: dto.priceMarkup,
+services/enabler-service/src/domain/entities/product-listing.entity.ts:10:    customPrice?: number | null;
+services/enabler-service/src/domain/entities/product-listing.entity.ts:11:    priceMarkup?: number | null;
+services/enabler-service/src/domain/entities/product-listing.entity.ts:62:    get customPrice(): number | null | undefined {
+services/enabler-service/src/domain/entities/product-listing.entity.ts:63:        return this.props.customPrice;
+services/enabler-service/src/domain/entities/product-listing.entity.ts:66:    get priceMarkup(): number | null | undefined {
+services/enabler-service/src/domain/entities/product-listing.entity.ts:67:        return this.props.priceMarkup;
+services/enabler-service/src/domain/entities/product-listing.entity.ts:85:        if (sellerPolicies.minPrice && this.props.customPrice && this.props.customPrice < sellerPolicies.minPrice) return false;
+services/enabler-service/src/domain/entities/product-listing.entity.ts:86:        if (sellerPolicies.maxMarkup && this.props.priceMarkup && this.props.priceMarkup > sellerPolicies.maxMarkup) return false;
+=== section 7 exact ===
+## 7. Error Codes
+
+| Code | HTTP | Meaning | UI action |
+|------|------|---------|-----------|
+| `UNAUTHORIZED` | 401 | No/expired JWT | Re-login |
+| `FORBIDDEN` | 403 | Not the enabler or admin (`authorizeEnabler` failed) | Hide action |
+| `KYC_LEVEL_REQUIRED` | 403 | KYC level 1 not completed | Redirect to KYC |
+| `LISTING_CAPACITY_EXCEEDED` | 422 | Max listings reached for KYC tier | Show upgrade prompt |
+| `ENABLER_NOT_FOUND` | 404 | Invalid enabler ID | Show "not found" |
+| `ENABLER_NOT_APPROVED` | 422 | Enabler not yet approved | Show pending status |
+| `ENABLER_NOT_ACTIVE` | 422 | Approved but not activated — cannot facilitate orders | Show "activate account" CTA |
+| `STATUS_NOT_PERMITTED` | 403 | Capability denied by lifecycle status (RESTRICTED/SUSPENDED/…) | Render blocked state from the capability snapshot |
+| `ENABLER_NOT_FOUND` (lifecycle routes) | 404 | No enabler profile for this identity | Show "not found" |
+| Activation requirements unmet | 409 | Terms not accepted / version mismatch / training incomplete | Show the missing requirement from the message |
+| Terms cannot be accepted | 409 | Enabler is SUSPENDED/REJECTED/DEACTIVATED | Show support CTA |
+| `VALIDATION_ERROR` (terms/enforcement body) | 400 | Missing/invalid `termsVersion` or `action` | Highlight fields |
+| Invalid enforcement transition | 409 | e.g. REACTIVATE on PENDING | Hide the unavailable admin action |
+| `ENABLER_SUSPENDED` | 422 | Account suspended | Show "contact support" |
+| `PRODUCT_NOT_FOUND` | 404 | Invalid product ID | Show "not found" |
+| `VALIDATION_ERROR` | 400 | Missing/invalid fields | Highlight fields |
+| `INTERNAL_SERVER_ERROR` | 500 | Server failure | Retry with backoff |
+
+---

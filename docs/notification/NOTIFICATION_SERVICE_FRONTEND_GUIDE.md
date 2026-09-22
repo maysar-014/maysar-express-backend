@@ -49,19 +49,16 @@ Order confirmed → order-service publishes event → notification-service sends
 
 ## 4. Push Token Registration
 
-**The `/push-tokens` HTTP endpoint is not mounted in this service.** FCM/push device tokens are stored via the user-service profile update:
+The notification service exposes a `/push-tokens` HTTP endpoint:
 
-```
-PUT /api/user/users/profile
-{ "fcmToken": "ExponentPushToken[xxxxxx]" }
-```
+| Method | Path | Status | Description |
+|--------|------|--------|-------------|
+| `POST` | `/api/notification/push-tokens` | **201** | Register device FCM token |
+| `DELETE` | `/api/notification/push-tokens/:token` | **200** | Deregister token on logout |
 
-Call this on every app launch after the user grants push notification permission. On logout, clear the token:
+Auth: `requireAuth`. Rate limit: 60/min.
 
-```
-PUT /api/user/users/profile
-{ "fcmToken": null }
-```
+Alternatively, tokens can also be stored via the user-service profile update (`PUT /api/user/profile` with `{ "fcmToken": "..." }`). Either path is valid; prefer the dedicated push-token endpoint for notification-specific token lifecycle management.
 
 ---
 
@@ -202,7 +199,7 @@ Only works for `pending` scheduled notifications (those with `scheduledAt` set).
 ```
 
 ### 7.9 Bulk send (admin)
-`POST /api/notification/notifications/bulk` → **201**
+`POST /api/notification/notifications/bulk` → **200**
 
 ```jsonc
 {
@@ -318,12 +315,12 @@ Sets `enabled: false` for the channel. Use for GDPR/opt-out flows.
 
 **Push notification setup (mobile):**
 1. Request OS permission → get FCM/Expo token.
-2. `PUT /api/user/users/profile` `{ "fcmToken": "..." }` on every app launch.
-3. On logout → `PUT /api/user/users/profile` `{ "fcmToken": null }`.
+2. `POST /api/notification/push-tokens` `{ "token": "...", "platform": "android"|"ios" }` on every app launch (or `PUT /api/user/profile` `{ "fcmToken": "..." }` — both paths work).
+3. On logout → `DELETE /api/notification/push-tokens/:token` (or `PUT /api/user/profile` `{ "fcmToken": null }`).
 
 **Integration checklist:**
-- [ ] Register push token on every app launch via `PUT /api/user/profile` `{ "fcmToken": "..." }` — NOT a notification-service endpoint
-- [ ] Clear FCM token on logout via `PUT /api/user/profile` `{ "fcmToken": null }`
+- [ ] Register push token on every app launch via `POST /api/notification/push-tokens` or `PUT /api/user/profile` `{ "fcmToken": "..." }`
+- [ ] Clear FCM token on logout via `DELETE /api/notification/push-tokens/:token` or `PUT /api/user/profile` `{ "fcmToken": null }`
 - [ ] Poll unread count every 30s or use WebSocket
 - [ ] Use lowercase status values (`read`, not `READ`) in PATCH requests
 - [ ] Show `failed` as "retrying" not permanent error until `retryCount >= 3`
@@ -341,7 +338,7 @@ Sets `enabled: false` for the channel. Use for GDPR/opt-out flows.
 | GET | `/api/notification/notifications` | JWT | List notifications |
 | GET | `/api/notification/notifications/unread-count` | JWT | Unread count |
 | POST | `/api/notification/notifications/mark-all-read` | JWT | Mark all read |
-| POST | `/api/notification/notifications/bulk` | JWT (admin) | Bulk send |
+| POST | `/api/notification/notifications/bulk` | JWT (admin) | Bulk send → **200** |
 | GET | `/api/notification/notifications/:id` | JWT | Get notification |
 | PATCH | `/api/notification/notifications/:id/status` | JWT | Update status |
 | DELETE | `/api/notification/notifications/:id` | JWT | Cancel scheduled |
@@ -354,3 +351,25 @@ Sets `enabled: false` for the channel. Use for GDPR/opt-out flows.
 | PUT | `/api/notification/templates/:id` | JWT (admin) | Update template |
 | DELETE | `/api/notification/templates/:id` | JWT (admin) | Delete template |
 | POST | `/api/notification/templates/:id/render` | JWT (admin) | Preview render |
+| POST | `/api/notification/push-tokens` | JWT | Register push token → **201** |
+| DELETE | `/api/notification/push-tokens/:token` | JWT | Deregister push token |
+
+
+---
+
+## System Maintenance (internal/ops)
+
+These endpoints are for ops/admin use only. They are not called from the frontend.
+
+```
+POST /api/notification/system/maintenance/cleanup/outbox/report
+POST /api/notification/system/maintenance/cleanup/outbox
+```
+
+**Auth:** `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+### Outbox cleanup report
+`POST /api/notification/system/maintenance/cleanup/outbox/report` → **200** — dry-run count of deletable outbox events.
+
+### Outbox cleanup
+`POST /api/notification/system/maintenance/cleanup/outbox` → **200** — batched deletion. Body: `{ "dryRun": true }` to simulate. `maxRuntimeMs` defaults to 20 seconds.

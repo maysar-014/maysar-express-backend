@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/kyc/admin",
+  "path": "/api/kyc/admin/{userId}",
+  "method": "PATCH",
+  "tags": [
+   "KYC"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request validation failed\",\"details\":[{\"field\":\"action\",\"message\":\"\\\"action\\\" is required\"}]}}"
+ }
+]

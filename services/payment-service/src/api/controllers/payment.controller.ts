@@ -9,8 +9,7 @@ import { CheckPaymentStatusUseCase } from "../../application/use-cases/check-pay
 import { RefundPaymentUseCase } from "../../application/use-cases/refund-payment.use-case";
 import { HandlePaymentWebhookUseCase } from "../../application/use-cases/handle-payment-webhook.use-case";
 import { PaymentFailureCode } from "../../domain/entities/payment.entity";
-import { SelcomPesaAdapter } from "../../infrastructure/providers/selcom-pesa.adapter";
-import { WebhookPayload } from "../../domain/repositories/payment-provider.gateway";
+import { IPaymentProvider, WebhookPayload } from "../../domain/repositories/payment-provider.gateway";
 import { logger } from "../../infrastructure/services/logger.service";
 import { t } from "@shared/i18n/i18n";
 import { extractPaymentWebhookRequest } from "./payment-webhook.utils";
@@ -21,7 +20,7 @@ export class PaymentController {
     private readonly checkPaymentStatusUseCase: CheckPaymentStatusUseCase,
     private readonly refundPaymentUseCase: RefundPaymentUseCase,
     private readonly handlePaymentWebhookUseCase?: HandlePaymentWebhookUseCase,
-    private readonly paymentGateway?: SelcomPesaAdapter,
+    private readonly paymentGateway?: IPaymentProvider,
   ) {}
 
   private mapPaymentFailureStatus(

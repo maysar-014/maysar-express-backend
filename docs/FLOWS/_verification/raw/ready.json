@@ -1,0 +1,15 @@
+[
+ {
+  "module": "ready",
+  "path": "/ready",
+  "method": "GET",
+  "tags": [
+   "Health"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"ready\",\"checks\":{\"database\":\"connected\",\"redis\":\"connected\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"ready\",\"checks\":{\"database\":\"connected\",\"redis\":\"connected\"}}"
+ }
+]

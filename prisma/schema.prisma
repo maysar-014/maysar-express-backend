@@ -460,6 +460,7 @@ model Category {
   children     Category[]          @relation("CategoryHierarchy")
   products     Product[]
   attributes   CategoryAttribute[]
+  enablerScopes Enabler_SellerAuthorizationScope[]
 
   @@map("catalog_categories")
 }
@@ -502,6 +503,11 @@ model Product {
   category              Category              @relation(fields: [categoryId], references: [id])
   supplierLocationRef   BusinessAddress?      @relation("ProductSupplierLocation", fields: [supplierLocationId], references: [id], onDelete: SetNull)
   structuredAttributes  ProductAttribute[]
+  /// Enabler capability (Enabler §8) — seller-granted scope rows and the
+  /// draft line items that reference this catalog product. Product truth is
+  /// never duplicated by the Enabler domain.
+  enablerScopes         Enabler_SellerAuthorizationScope[]
+  enablerDraftItems     Enabler_OrderDraftItem[]
 
   @@unique([categoryId, fingerprint])
   @@unique([sellerId, slug])
@@ -1817,11 +1823,18 @@ model Order_Order {
   settlements            Order_Settlement[]
   verificationAuditLogs  Order_VerificationAuditLog[]
   masterOrderItems       Order_MasterOrderItem[]      // back-reference for multi-seller
+  /// Enabler capability (Enabler §24/§43) — the draft that produced this order,
+  /// the attribution rows pointing at it, and the enabler earning anchored to
+  /// it. The Order domain remains the single source of truth for commerce.
+  enablerDrafts          Enabler_OrderDraft[]
+  enablerAttributions    Enabler_Attribution[]
+  enablerEarnings        Enabler_Earning[]
 
   @@index([buyerId])
   @@index([sellerId])
   @@index([status])
   @@index([createdAt])
+  @@index([enablerId])
   @@map("orders")
 }
 
@@ -2803,6 +2816,21 @@ model Enabler_Profile {
   approvedBy            String?                  @db.VarChar(64)
   approvedAt            DateTime?                @db.Timestamp(6)
   rejectionReason       String?
+  /// Activation requirements (Enabler §6): accepted terms version + timestamp,
+  /// and the training status derived from the shared training domain.
+  termsVersion          String?                  @db.VarChar(32)
+  termsAcceptedAt       DateTime?                @db.Timestamp(6)
+  trainingStatus        String                   @default("not_started") @db.VarChar(32)
+  trainingCompletedAt   DateTime?                @db.Timestamp(6)
+  /// Explicit lifecycle timestamps (Enabler §5). The backend — never the
+  /// frontend — is authoritative for these transitions.
+  activatedAt           DateTime?                @db.Timestamp(6)
+  restrictedAt          DateTime?                @db.Timestamp(6)
+  restrictedReason      String?
+  suspendedAt           DateTime?                @db.Timestamp(6)
+  suspendedReason       String?
+  deactivatedAt         DateTime?                @db.Timestamp(6)
+  deactivatedReason     String?
   metadata              Json?
   createdAt             DateTime                 @default(now()) @db.Timestamp(6)
   updatedAt             DateTime                 @updatedAt @db.Timestamp(6)
@@ -2812,10 +2840,18 @@ model Enabler_Profile {
   policies              Enabler_Policy[]
   productListings       Enabler_ProductListing[]
   tasks                 Enabler_Task[]
+  sellerAuthorizations  Enabler_SellerAuthorization[]
+  permanentLink         Enabler_PermanentLink?
+  attributions          Enabler_Attribution[]
+  orderDrafts           Enabler_OrderDraft[]
+  customerLinks         Enabler_CustomerLink[]
+  earnings              Enabler_Earning[]
+  enforcementActions    Enabler_EnforcementAction[]
 
   @@index([userId])
   @@index([status])
   @@index([tier])
+  @@index([trainingStatus])
   @@map("enabler_profiles")
 }
 
@@ -3004,6 +3040,285 @@ model Enabler_Task {
   @@index([sellerId])
   @@index([taskType, status])
   @@map("enabler_tasks")
+}
+
+/// Seller → Enabler authorization (Enabler §7). A seller approves an existing
+/// Maysar enabler to *assist* with their catalog. This grants no ownership of
+/// inventory, pricing authority, or payment custody — it is a scoped
+/// assistance permission that the backend re-checks on every sensitive
+/// operation (Enabler §9, §19, §35).
+model Enabler_SellerAuthorization {
+  id               String                      @id @default(cuid()) @db.VarChar(64)
+  enablerId        String                      @db.VarChar(64)
+  sellerId         String                      @db.VarChar(64)
+  status           Enabler_AuthorizationStatus @default(PENDING)
+  /// ALL_PRODUCTS | CATEGORY | PRODUCT — when not ALL_PRODUCTS the concrete
+  /// allow-list lives in Enabler_SellerAuthorizationScope.
+  scopeType        Enabler_ScopeType           @default(ALL_PRODUCTS)
+  /// Seller-defined earning rule for this authorization (Enabler §31). The
+  /// enabler can never submit or override these values.
+  earningRuleType  Enabler_EarningRuleType     @default(PERCENTAGE_OF_ITEM_SUBTOTAL)
+  earningRuleValue Decimal                     @db.Decimal(10, 4)
+  currency         String                      @default("TZS") @db.VarChar(10)
+  effectiveFrom    DateTime                    @default(now()) @db.Timestamp(6)
+  effectiveUntil   DateTime?                   @db.Timestamp(6)
+  approvedByUserId String?                     @db.VarChar(64)
+  approvedAt       DateTime?                   @db.Timestamp(6)
+  revokedByUserId  String?                     @db.VarChar(64)
+  revokedAt        DateTime?                   @db.Timestamp(6)
+  revokedReason    String?
+  suspendedAt      DateTime?                   @db.Timestamp(6)
+  metadata         Json?
+  createdAt        DateTime                    @default(now()) @db.Timestamp(6)
+  updatedAt        DateTime                    @updatedAt @db.Timestamp(6)
+  enabler          Enabler_Profile             @relation(fields: [enablerId], references: [id], onDelete: Cascade)
+  scopes           Enabler_SellerAuthorizationScope[]
+
+  @@unique([enablerId, sellerId])
+  @@index([enablerId])
+  @@index([sellerId])
+  @@index([status])
+  @@map("enabler_seller_authorizations")
+}
+
+/// Concrete product/category allow-list entry for a seller authorization.
+/// Exactly one of `productId` / `categoryId` is populated and matches
+/// `scopeType`; both columns carry real foreign keys so an unknown scope can
+/// never be persisted (Enabler §41).
+model Enabler_SellerAuthorizationScope {
+  id              String                      @id @default(cuid()) @db.VarChar(64)
+  authorizationId String                      @db.VarChar(64)
+  scopeType       Enabler_ScopeType
+  productId       String?                     @db.VarChar(64)
+  categoryId      String?                     @db.VarChar(64)
+  createdAt       DateTime                    @default(now()) @db.Timestamp(6)
+  authorization   Enabler_SellerAuthorization @relation(fields: [authorizationId], references: [id], onDelete: Cascade)
+  product         Product?                    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category        Category?                   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([authorizationId, productId])
+  @@unique([authorizationId, categoryId])
+  @@index([authorizationId])
+  @@map("enabler_seller_authorization_scopes")
+}
+
+/// Persistent public entry point for an active enabler (Enabler §12–13). This
+/// is NOT a storefront: it encodes no permissions at all. Resolution always
+/// re-derives the currently authorized catalog at request time, so revoking a
+/// seller authorization takes effect immediately.
+model Enabler_PermanentLink {
+  id          String                       @id @default(cuid()) @db.VarChar(64)
+  enablerId   String                       @unique @db.VarChar(64)
+  publicCode  String                       @unique @db.VarChar(32)
+  status      Enabler_PermanentLinkStatus  @default(ACTIVE)
+  suspendedAt DateTime?                    @db.Timestamp(6)
+  revokedAt   DateTime?                    @db.Timestamp(6)
+  lastResolvedAt DateTime?                 @db.Timestamp(6)
+  resolveCount   Int                       @default(0)
+  metadata    Json?
+  createdAt   DateTime                     @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime                     @updatedAt @db.Timestamp(6)
+  enabler     Enabler_Profile              @relation(fields: [enablerId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("enabler_permanent_links")
+}
+
+/// Attribution (Enabler §11): "this conversion/order is attributable to this
+/// enabler". It is deliberately NOT an ownership relation — the customer stays
+/// a Maysar customer. `attributionKey` makes duplicate attribution rows
+/// impossible for the same logical interaction (Enabler §33, §40).
+model Enabler_Attribution {
+  id             String                    @id @default(cuid()) @db.VarChar(64)
+  enablerId      String                    @db.VarChar(64)
+  /// Null until an anonymous visitor converts; never an ownership claim.
+  customerId     String?                   @db.VarChar(64)
+  context        Enabler_AttributionContext
+  status         Enabler_AttributionStatus @default(RECORDED)
+  attributionKey String                    @unique @db.VarChar(128)
+  productId      String?                   @db.VarChar(64)
+  draftId        String?                   @db.VarChar(64)
+  customerLinkId String?                   @db.VarChar(64)
+  orderId        String?                   @db.VarChar(64)
+  metadata       Json?
+  convertedAt    DateTime?                 @db.Timestamp(6)
+  expiresAt      DateTime?                 @db.Timestamp(6)
+  createdAt      DateTime                  @default(now()) @db.Timestamp(6)
+  updatedAt      DateTime                  @updatedAt @db.Timestamp(6)
+  enabler        Enabler_Profile           @relation(fields: [enablerId], references: [id], onDelete: Cascade)
+  order          Order_Order?              @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([enablerId, status])
+  @@index([customerId])
+  @@index([orderId])
+  @@index([draftId])
+  @@map("enabler_attributions")
+}
+
+/// Enabler Order Builder draft (Enabler §15–20, §43). This is a *proposal* the
+/// enabler assembles for a customer they assist. It is explicitly NOT the
+/// customer's cart (Enabler §16, §44) and NOT a Maysar order — it only ever
+/// contributes items to the existing checkout via `convertedOrderId`.
+model Enabler_OrderDraft {
+  id                         String             @id @default(cuid()) @db.VarChar(64)
+  enablerId                  String             @db.VarChar(64)
+  customerId                 String?            @db.VarChar(64)
+  customerRef                String?            @db.VarChar(255)
+  status                     Enabler_DraftStatus @default(DRAFT)
+  currency                   String             @default("TZS") @db.VarChar(10)
+  subtotal                   Decimal            @default(0) @db.Decimal(12, 2)
+  fees                       Decimal            @default(0) @db.Decimal(12, 2)
+  total                      Decimal            @default(0) @db.Decimal(12, 2)
+  /// Authoritative pricing provenance captured at validation time so an earning
+  /// can always be explained (Enabler §30).
+  pricingContext             Json?
+  itemCount                  Int                @default(0)
+  convertedOrderId           String?            @unique @db.VarChar(64)
+  convertedCheckoutSessionId String?            @db.VarChar(64)
+  conversionIdempotencyKey   String?            @unique @db.VarChar(128)
+  readyAt                    DateTime?          @db.Timestamp(6)
+  acceptedAt                 DateTime?          @db.Timestamp(6)
+  convertedAt                DateTime?          @db.Timestamp(6)
+  cancelledAt                DateTime?          @db.Timestamp(6)
+  cancelReason               String?
+  expiresAt                  DateTime?          @db.Timestamp(6)
+  metadata                   Json?
+  createdAt                  DateTime           @default(now()) @db.Timestamp(6)
+  updatedAt                  DateTime           @updatedAt @db.Timestamp(6)
+  enabler                    Enabler_Profile    @relation(fields: [enablerId], references: [id], onDelete: Cascade)
+  convertedOrder             Order_Order?       @relation(fields: [convertedOrderId], references: [id], onDelete: SetNull)
+  items                      Enabler_OrderDraftItem[]
+  customerLinks              Enabler_CustomerLink[]
+
+  @@index([enablerId, status])
+  @@index([customerId])
+  @@index([status, expiresAt])
+  @@map("enabler_order_drafts")
+}
+
+/// A single line of an Enabler order draft. `unitPrice`/`lineTotal` are always
+/// snapshots of authoritative catalog/seller pricing — never client input
+/// (Enabler §18). `sellerId` is denormalised for the seller-authorization check.
+model Enabler_OrderDraftItem {
+  id          String            @id @default(cuid()) @db.VarChar(64)
+  draftId     String            @db.VarChar(64)
+  productId   String            @db.VarChar(64)
+  variantId   String?           @db.VarChar(64)
+  sellerId    String            @db.VarChar(64)
+  quantity    Int
+  unitPrice   Decimal           @db.Decimal(12, 2)
+  lineTotal   Decimal           @db.Decimal(12, 2)
+  currency    String            @default("TZS") @db.VarChar(10)
+  /// SELLER_OFFER | VARIANT — where the authoritative price came from.
+  priceSource String            @db.VarChar(40)
+  snapshot    Json?
+  createdAt   DateTime          @default(now()) @db.Timestamp(6)
+  updatedAt   DateTime          @updatedAt @db.Timestamp(6)
+  draft       Enabler_OrderDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  product     Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([draftId, productId, variantId])
+  @@index([draftId])
+  @@index([sellerId])
+  @@map("enabler_order_draft_items")
+}
+
+/// Single-use customer order link (Enabler §21–22). Only the SHA-256 hash of
+/// the token is persisted — the raw token exists solely in the URL handed to
+/// the customer, mirroring the existing `Request_AccessLink` convention.
+/// Consumption is guarded by an atomic conditional update so two concurrent
+/// consumers can never both succeed (Enabler §40).
+model Enabler_CustomerLink {
+  id               String             @id @default(cuid()) @db.VarChar(64)
+  draftId          String             @db.VarChar(64)
+  enablerId        String             @db.VarChar(64)
+  tokenHash        String             @unique @db.VarChar(128)
+  tokenPrefix      String             @db.VarChar(16)
+  status           Enabler_LinkStatus @default(CREATED)
+  expiresAt        DateTime           @db.Timestamp(6)
+  openedAt         DateTime?          @db.Timestamp(6)
+  reviewingAt      DateTime?          @db.Timestamp(6)
+  acceptedAt       DateTime?          @db.Timestamp(6)
+  consumedAt       DateTime?          @db.Timestamp(6)
+  consumedByUserId String?            @db.VarChar(64)
+  revokedAt        DateTime?          @db.Timestamp(6)
+  revokedReason    String?
+  openCount        Int                @default(0)
+  /// Set when the customer's confirmation produced a real Maysar order.
+  convertedOrderId String?            @db.VarChar(64)
+  metadata         Json?
+  createdAt        DateTime           @default(now()) @db.Timestamp(6)
+  updatedAt        DateTime           @updatedAt @db.Timestamp(6)
+  draft            Enabler_OrderDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  enabler          Enabler_Profile    @relation(fields: [enablerId], references: [id], onDelete: Cascade)
+
+  @@index([draftId])
+  @@index([enablerId, status])
+  @@index([status, expiresAt])
+  @@map("enabler_customer_links")
+}
+
+/// Enabler earning (Enabler §28–32). Deliberately NOT a wallet: it is the
+/// attribution/qualification record that explains *why* a commission exists.
+/// Settlement happens through the existing commission + wallet domains via
+/// `commissionId` / `walletTransactionId`. `orderId` is UNIQUE, which makes a
+/// duplicate earning for the same order impossible even under concurrent
+/// event delivery (Enabler §39–40).
+model Enabler_Earning {
+  id                  String                @id @default(cuid()) @db.VarChar(64)
+  enablerId           String                @db.VarChar(64)
+  orderId             String                @unique @db.VarChar(64)
+  sellerId            String                @db.VarChar(64)
+  draftId             String?               @db.VarChar(64)
+  authorizationId     String?               @db.VarChar(64)
+  status              Enabler_EarningStatus @default(ATTRIBUTED)
+  currency            String                @default("TZS") @db.VarChar(10)
+  /// Basis the rule was applied to (item subtotal / order total).
+  baseAmount          Decimal               @db.Decimal(12, 2)
+  earningRuleType     Enabler_EarningRuleType
+  earningRuleValue    Decimal               @db.Decimal(10, 4)
+  amount              Decimal               @db.Decimal(12, 2)
+  /// Full calculation provenance: rule source, authorization id, resolved
+  /// prices and the inputs used, so the amount is always explainable (§30).
+  calculationContext  Json
+  commissionId        String?               @db.VarChar(64)
+  walletTransactionId String?               @db.VarChar(64)
+  payoutId            String?               @db.VarChar(64)
+  attributedAt        DateTime              @default(now()) @db.Timestamp(6)
+  qualifiedAt         DateTime?             @db.Timestamp(6)
+  availableAt         DateTime?             @db.Timestamp(6)
+  paidAt              DateTime?             @db.Timestamp(6)
+  reversedAt          DateTime?             @db.Timestamp(6)
+  reversalReason      String?
+  metadata            Json?
+  createdAt           DateTime              @default(now()) @db.Timestamp(6)
+  updatedAt           DateTime              @updatedAt @db.Timestamp(6)
+  enabler             Enabler_Profile       @relation(fields: [enablerId], references: [id], onDelete: Cascade)
+  order               Order_Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([enablerId, status])
+  @@index([sellerId])
+  @@index([status, qualifiedAt])
+  @@map("enabler_earnings")
+}
+
+/// Immutable trail of admin enforcement decisions (Enabler §34, §52). An
+/// enforcer restricts/suspends capability without deleting the Maysar user.
+model Enabler_EnforcementAction {
+  id             String                  @id @default(cuid()) @db.VarChar(64)
+  enablerId      String                  @db.VarChar(64)
+  action         Enabler_EnforcementType
+  previousStatus Enabler_Status
+  newStatus      Enabler_Status
+  reason         String?
+  actorUserId    String?                 @db.VarChar(64)
+  metadata       Json?
+  createdAt      DateTime                @default(now()) @db.Timestamp(6)
+  enabler        Enabler_Profile         @relation(fields: [enablerId], references: [id], onDelete: Cascade)
+
+  @@index([enablerId, createdAt])
+  @@index([action])
+  @@map("enabler_enforcement_actions")
 }
 
 model Enabler_OutboxEvent {
@@ -4028,8 +4343,12 @@ enum Enabler_Status {
   PENDING
   APPROVED
   ACTIVE
+  /// Capability-limited: the enabler is still visible but specific operations
+  /// (e.g. generating customer links) are refused by the backend.
+  RESTRICTED
   SUSPENDED
   REJECTED
+  DEACTIVATED
 
   @@map("enabler_status")
 }
@@ -4061,6 +4380,117 @@ enum Enabler_OrderStatus {
   DISPUTED
 
   @@map("enabler_order_status")
+}
+
+/// Seller → Enabler authorization status (Enabler §7).
+enum Enabler_AuthorizationStatus {
+  PENDING
+  APPROVED
+  REVOKED
+  SUSPENDED
+
+  @@map("enabler_authorization_status")
+}
+
+/// Granularity of a seller authorization (Enabler §8).
+enum Enabler_ScopeType {
+  ALL_PRODUCTS
+  CATEGORY
+  PRODUCT
+
+  @@map("enabler_scope_type")
+}
+
+/// Seller-defined earning rule (Enabler §31). Only the seller/admin side may
+/// set these; an enabler can never submit its own rate.
+enum Enabler_EarningRuleType {
+  PERCENTAGE_OF_ITEM_SUBTOTAL
+  FIXED_PER_ORDER
+  FIXED_PER_ITEM
+
+  @@map("enabler_earning_rule_type")
+}
+
+enum Enabler_PermanentLinkStatus {
+  ACTIVE
+  SUSPENDED
+  REVOKED
+
+  @@map("enabler_permanent_link_status")
+}
+
+/// Where an attribution originated (Enabler §10–11). An attribution is never
+/// an ownership claim over a customer.
+enum Enabler_AttributionContext {
+  PERMANENT_LINK
+  PRODUCT_SHARE
+  ORDER_LINK
+
+  @@map("enabler_attribution_context")
+}
+
+enum Enabler_AttributionStatus {
+  RECORDED
+  CONVERTED
+  EXPIRED
+  REVOKED
+
+  @@map("enabler_attribution_status")
+}
+
+/// Enabler order draft lifecycle (Enabler §20). A draft is a proposal — never
+/// a Maysar order and never a customer cart.
+enum Enabler_DraftStatus {
+  DRAFT
+  READY_FOR_CUSTOMER
+  CUSTOMER_OPENED
+  CUSTOMER_REVIEWING
+  ACCEPTED
+  CONVERTED
+  CANCELLED
+  EXPIRED
+  REJECTED
+
+  @@map("enabler_draft_status")
+}
+
+/// Single-use customer link lifecycle (Enabler §22).
+enum Enabler_LinkStatus {
+  CREATED
+  OPENED
+  REVIEWING
+  ACCEPTED
+  CONSUMED
+  EXPIRED
+  REVOKED
+  CANCELLED
+
+  @@map("enabler_link_status")
+}
+
+/// Enabler earning lifecycle (Enabler §29).
+enum Enabler_EarningStatus {
+  ATTRIBUTED
+  PENDING
+  QUALIFIED
+  AVAILABLE
+  PAID
+  CANCELLED
+  REVERSED
+  DISPUTED
+  REJECTED
+
+  @@map("enabler_earning_status")
+}
+
+/// Admin enforcement actions against an enabler (Enabler §52).
+enum Enabler_EnforcementType {
+  RESTRICT
+  SUSPEND
+  REACTIVATE
+  DEACTIVATE
+
+  @@map("enabler_enforcement_type")
 }
 
 enum Campaign_Type {

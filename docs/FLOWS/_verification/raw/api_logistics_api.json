@@ -1,0 +1,522 @@
+[
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/courier/{courierId}",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "courier",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"courierId\":\"no-fixture\",\"name\":\"Fallback Courier\",\"phone\":\"+255700000000\",\"vehicle\":\"motorbike\",\"rating\":5,\"status\":\"online\",\"currentLocation\":{\"lat\":-6.7924,\"lng\":39.2083},\"stats\":{\"deliveriesCompleted\":0,\"averageRating\":5,\"onTimeDeliveryRate\":0}}}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/courier/{courierId}/status",
+  "method": "PUT",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "courier",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for PUT requests\"}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/courier",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "courier",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"couriers\":[],\"total\":0}}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/cod/{deliveryId}/otp",
+  "method": "POST",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/cod/{deliveryId}/verify",
+  "method": "POST",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/analytics/performance",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"platform\":{\"totalCouriers\":0,\"activeCouriers\":0,\"averageOnTimeDeliveryRate\":0,\"averageCustomerSatisfaction\":4.5,\"averageCourierRating\":4.6},\"period\":\"month\"}}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/analytics",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"overview\":{\"totalDeliveries\":0,\"completedDeliveries\":0,\"pendingDeliveries\":0,\"averageDeliveryTime\":0,\"successRate\":0},\"performance\":{\"onTimeDeliveryRate\":0,\"customerSatisfaction\":4.5,\"averageRating\":4.6,\"totalRevenue\":0},\"trends\":{\"dailyGrowth\":2.3,\"weeklyGrowth\":8.7,\"monthlyGrowth\":15.2}}}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/couriers",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "courier",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"couriers\":[],\"total\":0}}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/couriers/{courierId}/status",
+  "method": "PUT",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "courier",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for PUT requests\"}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/deliveries",
+  "method": "POST",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/deliveries/{deliveryId}",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"errors\":[{\"type\":\"field\",\"value\":\"no-fixture\",\"msg\":\"Delivery ID must be a valid ID\",\"path\":\"deliveryId\",\"location\":\"params\"}]}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/deliveries/{deliveryId}/history",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"deliveryId\":\"no-fixture\",\"history\":[{\"status\":\"created\",\"timestamp\":\"2026-09-20T15:45:52.574Z\",\"location\":\"Order placed\"},{\"status\":\"assigned\",\"timestamp\":\"2026-09-20T16:15:52.574Z\",\"location\":\"Courier assigned\"},{\"status\":\"picked_up\",\"timestamp\":\"2026-09-20T16:45:52.574Z\",\"location\":\"Uhuru Street\"},{\"status\":\"in_transit\",\"timestamp\":\"2026-09-20T17:15:52.574Z\",\"location\":\"En route to destination\"}]}}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/deliveries/{deliveryId}/status",
+  "method": "POST",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/analytics/courier/{courierId}",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "courier",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"courierId\":\"no-fixture\",\"kpis\":{\"deliveriesCompleted\":0,\"averageRating\":5,\"onTimeDeliveryRate\":0,\"customerSatisfaction\":4.5,\"earnings\":0,\"efficiency\":0},\"period\":\"month\"}}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/couriers/{courierId}",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "courier",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"courierId\":\"no-fixture\",\"name\":\"Fallback Courier\",\"phone\":\"+255700000000\",\"vehicle\":\"motorbike\",\"rating\":5,\"status\":\"online\",\"currentLocation\":{\"lat\":-6.7924,\"lng\":39.2083},\"stats\":{\"deliveriesCompleted\":0,\"averageRating\":5,\"onTimeDeliveryRate\":0}}}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/earnings",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"summary\":{\"totalEarnings\":0,\"totalCommissions\":0,\"netEarnings\":0,\"pendingPayments\":0},\"breakdown\":{\"deliveryFees\":0,\"bonuses\":0,\"tips\":0,\"deductions\":0},\"period\":{\"startDate\":\"2026-08-21T17:45:52.615Z\",\"endDate\":\"2026-09-20T17:45:52.615Z\",\"totalDays\":30}}}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/deliveries",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"deliveries\":[],\"total\":0,\"page\":1,\"limit\":10,\"totalPages\":0,\"filters\":{}},\"message\":\"Deliveries retrieved successfully\"}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/earnings",
+  "method": "POST",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/earnings/calculate",
+  "method": "POST",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/engines/status",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"engines\":[{\"name\":\"logistics\",\"status\":\"healthy\",\"version\":\"1.0.0\"},{\"name\":\"route-optimization\",\"status\":\"healthy\",\"version\":\"1.0.0\"},{\"name\":\"real-time-tracking\",\"status\":\"healthy\",\"version\":\"1.0.0\"},{\"name\":\"delivery-history\",\"status\":\"healthy\",\"version\":\"1.0.0\"},{\"name\":\"earnings-calculation\",\"status\":\"healthy\",\"version\":\"1.0.0\"},{\"name\":\"earnings-management\",\"status\":\"healthy\",\"version\":\"1.0.0\"},{\"name\":\"performance-analytics\",\"status\":\"healthy\",\"version\":\"1.0.0\"},{\"name\":\"performance-monitoring\",\"status\":\"healthy\",\"version\":\"1.0.0\"},{\"name\":\"super-efficiency-optimizer\",\"status\":\"healthy\",\"version\":\"1.0.0\"},{\"name\":\"vehicle-compliance\",\"status\":\"healthy\",\"versio"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/health",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:52.651Z\",\"uptime\":4920.491626,\"checks\":{\"circuitBreakers\":{\"total\":0,\"healthy\":0,\"degraded\":0,\"unhealthy\":0,\"metrics\":[]},\"alerts\":{\"total\":0,\"unresolved\":0,\"bySeverity\":{}}}}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/metrics",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"current\":{\"timestamp\":\"2026-09-20T17:45:52.661Z\",\"overallStatus\":\"healthy\",\"circuitBreakers\":{\"total\":0,\"healthy\":0,\"degraded\":0,\"unhealthy\":0,\"metrics\":[]},\"localProviders\":{\"routing\":{\"status\":\"operational\",\"errorRate\":0}},\"systemResources\":{\"memoryUsage\":17.20874582538168,\"activeConnections\":0}},\"history\":[{\"timestamp\":\"2026-09-20T16:57:12.561Z\",\"overallStatus\":\"healthy\",\"circuitBreakers\":{\"total\":0,\"healthy\":0,\"degraded\":0,\"unhealthy\":0,\"metrics\":[]},\"localProviders\":{\"routing\":{\"status\":\"operational\",\"errorRate\":0}},\"systemResources\":{\"memoryUsage\":2.8780638716603053,\"activeConnections\":0}},{\"timestamp\":\"2026-09-20T16:57:42.564Z\",\"overallStatus\":\"healthy\",\"circu"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/qa/architecture",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"mode\":\"fast\",\"summary\":\"Fast QA mode enabled - architectural analysis skipped.\",\"constitutionCompliance\":{\"section1\":true,\"section2\":true,\"section3\":true,\"section5\":true,\"section6\":true}},\"timestamp\":\"2026-09-20T17:45:52.666Z\"}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/qa/load-test",
+  "method": "POST",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/qa/performance",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"mode\":\"fast\",\"summary\":\"Fast QA mode enabled - performance benchmarks skipped.\",\"benchmarks\":[],\"totals\":{\"tests\":0,\"passed\":0,\"failed\":0}},\"timestamp\":\"2026-09-20T17:45:52.686Z\"}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/earnings/courier/{courierId}",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "courier",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"courierId\":\"no-fixture\",\"period\":\"today\",\"todayEarnings\":0,\"totalEarnings\":0,\"deliveriesCount\":0,\"averagePerDelivery\":0,\"lastUpdated\":\"2026-09-20T17:45:52.689Z\"}}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/qa/security",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"mode\":\"fast\",\"summary\":\"Fast QA mode enabled - security audit skipped.\",\"findings\":[]},\"timestamp\":\"2026-09-20T17:45:52.711Z\"}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/qa/dashboard",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"architectural\":{\"status\":\"success\",\"data\":{\"mode\":\"fast\"}},\"performance\":{\"status\":\"success\",\"data\":{\"mode\":\"fast\"}},\"security\":{\"status\":\"success\",\"data\":{\"mode\":\"fast\"}},\"overall\":{\"constitutionCompliance\":{\"section1\":true,\"section2\":true,\"section3\":true,\"section5\":true,\"section6\":true},\"qualityScore\":100}},\"timestamp\":\"2026-09-20T17:45:52.715Z\"}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/routes/{routeId}",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"ROUTE_NOT_FOUND\",\"message\":\"Failed to find route\"}}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/routes/{routeId}/alternatives",
+  "method": "POST",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/routes/{routeId}/progress",
+  "method": "PUT",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for PUT requests\"}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/routes/courier/{courierId}",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "courier",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"ROUTE_NOT_FOUND\",\"message\":\"Failed to find routes\"}}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/routes/optimize",
+  "method": "POST",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/stats/performance",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"service\":\"logistics-service\",\"uptime\":4920.5966767,\"memory\":{\"rss\":374829056,\"heapTotal\":342724608,\"heapUsed\":258183720,\"external\":11180430,\"arrayBuffers\":2698613},\"timestamp\":\"2026-09-20T17:45:52.756Z\"}}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/earnings/summary",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"period\":\"month\",\"totalEarnings\":0,\"totalDeliveries\":0,\"averagePerDelivery\":0,\"topPerformers\":[]}}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/routes",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"ROUTE_NOT_FOUND\",\"message\":\"Failed to find routes\"}}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/tracking/location",
+  "method": "POST",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"error\":\"Missing idempotency key\",\"message\":\"Header 'idempotency-key' is required for POST requests\"}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/test/all-engines",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"testResults\":[{\"engine\":\"logistics\",\"status\":\"success\",\"result\":{\"engineTests\":{\"costCalculation\":{\"distanceKm\":25,\"weightKg\":2.5,\"priority\":\"standard\",\"cost\":7625},\"validation\":{\"isValid\":true,\"violations\":[]},\"riskCalculation\":{\"distance\":25,\"orderValue\":50000,\"priority\":\"standard\",\"riskScore\":0.226},\"courierEligibility\":{\"isEligible\":true,\"score\":93,\"reasons\":[]},\"timeEstimates\":{\"pickupBufferMinutes\":15,\"deliveryBufferMinutes\":0,\"totalDurationMinutes\":45},\"vehicleType\":{\"weightKg\":2.5,\"volumeM3\":0.1,\"priority\":\"standard\",\"vehicleType\":\"bicycle\"}},\"businessRulesValidated\":6,\"successfulTests\":6,\"testType\":\"real_domain_engine_test\"},\"duration\":7,\"timestamp\":\"2026-09"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/tracking/courier/{courierId}/history",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "courier",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"courierId\":\"no-fixture\",\"locations\":[],\"period\":\"day\",\"pagination\":{\"page\":1,\"limit\":500,\"total\":0,\"pages\":0}}}"
+ },
+ {
+  "module": "api/logistics/api",
+  "path": "/api/logistics/api/v1/tracking/{trackingNumber}",
+  "method": "GET",
+  "tags": [
+   "Logistics"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"trackingNumber\":\"test-000\",\"status\":\"unknown\",\"delivery\":null,\"currentLocation\":\"Unknown\",\"estimatedDelivery\":null,\"history\":[],\"pagination\":{\"page\":1,\"limit\":100,\"total\":0,\"pages\":0}}}"
+ }
+]

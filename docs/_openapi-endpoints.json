@@ -1,0 +1,8178 @@
+[
+ {
+  "path": "/api/admin/dashboard/founder-operating-system",
+  "method": "GET",
+  "operationId": "get_api_admin_dashboard_founder_operating_system",
+  "summary": "GET dashboard founder-operating-system",
+  "tags": [
+   "Analytics"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/admin/dashboard/red-flags",
+  "method": "GET",
+  "operationId": "get_api_admin_dashboard_red_flags",
+  "summary": "GET dashboard red-flags",
+  "tags": [
+   "Analytics"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/analytics/action-items/{actionId}/resolve",
+  "method": "PATCH",
+  "operationId": null,
+  "summary": "Resolve seller action item",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "actionId",
+   "actionId"
+  ]
+ },
+ {
+  "path": "/api/analytics/admin/dashboard/founder-operating-system",
+  "method": "GET",
+  "operationId": "get_api_analytics_admin_dashboard_founder_operating_system",
+  "summary": "GET admin dashboard founder-operating-system",
+  "tags": [
+   "Analytics"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/analytics/admin/dashboard/red-flags",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Admin red flags dashboard",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/analytics/analytics/dashboard/{sellerId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get seller dashboard",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "sellerId",
+   "sellerId"
+  ]
+ },
+ {
+  "path": "/api/analytics/analytics/sales/{sellerId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get sales analytics",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "sellerId",
+   "sellerId"
+  ]
+ },
+ {
+  "path": "/api/analytics/courier/analytics/{courierId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get courier analytics",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "courierId",
+   "courierId"
+  ]
+ },
+ {
+  "path": "/api/analytics/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Analytics service health",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/analytics/metrics",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Analytics service metrics",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/analytics/seller-profitability/dashboard",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Seller profitability dashboard",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/analytics/seller-profitability/dashboard/{sellerId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Seller profitability dashboard by seller",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "sellerId",
+   "sellerId"
+  ]
+ },
+ {
+  "path": "/api/analytics/seller-profitability/financial",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Financial metrics",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/analytics/seller-profitability/growth-indicators",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Growth indicators",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/analytics/seller-profitability/happiness",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Happiness signals",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/analytics/seller-profitability/retention",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Retention metrics",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/analytics/seller-profitability/revenue-health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Revenue health",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/analytics/sellers/{sellerId}/dashboard",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Seller dashboard",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "sellerId",
+   "sellerId"
+  ]
+ },
+ {
+  "path": "/api/analytics/sellers/{sellerId}/dashboard/action-center",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Seller action center",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "sellerId",
+   "sellerId"
+  ]
+ },
+ {
+  "path": "/api/analytics/sellers/{sellerId}/dashboard/money-snapshot",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Seller money snapshot",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "sellerId",
+   "sellerId"
+  ]
+ },
+ {
+  "path": "/api/analytics/sellers/{sellerId}/dashboard/profitability-score",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Seller profitability score",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "sellerId",
+   "sellerId"
+  ]
+ },
+ {
+  "path": "/api/analytics/sellers/{sellerId}/dashboard/sales-trend",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Seller sales trend",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "sellerId",
+   "sellerId"
+  ]
+ },
+ {
+  "path": "/api/analytics/sellers/{sellerId}/sla",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Seller SLA report",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "sellerId",
+   "sellerId",
+   "lookbackDays"
+  ]
+ },
+ {
+  "path": "/api/analytics/sellers/{sellerId}/sla/breaches",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Seller SLA breaches",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "sellerId",
+   "sellerId",
+   "lookbackDays"
+  ]
+ },
+ {
+  "path": "/api/analytics/sellers/{sellerId}/sla/evaluate",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Evaluate seller SLA",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "sellerId",
+   "sellerId",
+   "lookbackDays"
+  ]
+ },
+ {
+  "path": "/api/analytics/sellers/{sellerId}/sla/readiness",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Seller SLA readiness",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "sellerId",
+   "sellerId",
+   "lookbackDays"
+  ]
+ },
+ {
+  "path": "/api/analytics/supplier/analytics/{supplierId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get supplier analytics",
+  "tags": [
+   "Analytics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "supplierId",
+   "supplierId"
+  ]
+ },
+ {
+  "path": "/api/auth/2fa/backup",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/2fa/backup",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/2fa/backup-codes/regenerate",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/2fa/backup-codes/regenerate",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/2fa/disable",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Disable 2FA",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/2fa/enable",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Enable 2FA",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/2fa/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/2fa/health",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/2fa/health/live",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/2fa/health/live",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/2fa/health/ready",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/2fa/health/ready",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/2fa/setup",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/2fa/setup",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/2fa/status",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/2fa/status",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/2fa/verify",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Verify 2FA setup",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/2fa/verify-setup",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/2fa/verify-setup",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/admin/audit",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/admin/audit",
+  "tags": [
+   "Admin"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/auth/admin/discovery/refresh",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/admin/discovery/refresh",
+  "tags": [
+   "Admin"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/auth/admin/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Auth admin health",
+  "tags": [
+   "Admin"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/auth/admin/security-events",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/admin/security-events",
+  "tags": [
+   "Admin"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/auth/admin/sessions/{sessionId}",
+  "method": "DELETE",
+  "operationId": null,
+  "summary": "Terminate specific session (admin)",
+  "tags": [
+   "Admin"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "sessionId",
+   "sessionId"
+  ]
+ },
+ {
+  "path": "/api/auth/admin/stats",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Auth admin stats",
+  "tags": [
+   "Admin"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/auth/admin/users/{userId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get user by ID (admin)",
+  "tags": [
+   "Admin"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/auth/admin/users/{userId}/role",
+  "method": "PATCH",
+  "operationId": null,
+  "summary": "Update user role (admin)",
+  "tags": [
+   "Admin"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/auth/admin/users/{userId}/sessions",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get user sessions (admin)",
+  "tags": [
+   "Admin"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/auth/admin/users/{userId}/sessions",
+  "method": "DELETE",
+  "operationId": null,
+  "summary": "Terminate user sessions (admin)",
+  "tags": [
+   "Admin"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/auth/admin/users/{userId}/status",
+  "method": "PATCH",
+  "operationId": null,
+  "summary": "Update user status (admin)",
+  "tags": [
+   "Admin"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/auth/admin/users/search",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Search users (admin)",
+  "tags": [
+   "Admin"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "query",
+   "role",
+   "status",
+   "limit",
+   "offset"
+  ]
+ },
+ {
+  "path": "/api/auth/blacklist-token",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/blacklist-token",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/check-blacklist",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/check-blacklist",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/check-brute-force",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/check-brute-force",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/device-history/{userId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/device-history/{userId}",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/auth/device/{deviceId}",
+  "method": "DELETE",
+  "operationId": null,
+  "summary": "DELETE /api/auth/device/{deviceId}",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": [
+   "deviceId",
+   "deviceId"
+  ]
+ },
+ {
+  "path": "/api/auth/extend-session",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/extend-session",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/forgot-password",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Request password reset",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/generate-api-key",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/generate-api-key",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/health",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/health/circuit-breaker",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/health/circuit-breaker",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/health/detailed",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/health/detailed",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/health/discovery",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/health/discovery",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/health/live",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/health/live",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/health/metrics",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/health/metrics",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/health/ready",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/health/ready",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/invalidate-session",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/invalidate-session",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/login",
+  "method": "POST",
+  "operationId": null,
+  "summary": "User login",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/logout",
+  "method": "POST",
+  "operationId": null,
+  "summary": "User logout",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/metrics",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/metrics",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/middleware/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/middleware/health",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/oauth/callback",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/oauth/callback",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": [
+   "code"
+  ]
+ },
+ {
+  "path": "/api/auth/oauth/initiate",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/oauth/initiate",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/oauth/refresh",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/oauth/refresh",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/oauth/revoke",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/oauth/revoke",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/phone/send-otp",
+  "method": "POST",
+  "operationId": "post_api_auth_phone_send_otp",
+  "summary": "POST phone send-otp",
+  "tags": [
+   "Auth"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/auth/phone/verify-otp",
+  "method": "POST",
+  "operationId": "post_api_auth_phone_verify_otp",
+  "summary": "POST phone verify-otp",
+  "tags": [
+   "Auth"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/auth/record-failure",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/record-failure",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/refresh",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Refresh access token",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/register",
+  "method": "POST",
+  "operationId": null,
+  "summary": "User registration",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/report-suspicious",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/report-suspicious",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/reset-brute-force",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/reset-brute-force",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/reset-password",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Reset password with token",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/revoke-api-key",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/revoke-api-key",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/role-requests",
+  "method": "GET",
+  "operationId": null,
+  "summary": "List role requests for the authenticated user",
+  "tags": [
+   "Auth"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "status",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/auth/role-requests",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Submit an additional role request",
+  "tags": [
+   "Auth"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/auth/session/{sessionId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/session/{sessionId}",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": [
+   "sessionId",
+   "sessionId"
+  ]
+ },
+ {
+  "path": "/api/auth/sessions",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/sessions",
+  "tags": [
+   "Auth"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/auth/sessions",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/sessions",
+  "tags": [
+   "Auth"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/auth/sessions/{sessionId}",
+  "method": "DELETE",
+  "operationId": null,
+  "summary": "DELETE /api/auth/sessions/{sessionId}",
+  "tags": [
+   "Auth"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "sessionId",
+   "sessionId"
+  ]
+ },
+ {
+  "path": "/api/auth/sessions/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/sessions/health",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/sessions/health/live",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/sessions/health/live",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/sessions/health/ready",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/sessions/health/ready",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/stats",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/auth/stats",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/switch-role",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Switch authenticated role context",
+  "tags": [
+   "Auth"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/auth/system/maintenance/cleanup/auth",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/system/maintenance/cleanup/auth",
+  "tags": [
+   "Auth"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/auth/system/maintenance/cleanup/auth/report",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/system/maintenance/cleanup/auth/report",
+  "tags": [
+   "Auth"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/auth/system/maintenance/cleanup/outbox",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/system/maintenance/cleanup/outbox",
+  "tags": [
+   "Auth"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/auth/system/maintenance/cleanup/outbox/report",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/system/maintenance/cleanup/outbox/report",
+  "tags": [
+   "Auth"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/auth/track-device",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/track-device",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/validate-api-key",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/validate-api-key",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/validate-token",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/auth/validate-token",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/auth/verify",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Verify session/token validity",
+  "tags": [
+   "Auth"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/auth/verify",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Verify OTP during authentication",
+  "tags": [
+   "Auth"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/auth/verify-otp",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Verify OTP during authentication",
+  "tags": [
+   "Auth"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/business-registry",
+  "method": "POST",
+  "operationId": "post_api_business_registry",
+  "summary": "POST /api/business-registry",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/business-registry/{id}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get business by ID",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/{id}",
+  "method": "PUT",
+  "operationId": null,
+  "summary": "Update business",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/{id}",
+  "method": "DELETE",
+  "operationId": null,
+  "summary": "Delete business",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/{id}/compliance-records",
+  "method": "GET",
+  "operationId": "get_api_business_registry_id_compliance_records",
+  "summary": "GET {id} compliance-records",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/{id}/compliance-records",
+  "method": "POST",
+  "operationId": "post_api_business_registry_id_compliance_records",
+  "summary": "POST {id} compliance-records",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/{id}/documents",
+  "method": "GET",
+  "operationId": "get_api_business_registry_id_documents",
+  "summary": "GET {id} documents",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/{id}/documents",
+  "method": "POST",
+  "operationId": "post_api_business_registry_id_documents",
+  "summary": "POST {id} documents",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/{id}/reactivate",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Reactivate business",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/{id}/suspend",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Suspend business",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/{id}/verify",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Verify business",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/businesses",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/business-registry/businesses",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/business-registry/businesses/{id}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/business-registry/businesses/{id}",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/businesses/{id}",
+  "method": "PUT",
+  "operationId": null,
+  "summary": "PUT /api/business-registry/businesses/{id}",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/businesses/{id}",
+  "method": "DELETE",
+  "operationId": null,
+  "summary": "DELETE /api/business-registry/businesses/{id}",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/businesses/{id}/compliance-records",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/business-registry/businesses/{id}/compliance-records",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/businesses/{id}/compliance-records",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/business-registry/businesses/{id}/compliance-records",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/businesses/{id}/documents",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/business-registry/businesses/{id}/documents",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/businesses/{id}/documents",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/business-registry/businesses/{id}/documents",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/businesses/{id}/reactivate",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/business-registry/businesses/{id}/reactivate",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/businesses/{id}/suspend",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/business-registry/businesses/{id}/suspend",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/businesses/{id}/verify",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/business-registry/businesses/{id}/verify",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/businesses/industries/{industry}/sellers",
+  "method": "GET",
+  "operationId": "get_api_business_registry_businesses_industries_industry_sellers",
+  "summary": "GET businesses industries {industry} sellers",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "industry"
+  ]
+ },
+ {
+  "path": "/api/business-registry/businesses/owner/{ownerId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/business-registry/businesses/owner/{ownerId}",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "ownerId",
+   "ownerId"
+  ]
+ },
+ {
+  "path": "/api/business-registry/businesses/search",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/business-registry/businesses/search",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/business-registry/businesses/sellers",
+  "method": "GET",
+  "operationId": "get_api_business_registry_businesses_sellers",
+  "summary": "GET businesses sellers",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/business-registry/businesses/sellers/{sellerId}",
+  "method": "GET",
+  "operationId": "get_api_business_registry_businesses_sellers_sellerId",
+  "summary": "GET businesses sellers {sellerId}",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "sellerId"
+  ]
+ },
+ {
+  "path": "/api/business-registry/businesses/sellers/{sellerId}/industries",
+  "method": "GET",
+  "operationId": "get_api_business_registry_businesses_sellers_sellerId_industries",
+  "summary": "GET businesses sellers {sellerId} industries",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "sellerId"
+  ]
+ },
+ {
+  "path": "/api/business-registry/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/business-registry/health",
+  "tags": [
+   "Business"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/business-registry/health/live",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/business-registry/health/live",
+  "tags": [
+   "Business"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/business-registry/health/ready",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/business-registry/health/ready",
+  "tags": [
+   "Business"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/business-registry/industries/{industry}/sellers",
+  "method": "GET",
+  "operationId": "get_api_business_registry_industries_industry_sellers",
+  "summary": "GET industries {industry} sellers",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "industry"
+  ]
+ },
+ {
+  "path": "/api/business-registry/owner/{ownerId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get businesses by owner",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "ownerId",
+   "ownerId"
+  ]
+ },
+ {
+  "path": "/api/business-registry/public",
+  "method": "POST",
+  "operationId": "post_api_business_registry_public",
+  "summary": "POST public",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/business-registry/public/{id}",
+  "method": "GET",
+  "operationId": "get_api_business_registry_public_id",
+  "summary": "GET public {id}",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/public/{id}",
+  "method": "PUT",
+  "operationId": "put_api_business_registry_public_id",
+  "summary": "PUT public {id}",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/public/{id}",
+  "method": "DELETE",
+  "operationId": "delete_api_business_registry_public_id",
+  "summary": "DELETE public {id}",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/public/{id}/compliance-records",
+  "method": "GET",
+  "operationId": "get_api_business_registry_public_id_compliance_records",
+  "summary": "GET public {id} compliance-records",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/public/{id}/compliance-records",
+  "method": "POST",
+  "operationId": "post_api_business_registry_public_id_compliance_records",
+  "summary": "POST public {id} compliance-records",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/public/{id}/documents",
+  "method": "GET",
+  "operationId": "get_api_business_registry_public_id_documents",
+  "summary": "GET public {id} documents",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/public/{id}/documents",
+  "method": "POST",
+  "operationId": "post_api_business_registry_public_id_documents",
+  "summary": "POST public {id} documents",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/public/{id}/reactivate",
+  "method": "POST",
+  "operationId": "post_api_business_registry_public_id_reactivate",
+  "summary": "POST public {id} reactivate",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/public/{id}/suspend",
+  "method": "POST",
+  "operationId": "post_api_business_registry_public_id_suspend",
+  "summary": "POST public {id} suspend",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/public/{id}/verify",
+  "method": "POST",
+  "operationId": "post_api_business_registry_public_id_verify",
+  "summary": "POST public {id} verify",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/business-registry/public/industries/{industry}/sellers",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Browse sellers by industry",
+  "tags": [
+   "Seller Discovery"
+  ],
+  "security": [],
+  "params": [
+   "industry",
+   "industry",
+   "q",
+   "limit",
+   "offset"
+  ]
+ },
+ {
+  "path": "/api/business-registry/public/owner/{ownerId}",
+  "method": "GET",
+  "operationId": "get_api_business_registry_public_owner_ownerId",
+  "summary": "GET public owner {ownerId}",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "ownerId"
+  ]
+ },
+ {
+  "path": "/api/business-registry/public/search",
+  "method": "GET",
+  "operationId": "get_api_business_registry_public_search",
+  "summary": "GET public search",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/business-registry/public/sellers",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Browse public sellers",
+  "tags": [
+   "Seller Discovery"
+  ],
+  "security": [],
+  "params": [
+   "industry",
+   "industries",
+   "q",
+   "limit",
+   "offset"
+  ]
+ },
+ {
+  "path": "/api/business-registry/public/sellers/{sellerId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get public seller profile",
+  "tags": [
+   "Seller Discovery"
+  ],
+  "security": [],
+  "params": [
+   "sellerId",
+   "sellerId"
+  ]
+ },
+ {
+  "path": "/api/business-registry/public/sellers/{sellerId}/industries",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get seller industries",
+  "tags": [
+   "Seller Discovery"
+  ],
+  "security": [],
+  "params": [
+   "sellerId",
+   "sellerId"
+  ]
+ },
+ {
+  "path": "/api/business-registry/search",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Search businesses",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "q"
+  ]
+ },
+ {
+  "path": "/api/business-registry/sellers",
+  "method": "GET",
+  "operationId": "get_api_business_registry_sellers",
+  "summary": "GET sellers",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/business-registry/sellers/{sellerId}",
+  "method": "GET",
+  "operationId": "get_api_business_registry_sellers_sellerId",
+  "summary": "GET sellers {sellerId}",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "sellerId"
+  ]
+ },
+ {
+  "path": "/api/business-registry/sellers/{sellerId}/industries",
+  "method": "GET",
+  "operationId": "get_api_business_registry_sellers_sellerId_industries",
+  "summary": "GET sellers {sellerId} industries",
+  "tags": [
+   "Business Registry"
+  ],
+  "security": null,
+  "params": [
+   "sellerId"
+  ]
+ },
+ {
+  "path": "/api/business-registry/system/maintenance/cleanup/outbox",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/business-registry/system/maintenance/cleanup/outbox",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/business-registry/system/maintenance/cleanup/outbox/report",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/business-registry/system/maintenance/cleanup/outbox/report",
+  "tags": [
+   "Business"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/campaigns",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/catalog/campaigns",
+  "tags": [
+   "Products"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/campaigns",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/catalog/campaigns",
+  "tags": [
+   "Products"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/campaigns/{id}",
+  "method": "GET",
+  "operationId": "get_api_catalog_campaigns_id",
+  "summary": "GET campaigns {id}",
+  "tags": [
+   "Catalog"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/campaigns/{id}",
+  "method": "PUT",
+  "operationId": "put_api_catalog_campaigns_id",
+  "summary": "PUT campaigns {id}",
+  "tags": [
+   "Catalog"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/campaigns/{id}/cancel",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/catalog/campaigns/{id}/cancel",
+  "tags": [
+   "Products"
+  ],
+  "security": [],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/campaigns/{id}/complete",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/catalog/campaigns/{id}/complete",
+  "tags": [
+   "Products"
+  ],
+  "security": [],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/campaigns/{id}/launch",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/catalog/campaigns/{id}/launch",
+  "tags": [
+   "Products"
+  ],
+  "security": [],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/campaigns/{id}/pause",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/catalog/campaigns/{id}/pause",
+  "tags": [
+   "Products"
+  ],
+  "security": [],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/campaigns/{id}/resume",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/catalog/campaigns/{id}/resume",
+  "tags": [
+   "Products"
+  ],
+  "security": [],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/catalog/health",
+  "tags": [
+   "Products"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/health/live",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/catalog/health/live",
+  "tags": [
+   "Products"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/health/metrics",
+  "method": "GET",
+  "operationId": "get_api_catalog_health_metrics",
+  "summary": "GET health metrics",
+  "tags": [
+   "Catalog"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/catalog/health/ready",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/catalog/health/ready",
+  "tags": [
+   "Products"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/health/search",
+  "method": "GET",
+  "operationId": "get_api_catalog_health_search",
+  "summary": "GET health search",
+  "tags": [
+   "Catalog"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/catalog/health/version",
+  "method": "GET",
+  "operationId": "get_api_catalog_health_version",
+  "summary": "GET health version",
+  "tags": [
+   "Catalog"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/catalog/match",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Match product",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/match/audit/{productId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get match audit trail",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "productId",
+   "productId"
+  ]
+ },
+ {
+  "path": "/api/catalog/match/confirm/{confirmationId}",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Confirm product match",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "confirmationId",
+   "confirmationId"
+  ]
+ },
+ {
+  "path": "/api/catalog/match/pending",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get pending match confirmations",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/pricing/calculate",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/catalog/pricing/calculate",
+  "tags": [
+   "Pricing"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/pricing/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/catalog/pricing/health",
+  "tags": [
+   "Pricing"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/pricing/health/live",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/catalog/pricing/health/live",
+  "tags": [
+   "Pricing"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/pricing/health/ready",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/catalog/pricing/health/ready",
+  "tags": [
+   "Pricing"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/products/{productId}/buy-box",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get buy-box for product",
+  "tags": [
+   "Products"
+  ],
+  "security": [],
+  "params": [
+   "productId",
+   "productId"
+  ]
+ },
+ {
+  "path": "/api/catalog/products/{productId}/buy-box/compute",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Trigger buy-box computation",
+  "tags": [
+   "Products"
+  ],
+  "security": [],
+  "params": [
+   "productId",
+   "productId"
+  ]
+ },
+ {
+  "path": "/api/catalog/sellers/{sellerId}/share-url",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Generate shareable URL for seller",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "sellerId",
+   "sellerId"
+  ]
+ },
+ {
+  "path": "/api/catalog/sellers/{sellerId}/storefront",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get seller storefront details",
+  "tags": [
+   "Products"
+  ],
+  "security": [],
+  "params": [
+   "sellerId",
+   "sellerId"
+  ]
+ },
+ {
+  "path": "/api/catalog/system/maintenance/cleanup/event-store",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/catalog/system/maintenance/cleanup/event-store",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/system/maintenance/cleanup/event-store/report",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/catalog/system/maintenance/cleanup/event-store/report",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/system/maintenance/cleanup/outbox",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/catalog/system/maintenance/cleanup/outbox",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/system/maintenance/cleanup/outbox/report",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/catalog/system/maintenance/cleanup/outbox/report",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/v1/admin/buy-box/anomaly-flags/{flagId}",
+  "method": "DELETE",
+  "operationId": "delete_api_catalog_v1_admin_buy_box_anomaly_flags_flagId",
+  "summary": "DELETE v1 admin buy-box anomaly-flags {flagId}",
+  "tags": [
+   "Catalog"
+  ],
+  "security": null,
+  "params": [
+   "flagId"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/admin/buy-box/history/{productId}",
+  "method": "GET",
+  "operationId": "get_api_catalog_v1_admin_buy_box_history_productId",
+  "summary": "GET v1 admin buy-box history {productId}",
+  "tags": [
+   "Catalog"
+  ],
+  "security": null,
+  "params": [
+   "productId"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/admin/buy-box/overrides",
+  "method": "POST",
+  "operationId": "post_api_catalog_v1_admin_buy_box_overrides",
+  "summary": "POST v1 admin buy-box overrides",
+  "tags": [
+   "Catalog"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/catalog/v1/admin/buy-box/strategies/{categoryId}",
+  "method": "PUT",
+  "operationId": "put_api_catalog_v1_admin_buy_box_strategies_categoryId",
+  "summary": "PUT v1 admin buy-box strategies {categoryId}",
+  "tags": [
+   "Catalog"
+  ],
+  "security": null,
+  "params": [
+   "categoryId"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/categories",
+  "method": "GET",
+  "operationId": null,
+  "summary": "List categories",
+  "tags": [
+   "Products"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/v1/categories",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Create category",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/v1/categories/{categoryId}/attributes",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Load category attributes",
+  "tags": [
+   "Products"
+  ],
+  "security": [],
+  "params": [
+   "categoryId",
+   "categoryId"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/categories/{id}",
+  "method": "PUT",
+  "operationId": null,
+  "summary": "Update category",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/categories/{id}",
+  "method": "DELETE",
+  "operationId": null,
+  "summary": "Delete category",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/pricing/analytics",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get pricing analytics",
+  "tags": [
+   "Pricing"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/v1/pricing/bulk-update",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Bulk update pricing",
+  "tags": [
+   "Pricing"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/v1/pricing/calculate",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Calculate product price",
+  "tags": [
+   "Pricing"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/v1/pricing/rules",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get pricing rules",
+  "tags": [
+   "Pricing"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/v1/pricing/rules",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Create pricing rule",
+  "tags": [
+   "Pricing"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/v1/pricing/validate-rule",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Validate pricing rule",
+  "tags": [
+   "Pricing"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/v1/products",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Create product",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/v1/products/{id}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get product by ID",
+  "tags": [
+   "Products"
+  ],
+  "security": [],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/products/{id}",
+  "method": "PUT",
+  "operationId": null,
+  "summary": "Update product",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/products/{id}",
+  "method": "DELETE",
+  "operationId": null,
+  "summary": "Delete product",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/products/{id}/analytics",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get product analytics",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/products/{id}/category",
+  "method": "PUT",
+  "operationId": null,
+  "summary": "Update product category",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/products/{id}/media",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get product media",
+  "tags": [
+   "Products"
+  ],
+  "security": [],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/products/{id}/media",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Upload product media",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/products/{id}/metrics",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get product metrics",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/products/{id}/publish",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Publish product",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/products/{id}/reviews",
+  "method": "GET",
+  "operationId": "get_api_catalog_v1_products_id_reviews",
+  "summary": "GET v1 products {id} reviews",
+  "tags": [
+   "Catalog"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/products/{id}/reviews",
+  "method": "POST",
+  "operationId": "post_api_catalog_v1_products_id_reviews",
+  "summary": "POST v1 products {id} reviews",
+  "tags": [
+   "Catalog"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/products/{id}/unpublish",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Unpublish product",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/products/{productId}/pricing",
+  "method": "PUT",
+  "operationId": null,
+  "summary": "Update product pricing",
+  "tags": [
+   "Pricing"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "productId",
+   "productId"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/products/bulk",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Bulk create products",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/v1/products/bulk",
+  "method": "PUT",
+  "operationId": null,
+  "summary": "Bulk update products",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/v1/products/bulk",
+  "method": "DELETE",
+  "operationId": null,
+  "summary": "Bulk delete products",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/v1/products/preview-description",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Preview generated product description",
+  "tags": [
+   "Products"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/v1/products/search",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Search products",
+  "tags": [
+   "Search"
+  ],
+  "security": [],
+  "params": [
+   "q",
+   "category",
+   "minPrice",
+   "maxPrice",
+   "page",
+   "limit"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/reviews/{reviewId}/moderate",
+  "method": "PUT",
+  "operationId": "put_api_catalog_v1_reviews_reviewId_moderate",
+  "summary": "PUT v1 reviews {reviewId} moderate",
+  "tags": [
+   "Catalog"
+  ],
+  "security": null,
+  "params": [
+   "reviewId"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/search",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Legacy search endpoint (deprecated)",
+  "tags": [
+   "Search"
+  ],
+  "security": [],
+  "params": [
+   "q"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/search/analytics",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get search analytics",
+  "tags": [
+   "Search"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/v1/search/popular",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get popular searches",
+  "tags": [
+   "Search"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/catalog/v1/search/products",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Legacy product search endpoint (deprecated)",
+  "tags": [
+   "Search"
+  ],
+  "security": [],
+  "params": [
+   "q"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/search/suggestions",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get search suggestions",
+  "tags": [
+   "Search"
+  ],
+  "security": [],
+  "params": [
+   "q"
+  ]
+ },
+ {
+  "path": "/api/catalog/v1/sellers/{sellerId}/products",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get products by seller",
+  "tags": [
+   "Products"
+  ],
+  "security": [],
+  "params": [
+   "sellerId",
+   "sellerId",
+   "page",
+   "limit"
+  ]
+ },
+ {
+  "path": "/api/chat/health",
+  "method": "GET",
+  "operationId": "get_api_chat_health",
+  "summary": "GET health",
+  "tags": [
+   "Chat"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/chat/v1/admin/blocklist/domains",
+  "method": "GET",
+  "operationId": "get_api_chat_v1_admin_blocklist_domains",
+  "summary": "GET v1 admin blocklist domains",
+  "tags": [
+   "Chat"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/chat/v1/admin/blocklist/domains",
+  "method": "POST",
+  "operationId": "post_api_chat_v1_admin_blocklist_domains",
+  "summary": "POST v1 admin blocklist domains",
+  "tags": [
+   "Chat"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/chat/v1/admin/blocklist/domains/{domain}",
+  "method": "DELETE",
+  "operationId": "delete_api_chat_v1_admin_blocklist_domains_domain",
+  "summary": "DELETE v1 admin blocklist domains {domain}",
+  "tags": [
+   "Chat"
+  ],
+  "security": null,
+  "params": [
+   "domain"
+  ]
+ },
+ {
+  "path": "/api/chat/v1/conversations",
+  "method": "GET",
+  "operationId": "get_api_chat_v1_conversations",
+  "summary": "GET v1 conversations",
+  "tags": [
+   "Chat"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/chat/v1/conversations",
+  "method": "POST",
+  "operationId": "post_api_chat_v1_conversations",
+  "summary": "POST v1 conversations",
+  "tags": [
+   "Chat"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/chat/v1/conversations/{id}",
+  "method": "GET",
+  "operationId": "get_api_chat_v1_conversations_id",
+  "summary": "GET v1 conversations {id}",
+  "tags": [
+   "Chat"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/chat/v1/conversations/{id}/messages",
+  "method": "GET",
+  "operationId": "get_api_chat_v1_conversations_id_messages",
+  "summary": "GET v1 conversations {id} messages",
+  "tags": [
+   "Chat"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/chat/v1/conversations/{id}/messages",
+  "method": "POST",
+  "operationId": "post_api_chat_v1_conversations_id_messages",
+  "summary": "POST v1 conversations {id} messages",
+  "tags": [
+   "Chat"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/chat/v1/conversations/{id}/messages/{messageId}",
+  "method": "DELETE",
+  "operationId": "delete_api_chat_v1_conversations_id_messages_messageId",
+  "summary": "DELETE v1 conversations {id} messages {messageId}",
+  "tags": [
+   "Chat"
+  ],
+  "security": null,
+  "params": [
+   "id",
+   "messageId"
+  ]
+ },
+ {
+  "path": "/api/chat/v1/conversations/{id}/mute",
+  "method": "POST",
+  "operationId": "post_api_chat_v1_conversations_id_mute",
+  "summary": "POST v1 conversations {id} mute",
+  "tags": [
+   "Chat"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/chat/v1/conversations/{id}/mute",
+  "method": "DELETE",
+  "operationId": "delete_api_chat_v1_conversations_id_mute",
+  "summary": "DELETE v1 conversations {id} mute",
+  "tags": [
+   "Chat"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/chat/v1/conversations/{id}/read",
+  "method": "PUT",
+  "operationId": "put_api_chat_v1_conversations_id_read",
+  "summary": "PUT v1 conversations {id} read",
+  "tags": [
+   "Chat"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/chat/v1/conversations/search",
+  "method": "GET",
+  "operationId": "get_api_chat_v1_conversations_search",
+  "summary": "GET v1 conversations search",
+  "tags": [
+   "Chat"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/chat/v1/media/upload",
+  "method": "POST",
+  "operationId": "post_api_chat_v1_media_upload",
+  "summary": "POST v1 media upload",
+  "tags": [
+   "Chat"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/chat/v1/messages/{messageId}/report",
+  "method": "POST",
+  "operationId": "post_api_chat_v1_messages_messageId_report",
+  "summary": "POST v1 messages {messageId} report",
+  "tags": [
+   "Chat"
+  ],
+  "security": null,
+  "params": [
+   "messageId"
+  ]
+ },
+ {
+  "path": "/api/chat/v1/users/{userId}/block",
+  "method": "POST",
+  "operationId": "post_api_chat_v1_users_userId_block",
+  "summary": "POST v1 users {userId} block",
+  "tags": [
+   "Chat"
+  ],
+  "security": null,
+  "params": [
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/chat/v1/users/{userId}/block",
+  "method": "DELETE",
+  "operationId": "delete_api_chat_v1_users_userId_block",
+  "summary": "DELETE v1 users {userId} block",
+  "tags": [
+   "Chat"
+  ],
+  "security": null,
+  "params": [
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/checkout/{cartId}",
+  "method": "GET",
+  "operationId": "get_api_checkout_cartId",
+  "summary": "GET {cartId}",
+  "tags": [
+   "Checkout"
+  ],
+  "security": null,
+  "params": [
+   "cartId"
+  ]
+ },
+ {
+  "path": "/api/checkout/{cartId}",
+  "method": "DELETE",
+  "operationId": "delete_api_checkout_cartId",
+  "summary": "DELETE {cartId}",
+  "tags": [
+   "Checkout"
+  ],
+  "security": null,
+  "params": [
+   "cartId"
+  ]
+ },
+ {
+  "path": "/api/checkout/{id}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get checkout session",
+  "tags": [
+   "Checkout"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/checkout/{id}/confirm",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Confirm checkout",
+  "tags": [
+   "Checkout"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/checkout/current",
+  "method": "GET",
+  "operationId": "get_api_checkout_current",
+  "summary": "GET current",
+  "tags": [
+   "Checkout"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/checkout/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/checkout/health",
+  "tags": [
+   "Checkout"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/checkout/health/live",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/checkout/health/live",
+  "tags": [
+   "Checkout"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/checkout/health/ready",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/checkout/health/ready",
+  "tags": [
+   "Checkout"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/checkout/initiate",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Initiate checkout",
+  "tags": [
+   "Checkout"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/checkout/items",
+  "method": "POST",
+  "operationId": "post_api_checkout_items",
+  "summary": "POST items",
+  "tags": [
+   "Checkout"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/checkout/items",
+  "method": "PATCH",
+  "operationId": "patch_api_checkout_items",
+  "summary": "PATCH items",
+  "tags": [
+   "Checkout"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/checkout/items",
+  "method": "DELETE",
+  "operationId": "delete_api_checkout_items",
+  "summary": "DELETE items",
+  "tags": [
+   "Checkout"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/checkout/merge",
+  "method": "POST",
+  "operationId": "post_api_checkout_merge",
+  "summary": "POST merge",
+  "tags": [
+   "Checkout"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/checkout/metrics",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/checkout/metrics",
+  "tags": [
+   "Checkout"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/checkout/system/maintenance/cleanup/checkout-sessions",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/checkout/system/maintenance/cleanup/checkout-sessions",
+  "tags": [
+   "Checkout"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/checkout/system/maintenance/cleanup/checkout-sessions/report",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/checkout/system/maintenance/cleanup/checkout-sessions/report",
+  "tags": [
+   "Checkout"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/commission/{id}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get commission by ID",
+  "tags": [
+   "Commission"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/commission/{id}/approve",
+  "method": "PUT",
+  "operationId": null,
+  "summary": "Approve commission",
+  "tags": [
+   "Commission"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/commission/calculate",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Calculate commission",
+  "tags": [
+   "Commission"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/commission/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/commission/health",
+  "tags": [
+   "Commission"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/commission/health/live",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/commission/health/live",
+  "tags": [
+   "Commission"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/commission/health/ready",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/commission/health/ready",
+  "tags": [
+   "Commission"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/commission/sellers/{sellerId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get seller commissions",
+  "tags": [
+   "Commission"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "sellerId",
+   "sellerId"
+  ]
+ },
+ {
+  "path": "/api/commission/sellers/{sellerId}/summary",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get commission summary",
+  "tags": [
+   "Commission"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "sellerId",
+   "sellerId"
+  ]
+ },
+ {
+  "path": "/api/community/articles",
+  "method": "GET",
+  "operationId": "get_api_community_articles",
+  "summary": "GET articles",
+  "tags": [
+   "Community"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/community/articles",
+  "method": "POST",
+  "operationId": "post_api_community_articles",
+  "summary": "POST articles",
+  "tags": [
+   "Community"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/community/articles/{articleId}",
+  "method": "GET",
+  "operationId": "get_api_community_articles_articleId",
+  "summary": "GET articles {articleId}",
+  "tags": [
+   "Community"
+  ],
+  "security": null,
+  "params": [
+   "articleId"
+  ]
+ },
+ {
+  "path": "/api/community/articles/{articleId}/publish",
+  "method": "POST",
+  "operationId": "post_api_community_articles_articleId_publish",
+  "summary": "POST articles {articleId} publish",
+  "tags": [
+   "Community"
+  ],
+  "security": null,
+  "params": [
+   "articleId"
+  ]
+ },
+ {
+  "path": "/api/community/articles/{articleId}/reviews",
+  "method": "POST",
+  "operationId": "post_api_community_articles_articleId_reviews",
+  "summary": "POST articles {articleId} reviews",
+  "tags": [
+   "Community"
+  ],
+  "security": null,
+  "params": [
+   "articleId"
+  ]
+ },
+ {
+  "path": "/api/community/challenges",
+  "method": "GET",
+  "operationId": null,
+  "summary": "List business challenges",
+  "tags": [
+   "Community"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/community/challenges",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Propose business challenge",
+  "tags": [
+   "Community"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/community/challenges/{challengeId}/solutions",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Submit solution to challenge",
+  "tags": [
+   "Community"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "challengeId",
+   "challengeId"
+  ]
+ },
+ {
+  "path": "/api/community/discover",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get personalized content recommendations",
+  "tags": [
+   "Community"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/community/discussions",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/community/discussions",
+  "tags": [
+   "Community"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/community/discussions",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/community/discussions",
+  "tags": [
+   "Community"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/community/discussions/{threadId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/community/discussions/{threadId}",
+  "tags": [
+   "Community"
+  ],
+  "security": [],
+  "params": [
+   "threadId",
+   "threadId"
+  ]
+ },
+ {
+  "path": "/api/community/discussions/{threadId}/accept/{answerId}",
+  "method": "PATCH",
+  "operationId": null,
+  "summary": "PATCH /api/community/discussions/{threadId}/accept/{answerId}",
+  "tags": [
+   "Community"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "threadId",
+   "answerId",
+   "threadId",
+   "answerId"
+  ]
+ },
+ {
+  "path": "/api/community/discussions/{threadId}/answers",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/community/discussions/{threadId}/answers",
+  "tags": [
+   "Community"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "threadId",
+   "threadId"
+  ]
+ },
+ {
+  "path": "/api/community/discussions/{threadId}/close",
+  "method": "PATCH",
+  "operationId": null,
+  "summary": "PATCH /api/community/discussions/{threadId}/close",
+  "tags": [
+   "Community"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "threadId",
+   "threadId"
+  ]
+ },
+ {
+  "path": "/api/community/expertise/validate",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/community/expertise/validate",
+  "tags": [
+   "Community"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/community/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/community/health",
+  "tags": [
+   "Community"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/community/knowledge/articles",
+  "method": "GET",
+  "operationId": null,
+  "summary": "List knowledge articles",
+  "tags": [
+   "Community"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/community/knowledge/articles",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Submit knowledge article",
+  "tags": [
+   "Community"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/community/knowledge/articles/{articleId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get article",
+  "tags": [
+   "Community"
+  ],
+  "security": [],
+  "params": [
+   "articleId",
+   "articleId"
+  ]
+ },
+ {
+  "path": "/api/community/knowledge/articles/{articleId}/publish",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/community/knowledge/articles/{articleId}/publish",
+  "tags": [
+   "Community"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "articleId",
+   "articleId"
+  ]
+ },
+ {
+  "path": "/api/community/knowledge/articles/{articleId}/reviews",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Submit peer review",
+  "tags": [
+   "Community"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "articleId",
+   "articleId"
+  ]
+ },
+ {
+  "path": "/api/community/knowledge/challenges",
+  "method": "GET",
+  "operationId": "get_api_community_knowledge_challenges",
+  "summary": "GET knowledge challenges",
+  "tags": [
+   "Community"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/community/knowledge/challenges",
+  "method": "POST",
+  "operationId": "post_api_community_knowledge_challenges",
+  "summary": "POST knowledge challenges",
+  "tags": [
+   "Community"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/community/knowledge/challenges/{challengeId}/solutions",
+  "method": "POST",
+  "operationId": "post_api_community_knowledge_challenges_challengeId_solutions",
+  "summary": "POST knowledge challenges {challengeId} solutions",
+  "tags": [
+   "Community"
+  ],
+  "security": null,
+  "params": [
+   "challengeId"
+  ]
+ },
+ {
+  "path": "/api/community/knowledge/discover",
+  "method": "GET",
+  "operationId": "get_api_community_knowledge_discover",
+  "summary": "GET knowledge discover",
+  "tags": [
+   "Community"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/community/knowledge/expertise/validate",
+  "method": "POST",
+  "operationId": "post_api_community_knowledge_expertise_validate",
+  "summary": "POST knowledge expertise validate",
+  "tags": [
+   "Community"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/community/metrics",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/community/metrics",
+  "tags": [
+   "Community"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/community/posts",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Create a new post",
+  "tags": [
+   "Community"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/community/posts/{postId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get post by ID",
+  "tags": [
+   "Community"
+  ],
+  "security": [],
+  "params": [
+   "postId",
+   "postId"
+  ]
+ },
+ {
+  "path": "/api/community/posts/{postId}/related",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get related posts",
+  "tags": [
+   "Community"
+  ],
+  "security": [],
+  "params": [
+   "postId",
+   "postId"
+  ]
+ },
+ {
+  "path": "/api/community/posts/authors/{authorId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get posts by author",
+  "tags": [
+   "Community"
+  ],
+  "security": [],
+  "params": [
+   "authorId",
+   "authorId"
+  ]
+ },
+ {
+  "path": "/api/community/posts/published",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get published posts (global feed)",
+  "tags": [
+   "Community"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/community/posts/search",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Search posts",
+  "tags": [
+   "Community"
+  ],
+  "security": [],
+  "params": [
+   "q",
+   "limit"
+  ]
+ },
+ {
+  "path": "/api/community/posts/trending",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get trending topics",
+  "tags": [
+   "Community"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/community/posts/users/{userId}/feed",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get personalized feed for a user",
+  "tags": [
+   "Community"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/community/system/maintenance/cleanup/outbox",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/community/system/maintenance/cleanup/outbox",
+  "tags": [
+   "Community"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/community/system/maintenance/cleanup/outbox/report",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/community/system/maintenance/cleanup/outbox/report",
+  "tags": [
+   "Community"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/enabler/enablers/{enablerId}/earnings",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get enabler earnings ledger",
+  "tags": [
+   "Enabler"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "enablerId",
+   "status",
+   "page",
+   "limit",
+   "enablerId"
+  ]
+ },
+ {
+  "path": "/api/enabler/enablers/{enablerId}/earnings/summary",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get enabler earnings summary",
+  "tags": [
+   "Enabler"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "enablerId",
+   "enablerId"
+  ]
+ },
+ {
+  "path": "/api/enabler/enablers/{enablerId}/listings",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get enabler listings",
+  "tags": [
+   "Enabler"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "enablerId",
+   "enablerId"
+  ]
+ },
+ {
+  "path": "/api/enabler/enablers/{enablerId}/listings",
+  "method": "POST",
+  "operationId": null,
+  "summary": "List product as enabler",
+  "tags": [
+   "Enabler"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "enablerId",
+   "enablerId"
+  ]
+ },
+ {
+  "path": "/api/enabler/enablers/{enablerId}/orders",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get enabler orders",
+  "tags": [
+   "Enabler"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "enablerId",
+   "enablerId"
+  ]
+ },
+ {
+  "path": "/api/enabler/enablers/{enablerId}/orders",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Create enabler order",
+  "tags": [
+   "Enabler"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "enablerId",
+   "enablerId"
+  ]
+ },
+ {
+  "path": "/api/enabler/enablers/{enablerId}/orders/{orderId}/commission",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get enabler order commission breakdown",
+  "tags": [
+   "Enabler"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "enablerId",
+   "orderId",
+   "enablerId",
+   "orderId"
+  ]
+ },
+ {
+  "path": "/api/enabler/enablers/{enablerId}/promotion-jobs",
+  "method": "GET",
+  "operationId": null,
+  "summary": "List enabler promotion jobs",
+  "tags": [
+   "Enabler"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "enablerId",
+   "view",
+   "sellerId",
+   "status",
+   "page",
+   "limit",
+   "enablerId"
+  ]
+ },
+ {
+  "path": "/api/enabler/enablers/{enablerId}/promotion-jobs/{jobId}/accept",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Accept promotion job",
+  "tags": [
+   "Enabler"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "enablerId",
+   "jobId",
+   "enablerId",
+   "jobId"
+  ]
+ },
+ {
+  "path": "/api/enabler/enablers/{enablerId}/referral-link",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get enabler referral link",
+  "tags": [
+   "Enabler"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "enablerId",
+   "includeQR",
+   "enablerId"
+  ]
+ },
+ {
+  "path": "/api/enabler/enablers/{enablerId}/referral-link",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Generate enabler referral link",
+  "tags": [
+   "Enabler"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "enablerId",
+   "enablerId"
+  ]
+ },
+ {
+  "path": "/api/enabler/enablers/{enablerId}/referral-link/events",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Track enabler referral event",
+  "tags": [
+   "Enabler"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "enablerId",
+   "enablerId"
+  ]
+ },
+ {
+  "path": "/api/enabler/enablers/{id}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get enabler profile",
+  "tags": [
+   "Enabler"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/enabler/enablers/{id}/approve",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Approve enabler",
+  "tags": [
+   "Enabler"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/enabler/enablers/register",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Register as enabler",
+  "tags": [
+   "Enabler"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/enabler/hub/products",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Browse enabler hub products",
+  "tags": [
+   "Enabler"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/enabler/system/maintenance/cleanup/outbox",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/enabler/system/maintenance/cleanup/outbox",
+  "tags": [
+   "Enabler"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/enabler/system/maintenance/cleanup/outbox/report",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/enabler/system/maintenance/cleanup/outbox/report",
+  "tags": [
+   "Enabler"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/governance/constitution",
+  "method": "GET",
+  "operationId": "get_api_governance_constitution",
+  "summary": "Get the active governance constitution",
+  "tags": [
+   "Governance"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/governance/dashboard",
+  "method": "GET",
+  "operationId": "get_api_governance_dashboard",
+  "summary": "Get the governance dashboard payload",
+  "tags": [
+   "Governance"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/governance/reports/latest",
+  "method": "GET",
+  "operationId": "get_api_governance_reports_latest",
+  "summary": "Get the latest governance report",
+  "tags": [
+   "Governance"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/governance/runs",
+  "method": "GET",
+  "operationId": "get_api_governance_runs",
+  "summary": "List governance runs",
+  "tags": [
+   "Governance"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/governance/runs",
+  "method": "POST",
+  "operationId": "post_api_governance_runs",
+  "summary": "Start a governance audit run",
+  "tags": [
+   "Governance"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/governance/runs/{runId}",
+  "method": "GET",
+  "operationId": "get_api_governance_runs_runId",
+  "summary": "Get a governance run",
+  "tags": [
+   "Governance"
+  ],
+  "security": null,
+  "params": [
+   "runId"
+  ]
+ },
+ {
+  "path": "/api/governance/runs/{runId}/evidence/{gateId}",
+  "method": "GET",
+  "operationId": "get_api_governance_runs_runId_evidence_gateId",
+  "summary": "Get evidence for a governance gate",
+  "tags": [
+   "Governance"
+  ],
+  "security": null,
+  "params": [
+   "runId",
+   "gateId"
+  ]
+ },
+ {
+  "path": "/api/governance/summary",
+  "method": "GET",
+  "operationId": "get_api_governance_summary",
+  "summary": "Get the latest governance summary",
+  "tags": [
+   "Governance"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/inventory/analytics/stock-levels",
+  "method": "GET",
+  "operationId": "get_api_inventory_analytics_stock_levels",
+  "summary": "GET analytics stock-levels",
+  "tags": [
+   "Inventory"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/inventory/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/inventory/health",
+  "tags": [
+   "Inventory"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/inventory/health/live",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/inventory/health/live",
+  "tags": [
+   "Inventory"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/inventory/health/ready",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/inventory/health/ready",
+  "tags": [
+   "Inventory"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/inventory/inventory-counts",
+  "method": "POST",
+  "operationId": "post_api_inventory_inventory_counts",
+  "summary": "POST inventory-counts",
+  "tags": [
+   "Inventory"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/inventory/inventory-counts/{countId}",
+  "method": "PUT",
+  "operationId": "put_api_inventory_inventory_counts_countId",
+  "summary": "PUT inventory-counts {countId}",
+  "tags": [
+   "Inventory"
+  ],
+  "security": null,
+  "params": [
+   "countId"
+  ]
+ },
+ {
+  "path": "/api/inventory/materials",
+  "method": "GET",
+  "operationId": null,
+  "summary": "List supplier materials inventory",
+  "tags": [
+   "Inventory"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "warehouseId",
+   "lowStockOnly"
+  ]
+ },
+ {
+  "path": "/api/inventory/materials/{variantId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get supplier material inventory detail",
+  "tags": [
+   "Inventory"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "variantId",
+   "warehouseId",
+   "warehouseId",
+   "variantId"
+  ]
+ },
+ {
+  "path": "/api/inventory/materials/{variantId}/warehouses/{warehouseId}",
+  "method": "PUT",
+  "operationId": null,
+  "summary": "Update supplier material inventory and thresholds",
+  "tags": [
+   "Inventory"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "variantId",
+   "warehouseId",
+   "variantId",
+   "warehouseId"
+  ]
+ },
+ {
+  "path": "/api/inventory/metrics",
+  "method": "GET",
+  "operationId": "get_api_inventory_metrics",
+  "summary": "GET metrics",
+  "tags": [
+   "Inventory"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/inventory/reservations",
+  "method": "POST",
+  "operationId": "post_api_inventory_reservations",
+  "summary": "POST reservations",
+  "tags": [
+   "Inventory"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/inventory/reservations/{orderId}",
+  "method": "GET",
+  "operationId": "get_api_inventory_reservations_orderId",
+  "summary": "GET reservations {orderId}",
+  "tags": [
+   "Inventory"
+  ],
+  "security": null,
+  "params": [
+   "orderId"
+  ]
+ },
+ {
+  "path": "/api/inventory/reservations/{orderId}",
+  "method": "DELETE",
+  "operationId": "delete_api_inventory_reservations_orderId",
+  "summary": "DELETE reservations {orderId}",
+  "tags": [
+   "Inventory"
+  ],
+  "security": null,
+  "params": [
+   "orderId"
+  ]
+ },
+ {
+  "path": "/api/inventory/stock/{variantId}",
+  "method": "GET",
+  "operationId": "get_api_inventory_stock_variantId",
+  "summary": "GET stock {variantId}",
+  "tags": [
+   "Inventory"
+  ],
+  "security": null,
+  "params": [
+   "variantId"
+  ]
+ },
+ {
+  "path": "/api/inventory/stock/{variantId}/{warehouseId}",
+  "method": "PUT",
+  "operationId": "put_api_inventory_stock_variantId_warehouseId",
+  "summary": "PUT stock {variantId} {warehouseId}",
+  "tags": [
+   "Inventory"
+  ],
+  "security": null,
+  "params": [
+   "variantId",
+   "warehouseId"
+  ]
+ },
+ {
+  "path": "/api/inventory/system/maintenance/cleanup/outbox",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/inventory/system/maintenance/cleanup/outbox",
+  "tags": [
+   "Inventory"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/inventory/system/maintenance/cleanup/outbox/report",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/inventory/system/maintenance/cleanup/outbox/report",
+  "tags": [
+   "Inventory"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/inventory/warehouses",
+  "method": "GET",
+  "operationId": "get_api_inventory_warehouses",
+  "summary": "GET warehouses",
+  "tags": [
+   "Inventory"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/inventory/warehouses/{id}",
+  "method": "GET",
+  "operationId": "get_api_inventory_warehouses_id",
+  "summary": "GET warehouses {id}",
+  "tags": [
+   "Inventory"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/kyc/admin/{userId}",
+  "method": "PATCH",
+  "operationId": null,
+  "summary": "PATCH /api/kyc/admin/{userId}",
+  "tags": [
+   "KYC"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/kyc/status",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/kyc/status",
+  "tags": [
+   "KYC"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/kyc/submit",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/kyc/submit",
+  "tags": [
+   "KYC"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/courier",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/logistics/api/courier",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/courier/{courierId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/logistics/api/courier/{courierId}",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "courierId",
+   "courierId"
+  ]
+ },
+ {
+  "path": "/api/logistics/api/courier/{courierId}/status",
+  "method": "PUT",
+  "operationId": null,
+  "summary": "PUT /api/logistics/api/courier/{courierId}/status",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "courierId",
+   "courierId"
+  ]
+ },
+ {
+  "path": "/api/logistics/api/v1/analytics",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get logistics analytics",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/v1/analytics/courier/{courierId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/logistics/api/v1/analytics/courier/{courierId}",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "courierId",
+   "courierId"
+  ]
+ },
+ {
+  "path": "/api/logistics/api/v1/analytics/performance",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get performance metrics",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/v1/cod/{deliveryId}/otp",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Generate COD OTP",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "deliveryId",
+   "deliveryId"
+  ]
+ },
+ {
+  "path": "/api/logistics/api/v1/cod/{deliveryId}/verify",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Verify COD delivery",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "deliveryId",
+   "deliveryId"
+  ]
+ },
+ {
+  "path": "/api/logistics/api/v1/couriers",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get couriers",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/v1/couriers/{courierId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get courier by ID",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "courierId",
+   "courierId"
+  ]
+ },
+ {
+  "path": "/api/logistics/api/v1/couriers/{courierId}/status",
+  "method": "PUT",
+  "operationId": null,
+  "summary": "Update courier status",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "courierId",
+   "courierId"
+  ]
+ },
+ {
+  "path": "/api/logistics/api/v1/deliveries",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get deliveries",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "status",
+   "courierId",
+   "page",
+   "limit"
+  ]
+ },
+ {
+  "path": "/api/logistics/api/v1/deliveries",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Create delivery",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/v1/deliveries/{deliveryId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get delivery by ID",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "deliveryId",
+   "deliveryId"
+  ]
+ },
+ {
+  "path": "/api/logistics/api/v1/deliveries/{deliveryId}/history",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get delivery history",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "deliveryId",
+   "deliveryId"
+  ]
+ },
+ {
+  "path": "/api/logistics/api/v1/deliveries/{deliveryId}/status",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Update delivery status",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "deliveryId",
+   "deliveryId"
+  ]
+ },
+ {
+  "path": "/api/logistics/api/v1/earnings",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get earnings",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/v1/earnings",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Record earnings",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/v1/earnings/calculate",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/logistics/api/v1/earnings/calculate",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/v1/earnings/courier/{courierId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get courier earnings",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "courierId",
+   "courierId"
+  ]
+ },
+ {
+  "path": "/api/logistics/api/v1/earnings/summary",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/logistics/api/v1/earnings/summary",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/v1/engines/status",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/logistics/api/v1/engines/status",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/v1/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/logistics/api/v1/health",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/v1/metrics",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/logistics/api/v1/metrics",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/v1/qa/architecture",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/logistics/api/v1/qa/architecture",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/v1/qa/dashboard",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/logistics/api/v1/qa/dashboard",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/v1/qa/load-test",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/logistics/api/v1/qa/load-test",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/v1/qa/performance",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/logistics/api/v1/qa/performance",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/v1/qa/security",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/logistics/api/v1/qa/security",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/v1/routes",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get routes",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/v1/routes/{routeId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get route by ID",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "routeId",
+   "routeId"
+  ]
+ },
+ {
+  "path": "/api/logistics/api/v1/routes/{routeId}/alternatives",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/logistics/api/v1/routes/{routeId}/alternatives",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "routeId",
+   "routeId"
+  ]
+ },
+ {
+  "path": "/api/logistics/api/v1/routes/{routeId}/progress",
+  "method": "PUT",
+  "operationId": null,
+  "summary": "Update route progress",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "routeId",
+   "routeId"
+  ]
+ },
+ {
+  "path": "/api/logistics/api/v1/routes/courier/{courierId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get courier routes",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "courierId",
+   "courierId"
+  ]
+ },
+ {
+  "path": "/api/logistics/api/v1/routes/optimize",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Optimize route",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/v1/stats/performance",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/logistics/api/v1/stats/performance",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/v1/test/all-engines",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/logistics/api/v1/test/all-engines",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/api/v1/tracking/{trackingNumber}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get tracking history",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "trackingNumber",
+   "trackingNumber"
+  ]
+ },
+ {
+  "path": "/api/logistics/api/v1/tracking/courier/{courierId}/history",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/logistics/api/v1/tracking/courier/{courierId}/history",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "courierId",
+   "courierId"
+  ]
+ },
+ {
+  "path": "/api/logistics/api/v1/tracking/location",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Store location update",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/logistics/health",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/health/live",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/logistics/health/live",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/health/ready",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/logistics/health/ready",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/system/maintenance/cleanup/outbox",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/logistics/system/maintenance/cleanup/outbox",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/logistics/system/maintenance/cleanup/outbox/report",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/logistics/system/maintenance/cleanup/outbox/report",
+  "tags": [
+   "Logistics"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/maps/geocoding/geocode",
+  "method": "POST",
+  "operationId": "post_api_maps_geocoding_geocode",
+  "summary": "POST geocoding geocode",
+  "tags": [
+   "Maps"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/maps/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/maps/health",
+  "tags": [
+   "Maps"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/maps/health/live",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/maps/health/live",
+  "tags": [
+   "Maps"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/maps/health/ready",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/maps/health/ready",
+  "tags": [
+   "Maps"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/maps/routing/calculate",
+  "method": "POST",
+  "operationId": "post_api_maps_routing_calculate",
+  "summary": "POST routing calculate",
+  "tags": [
+   "Maps"
+  ],
+  "security": null,
+  "params": []
+ },
+ {
+  "path": "/api/notification/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Notification service health",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/notification/health-summary",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Notification health summary",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/notification/health/live",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Notification liveness",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/notification/health/ready",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Notification readiness",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/notification/notifications",
+  "method": "GET",
+  "operationId": null,
+  "summary": "List notifications",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/notification/notifications",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Create notification",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/notification/notifications/{id}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get notification",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/notification/notifications/{id}",
+  "method": "DELETE",
+  "operationId": null,
+  "summary": "Cancel scheduled notification",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/notification/notifications/{id}/retry",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Retry failed notification",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/notification/notifications/{id}/status",
+  "method": "PATCH",
+  "operationId": null,
+  "summary": "Update notification status",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/notification/notifications/bulk",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Bulk send notifications",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/notification/notifications/mark-all-read",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Mark all notifications as read",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/notification/notifications/unread-count",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get unread notification count",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/notification/preferences/{userId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get notification preferences",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/notification/preferences/{userId}",
+  "method": "PUT",
+  "operationId": null,
+  "summary": "Update notification preferences",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/notification/preferences/{userId}/opt-out",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Opt out of notifications",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/notification/sms/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "SMS service health",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/notification/sms/health/live",
+  "method": "GET",
+  "operationId": null,
+  "summary": "SMS liveness",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/notification/sms/health/ready",
+  "method": "GET",
+  "operationId": null,
+  "summary": "SMS readiness",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/notification/sms/retry/{messageId}",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Retry SMS message",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "messageId",
+   "messageId"
+  ]
+ },
+ {
+  "path": "/api/notification/sms/retry/failed",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Retry failed SMS messages",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/notification/sms/send",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Send SMS",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/notification/sms/statistics",
+  "method": "GET",
+  "operationId": null,
+  "summary": "SMS statistics",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/notification/sms/status/{messageId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get SMS status",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "messageId",
+   "messageId"
+  ]
+ },
+ {
+  "path": "/api/notification/sms/webhook/africastalking",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Africa's Talking delivery webhook",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/notification/system/maintenance/cleanup/sms",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/notification/system/maintenance/cleanup/sms",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/notification/system/maintenance/cleanup/sms/report",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/notification/system/maintenance/cleanup/sms/report",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/notification/templates",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Create notification template",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/notification/templates/{id}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get notification template",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/notification/templates/{id}",
+  "method": "PUT",
+  "operationId": null,
+  "summary": "Update notification template",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/notification/templates/{id}",
+  "method": "DELETE",
+  "operationId": null,
+  "summary": "Delete notification template",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/notification/templates/{id}/render",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Render notification template",
+  "tags": [
+   "Notifications"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/order/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/order/health",
+  "tags": [
+   "Orders"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/order/health/circuit-breakers",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/order/health/circuit-breakers",
+  "tags": [
+   "Orders"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/order/health/detailed",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/order/health/detailed",
+  "tags": [
+   "Orders"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/order/health/live",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/order/health/live",
+  "tags": [
+   "Orders"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/order/health/metrics",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/order/health/metrics",
+  "tags": [
+   "Orders"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/order/health/ping",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/order/health/ping",
+  "tags": [
+   "Orders"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/order/health/ready",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/order/health/ready",
+  "tags": [
+   "Orders"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/order/orders",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get all orders",
+  "tags": [
+   "Orders"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "page",
+   "limit",
+   "status",
+   "buyerId"
+  ]
+ },
+ {
+  "path": "/api/order/orders",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Place new order",
+  "tags": [
+   "Orders"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/order/orders/{id}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get order by ID",
+  "tags": [
+   "Orders"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/order/orders/{id}",
+  "method": "PUT",
+  "operationId": null,
+  "summary": "Update order",
+  "tags": [
+   "Orders"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/order/orders/{id}",
+  "method": "DELETE",
+  "operationId": null,
+  "summary": "Cancel order",
+  "tags": [
+   "Orders"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/order/orders/{id}/cancel",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Cancel order",
+  "tags": [
+   "Orders"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/order/orders/{id}/confirm-delivery",
+  "method": "POST",
+  "operationId": "post_api_order_orders_id_confirm_delivery",
+  "summary": "POST orders {id} confirm-delivery",
+  "tags": [
+   "Order"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/order/orders/{id}/status",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Update order status",
+  "tags": [
+   "Orders"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/order/orders/analytics/stats",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get order analytics",
+  "tags": [
+   "Orders"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/order/orders/cod/validate",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Validate COD eligibility",
+  "tags": [
+   "Orders"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/order/orders/disputes/{id}/resolve",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Resolve COD dispute",
+  "tags": [
+   "Orders"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/order/orders/search",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Search orders",
+  "tags": [
+   "Orders"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "q"
+  ]
+ },
+ {
+  "path": "/api/order/orders/tracking/{trackingNumber}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get order by tracking number",
+  "tags": [
+   "Orders"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "trackingNumber",
+   "trackingNumber"
+  ]
+ },
+ {
+  "path": "/api/order/system/maintenance/cleanup/outbox",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/order/system/maintenance/cleanup/outbox",
+  "tags": [
+   "Orders"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/order/system/maintenance/cleanup/outbox/report",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/order/system/maintenance/cleanup/outbox/report",
+  "tags": [
+   "Orders"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/payment/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/payment/health",
+  "tags": [
+   "Payments"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/payment/health/live",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/payment/health/live",
+  "tags": [
+   "Payments"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/payment/health/ready",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/payment/health/ready",
+  "tags": [
+   "Payments"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/payment/metrics",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/payment/metrics",
+  "tags": [
+   "Payments"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/payment/payments",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Create payment",
+  "tags": [
+   "Payments"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/payment/payments/{id}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get payment by ID",
+  "tags": [
+   "Payments"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/payment/payments/{id}/refund",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Refund payment",
+  "tags": [
+   "Payments"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/payment/payments/{id}/status",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Check payment status",
+  "tags": [
+   "Payments"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/payment/payments/order/{orderId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get payment by order ID",
+  "tags": [
+   "Payments"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "orderId",
+   "orderId"
+  ]
+ },
+ {
+  "path": "/api/payment/payments/webhooks/paymentGateway",
+  "method": "POST",
+  "operationId": null,
+  "summary": "PaymentGateway webhook",
+  "tags": [
+   "Payments"
+  ],
+  "security": [],
+  "params": [
+   "x-webhook-idempotency-key",
+   "x-webhook-idempotency-key"
+  ]
+ },
+ {
+  "path": "/api/payment/system/maintenance/cleanup/outbox",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/payment/system/maintenance/cleanup/outbox",
+  "tags": [
+   "Payments"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/payment/system/maintenance/cleanup/outbox/report",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/payment/system/maintenance/cleanup/outbox/report",
+  "tags": [
+   "Payments"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/payment/webhooks/paymentGateway",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/payment/webhooks/paymentGateway",
+  "tags": [
+   "Payments"
+  ],
+  "security": [],
+  "params": [
+   "x-webhook-idempotency-key",
+   "x-webhook-idempotency-key"
+  ]
+ },
+ {
+  "path": "/api/payout/payouts",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/payout/payouts",
+  "tags": [
+   "Payouts"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/payout/payouts",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/payout/payouts",
+  "tags": [
+   "Payouts"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/payout/payouts/{id}",
+  "method": "GET",
+  "operationId": "get_api_payout_payouts_id",
+  "summary": "GET payouts {id}",
+  "tags": [
+   "Payout"
+  ],
+  "security": null,
+  "params": [
+   "id"
+  ]
+ },
+ {
+  "path": "/api/payout/payouts/{id}/cancel",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/payout/payouts/{id}/cancel",
+  "tags": [
+   "Payouts"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/payout/system/maintenance/cleanup/outbox",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/payout/system/maintenance/cleanup/outbox",
+  "tags": [
+   "Payouts"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/payout/system/maintenance/cleanup/outbox/report",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/payout/system/maintenance/cleanup/outbox/report",
+  "tags": [
+   "Payouts"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/support/agents",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Create support agent",
+  "tags": [
+   "Support"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/support/agents/{id}",
+  "method": "PUT",
+  "operationId": null,
+  "summary": "Update support agent",
+  "tags": [
+   "Support"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/support/disputes",
+  "method": "GET",
+  "operationId": null,
+  "summary": "List dispute cases",
+  "tags": [
+   "Support"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "status",
+   "priority",
+   "userId",
+   "page",
+   "limit"
+  ]
+ },
+ {
+  "path": "/api/support/disputes",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Create dispute case",
+  "tags": [
+   "Support"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/support/disputes/{id}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get dispute case",
+  "tags": [
+   "Support"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/support/disputes/{id}/escalate",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Escalate dispute case",
+  "tags": [
+   "Support"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/support/disputes/{id}/evidence",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Attach evidence to dispute case",
+  "tags": [
+   "Support"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/support/system/maintenance/cleanup/outbox",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/support/system/maintenance/cleanup/outbox",
+  "tags": [
+   "Support"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/support/system/maintenance/cleanup/outbox/report",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/support/system/maintenance/cleanup/outbox/report",
+  "tags": [
+   "Support"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/support/tickets",
+  "method": "GET",
+  "operationId": null,
+  "summary": "List tickets",
+  "tags": [
+   "Support"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/support/tickets",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Create support ticket",
+  "tags": [
+   "Support"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/support/tickets/{id}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get ticket",
+  "tags": [
+   "Support"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/support/tickets/{id}/assign",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Assign ticket",
+  "tags": [
+   "Support"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/support/tickets/{id}/close",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Close ticket",
+  "tags": [
+   "Support"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/support/tickets/{id}/messages",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Add message to ticket",
+  "tags": [
+   "Support"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/support/tickets/{id}/resolve",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Resolve ticket",
+  "tags": [
+   "Support"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/training/api/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/training/api/health",
+  "tags": [
+   "Training"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/training/api/v1/modules",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/training/api/v1/modules",
+  "tags": [
+   "Training"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/training/api/v1/modules/{id}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/training/api/v1/modules/{id}",
+  "tags": [
+   "Training"
+  ],
+  "security": [],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/training/api/v1/modules/{id}/content",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/training/api/v1/modules/{id}/content",
+  "tags": [
+   "Training"
+  ],
+  "security": [],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/training/api/v1/modules/badges/{learnerId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/training/api/v1/modules/badges/{learnerId}",
+  "tags": [
+   "Training"
+  ],
+  "security": [],
+  "params": [
+   "learnerId",
+   "learnerId"
+  ]
+ },
+ {
+  "path": "/api/training/api/v1/modules/leaderboard",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/training/api/v1/modules/leaderboard",
+  "tags": [
+   "Training"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/training/api/v1/training/{id}/complete",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Complete training",
+  "tags": [
+   "Training"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/training/api/v1/training/{id}/progress",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/training/api/v1/training/{id}/progress",
+  "tags": [
+   "Training"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/training/api/v1/training/available",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get available training modules",
+  "tags": [
+   "Training"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/training/api/v1/training/eligibility/{learnerId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Check training eligibility",
+  "tags": [
+   "Training"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "learnerId",
+   "learnerId"
+  ]
+ },
+ {
+  "path": "/api/training/api/v1/training/progress/{learnerId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get training progress",
+  "tags": [
+   "Training"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "learnerId",
+   "learnerId"
+  ]
+ },
+ {
+  "path": "/api/training/api/v1/training/start",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Start training",
+  "tags": [
+   "Training"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/training/metrics",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/training/metrics",
+  "tags": [
+   "Training"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/user",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Create new user",
+  "tags": [
+   "Users"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/user/{id}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get user by ID",
+  "tags": [
+   "Users"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/user/{id}",
+  "method": "PUT",
+  "operationId": null,
+  "summary": "Update user",
+  "tags": [
+   "Users"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/user/{id}",
+  "method": "DELETE",
+  "operationId": null,
+  "summary": "Delete user account",
+  "tags": [
+   "Users"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/user/{id}/2fa/setup",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/user/{id}/2fa/setup",
+  "tags": [
+   "Users"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/user/{id}/password",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Change user password",
+  "tags": [
+   "Users"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/user/{id}/phone/verify",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/user/{id}/phone/verify",
+  "tags": [
+   "Users"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/user/{id}/role",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Change user role",
+  "tags": [
+   "Users"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/user/{id}/suspend",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Suspend user account",
+  "tags": [
+   "Users"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "id",
+   "id"
+  ]
+ },
+ {
+  "path": "/api/user/{userId}/cod-reputation",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get COD reputation",
+  "tags": [
+   "Users"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/user/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/user/health",
+  "tags": [
+   "Users"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/user/health/live",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/user/health/live",
+  "tags": [
+   "Users"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/user/health/metrics",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/user/health/metrics",
+  "tags": [
+   "Users"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/user/health/ping",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/user/health/ping",
+  "tags": [
+   "Users"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/user/health/ready",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/user/health/ready",
+  "tags": [
+   "Users"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/user/lookup",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/user/lookup",
+  "tags": [
+   "Users"
+  ],
+  "security": [
+   {
+    "InternalCall": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/user/profile",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get current user profile",
+  "tags": [
+   "Users"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/user/profile",
+  "method": "PUT",
+  "operationId": null,
+  "summary": "Update current user profile",
+  "tags": [
+   "Users"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/user/request-password-reset",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Request password reset",
+  "tags": [
+   "Users"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/user/reset-password/{token}",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/user/reset-password/{token}",
+  "tags": [
+   "Users"
+  ],
+  "security": [],
+  "params": [
+   "token",
+   "token"
+  ]
+ },
+ {
+  "path": "/api/user/search",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/user/search",
+  "tags": [
+   "Users"
+  ],
+  "security": [
+   {
+    "InternalCall": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/user/security/breaches/report",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/user/security/breaches/report",
+  "tags": [
+   "Users"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/user/system/maintenance/cleanup/outbox",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/user/system/maintenance/cleanup/outbox",
+  "tags": [
+   "Users"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/user/system/maintenance/cleanup/outbox/report",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/user/system/maintenance/cleanup/outbox/report",
+  "tags": [
+   "Users"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/user/verify-email/{token}",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Verify email address",
+  "tags": [
+   "Users"
+  ],
+  "security": [],
+  "params": [
+   "token",
+   "token"
+  ]
+ },
+ {
+  "path": "/api/wallet/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/wallet/health",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/wallet/health/live",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/wallet/health/live",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/wallet/health/ready",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/wallet/health/ready",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/api/wallet/system/maintenance/cleanup/idempotency",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/wallet/system/maintenance/cleanup/idempotency",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/wallet/system/maintenance/cleanup/idempotency/report",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/wallet/system/maintenance/cleanup/idempotency/report",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/wallet/system/maintenance/cleanup/outbox",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/wallet/system/maintenance/cleanup/outbox",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/wallet/system/maintenance/cleanup/outbox/report",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/wallet/system/maintenance/cleanup/outbox/report",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [
+   {
+    "ServiceKey": []
+   }
+  ],
+  "params": []
+ },
+ {
+  "path": "/api/wallet/wallets/{userId}",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get wallet",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/wallet/wallets/{userId}/balance",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get wallet balance",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/wallet/wallets/{userId}/credit",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Credit wallet",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/wallet/wallets/{userId}/debit",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Debit wallet",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/wallet/wallets/{userId}/freeze",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/wallet/wallets/{userId}/freeze",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/wallet/wallets/{userId}/hold",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Place hold on funds",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/wallet/wallets/{userId}/hold/{holdId}/capture",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Capture hold",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "holdId",
+   "userId",
+   "holdId"
+  ]
+ },
+ {
+  "path": "/api/wallet/wallets/{userId}/hold/{holdId}/release",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Release hold",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "holdId",
+   "userId",
+   "holdId"
+  ]
+ },
+ {
+  "path": "/api/wallet/wallets/{userId}/holds",
+  "method": "GET",
+  "operationId": null,
+  "summary": "List active holds for the wallet",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/wallet/wallets/{userId}/payout",
+  "method": "GET",
+  "operationId": null,
+  "summary": "List payouts initiated from the wallet",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/wallet/wallets/{userId}/payout",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Initiate payout",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/wallet/wallets/{userId}/statement",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Get wallet statement",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/wallet/wallets/{userId}/topup",
+  "method": "POST",
+  "operationId": null,
+  "summary": "Top up wallet",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/wallet/wallets/{userId}/transaction/{transactionId}/reverse",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/wallet/wallets/{userId}/transaction/{transactionId}/reverse",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "transactionId",
+   "userId",
+   "transactionId"
+  ]
+ },
+ {
+  "path": "/api/wallet/wallets/{userId}/transactions",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /api/wallet/wallets/{userId}/transactions",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/api/wallet/wallets/{userId}/unfreeze",
+  "method": "POST",
+  "operationId": null,
+  "summary": "POST /api/wallet/wallets/{userId}/unfreeze",
+  "tags": [
+   "Wallet"
+  ],
+  "security": [
+   {
+    "BearerAuth": []
+   }
+  ],
+  "params": [
+   "userId",
+   "userId"
+  ]
+ },
+ {
+  "path": "/debug-sentry",
+  "method": "GET",
+  "operationId": null,
+  "summary": "GET /debug-sentry",
+  "tags": [
+   "Health"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/health",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Health check",
+  "tags": [
+   "Health"
+  ],
+  "security": [],
+  "params": []
+ },
+ {
+  "path": "/ready",
+  "method": "GET",
+  "operationId": null,
+  "summary": "Readiness check",
+  "tags": [
+   "Health"
+  ],
+  "security": [],
+  "params": []
+ }
+]

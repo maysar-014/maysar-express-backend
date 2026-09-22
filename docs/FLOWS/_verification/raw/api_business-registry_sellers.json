@@ -1,0 +1,41 @@
+[
+ {
+  "module": "api/business-registry/sellers",
+  "path": "/api/business-registry/sellers",
+  "method": "GET",
+  "tags": [
+   "Business Registry"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Invalid ID format\"}}"
+ },
+ {
+  "module": "api/business-registry/sellers",
+  "path": "/api/business-registry/sellers/{sellerId}",
+  "method": "GET",
+  "tags": [
+   "Business Registry"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/sellers/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z not found\",\"timestamp\":\"2026-09-20T17:45:49.261Z\",\"path\":\"/api/business-registry/sellers/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\"}}"
+ },
+ {
+  "module": "api/business-registry/sellers",
+  "path": "/api/business-registry/sellers/{sellerId}/industries",
+  "method": "GET",
+  "tags": [
+   "Business Registry"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/sellers/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z/industries not found\",\"timestamp\":\"2026-09-20T17:45:49.275Z\",\"path\":\"/api/business-registry/sellers/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z/industries\"}}"
+ }
+]

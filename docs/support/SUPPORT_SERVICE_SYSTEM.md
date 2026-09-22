@@ -149,3 +149,17 @@ Show `ticketNumber` to the user as their reference number.
 - [ ] Show agent name when assigned
 - [ ] Send push notification when ticket status changes
 - [ ] Link tickets to related orders/payments for context
+
+
+---
+
+## System Maintenance Routes
+
+Mounted at `/api/support/system/maintenance`. Guards: `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/support/system/maintenance/cleanup/outbox/report` | Dry-run count of deletable support outbox events |
+| POST | `/api/support/system/maintenance/cleanup/outbox` | Batched deletion of expired outbox events. Body: `{ "dryRun": true }` to simulate |
+
+**Retention defaults:** sent/processed → 7 days, failed → 30 days. Batch size: 1000. Max runtime: 20 s.

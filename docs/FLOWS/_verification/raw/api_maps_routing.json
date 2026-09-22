@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/maps/routing",
+  "path": "/api/maps/routing/calculate",
+  "method": "POST",
+  "tags": [
+   "Maps"
+  ],
+  "anonStatus": 422,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"INVALID_COORDINATES\",\"message\":\"origin and destination must have numeric lat and lng fields\"}}",
+  "role": "buyer",
+  "authStatus": 422,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"INVALID_COORDINATES\",\"message\":\"origin and destination must have numeric lat and lng fields\"}}"
+ }
+]

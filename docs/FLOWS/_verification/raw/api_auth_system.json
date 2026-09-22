@@ -1,0 +1,54 @@
+[
+ {
+  "module": "api/auth/system",
+  "path": "/api/auth/system/maintenance/cleanup/auth",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 401,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"MISSING_SERVICE_KEY\",\"message\":\"Service key required\"}}"
+ },
+ {
+  "module": "api/auth/system",
+  "path": "/api/auth/system/maintenance/cleanup/auth/report",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 401,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"MISSING_SERVICE_KEY\",\"message\":\"Service key required\"}}"
+ },
+ {
+  "module": "api/auth/system",
+  "path": "/api/auth/system/maintenance/cleanup/outbox",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 401,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"MISSING_SERVICE_KEY\",\"message\":\"Service key required\"}}"
+ },
+ {
+  "module": "api/auth/system",
+  "path": "/api/auth/system/maintenance/cleanup/outbox/report",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "admin",
+  "authStatus": 401,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"MISSING_SERVICE_KEY\",\"message\":\"Service key required\"}}"
+ }
+]

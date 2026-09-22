@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/governance/reports",
+  "path": "/api/governance/reports/latest",
+  "method": "GET",
+  "tags": [
+   "Governance"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/governance/reports/latest not found\",\"timestamp\":\"2026-09-20T17:45:51.930Z\",\"path\":\"/api/governance/reports/latest\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/governance/reports/latest not found\",\"timestamp\":\"2026-09-20T17:45:51.933Z\",\"path\":\"/api/governance/reports/latest\"}}"
+ }
+]

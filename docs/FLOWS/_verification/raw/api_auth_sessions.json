@@ -1,0 +1,80 @@
+[
+ {
+  "module": "api/auth/sessions",
+  "path": "/api/auth/sessions",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":[]}"
+ },
+ {
+  "module": "api/auth/sessions",
+  "path": "/api/auth/sessions",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 201,
+  "authBody": "{\"success\":true,\"message\":\"Session created\",\"data\":{\"sessionId\":\"ses_01M2ZYS5HKWJBC9NPEY1KZ8JWH\"}}"
+ },
+ {
+  "module": "api/auth/sessions",
+  "path": "/api/auth/sessions/{sessionId}",
+  "method": "DELETE",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 204,
+  "authBody": ""
+ },
+ {
+  "module": "api/auth/sessions",
+  "path": "/api/auth/sessions/health/live",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"alive\",\"service\":\"session-service\",\"timestamp\":\"2026-09-20T17:45:48.356Z\"}"
+ },
+ {
+  "module": "api/auth/sessions",
+  "path": "/api/auth/sessions/health/ready",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"ready\",\"service\":\"session-service\",\"timestamp\":\"2026-09-20T17:45:48.362Z\"}"
+ },
+ {
+  "module": "api/auth/sessions",
+  "path": "/api/auth/sessions/health",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"healthy\",\"service\":\"session-service\",\"timestamp\":\"2026-09-20T17:45:48.438Z\",\"uptime\":\"4916s\"}"
+ }
+]

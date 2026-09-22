@@ -1,0 +1,289 @@
+
+=== /api/analytics: 25 routes ===
+- PATCH /api/analytics/action-items/{actionId}/resolve
+- GET /api/analytics/admin/dashboard/founder-operating-system
+- GET /api/analytics/admin/dashboard/red-flags
+- GET /api/analytics/analytics/dashboard/{sellerId}
+- GET /api/analytics/analytics/sales/{sellerId}
+- GET /api/analytics/courier/analytics/{courierId}
+- GET /api/analytics/health
+- GET /api/analytics/metrics
+- GET /api/analytics/seller-profitability/dashboard
+- GET /api/analytics/seller-profitability/dashboard/{sellerId}
+- GET /api/analytics/seller-profitability/financial
+- GET /api/analytics/seller-profitability/growth-indicators
+- GET /api/analytics/seller-profitability/happiness
+- GET /api/analytics/seller-profitability/retention
+- GET /api/analytics/seller-profitability/revenue-health
+- GET /api/analytics/sellers/{sellerId}/dashboard
+- GET /api/analytics/sellers/{sellerId}/dashboard/action-center
+- GET /api/analytics/sellers/{sellerId}/dashboard/money-snapshot
+- GET /api/analytics/sellers/{sellerId}/dashboard/profitability-score
+- GET /api/analytics/sellers/{sellerId}/dashboard/sales-trend
+- GET /api/analytics/sellers/{sellerId}/sla
+- GET /api/analytics/sellers/{sellerId}/sla/breaches
+- POST /api/analytics/sellers/{sellerId}/sla/evaluate
+- GET /api/analytics/sellers/{sellerId}/sla/readiness
+- GET /api/analytics/supplier/analytics/{supplierId}
+
+=== /api/business-registry: 56 routes ===
+- POST /api/business-registry
+- DELETE /api/business-registry/{id}
+- GET /api/business-registry/{id}
+- PUT /api/business-registry/{id}
+- GET /api/business-registry/{id}/compliance-records
+- POST /api/business-registry/{id}/compliance-records
+- GET /api/business-registry/{id}/documents
+- POST /api/business-registry/{id}/documents
+- POST /api/business-registry/{id}/reactivate
+- POST /api/business-registry/{id}/suspend
+- POST /api/business-registry/{id}/verify
+- POST /api/business-registry/businesses
+- DELETE /api/business-registry/businesses/{id}
+- GET /api/business-registry/businesses/{id}
+- PUT /api/business-registry/businesses/{id}
+- GET /api/business-registry/businesses/{id}/compliance-records
+- POST /api/business-registry/businesses/{id}/compliance-records
+- GET /api/business-registry/businesses/{id}/documents
+- POST /api/business-registry/businesses/{id}/documents
+- POST /api/business-registry/businesses/{id}/reactivate
+- POST /api/business-registry/businesses/{id}/suspend
+- POST /api/business-registry/businesses/{id}/verify
+- GET /api/business-registry/businesses/industries/{industry}/sellers
+- GET /api/business-registry/businesses/owner/{ownerId}
+- GET /api/business-registry/businesses/search
+- GET /api/business-registry/businesses/sellers
+- GET /api/business-registry/businesses/sellers/{sellerId}
+- GET /api/business-registry/businesses/sellers/{sellerId}/industries
+- GET /api/business-registry/health
+- GET /api/business-registry/health/live
+- GET /api/business-registry/health/ready
+- GET /api/business-registry/industries/{industry}/sellers
+- GET /api/business-registry/owner/{ownerId}
+- POST /api/business-registry/public
+- DELETE /api/business-registry/public/{id}
+- GET /api/business-registry/public/{id}
+- PUT /api/business-registry/public/{id}
+- GET /api/business-registry/public/{id}/compliance-records
+- POST /api/business-registry/public/{id}/compliance-records
+- GET /api/business-registry/public/{id}/documents
+- POST /api/business-registry/public/{id}/documents
+- POST /api/business-registry/public/{id}/reactivate
+- POST /api/business-registry/public/{id}/suspend
+- POST /api/business-registry/public/{id}/verify
+- GET /api/business-registry/public/industries/{industry}/sellers
+- GET /api/business-registry/public/owner/{ownerId}
+- GET /api/business-registry/public/search
+- GET /api/business-registry/public/sellers
+- GET /api/business-registry/public/sellers/{sellerId}
+- GET /api/business-registry/public/sellers/{sellerId}/industries
+- GET /api/business-registry/search
+- GET /api/business-registry/sellers
+- GET /api/business-registry/sellers/{sellerId}
+- GET /api/business-registry/sellers/{sellerId}/industries
+- POST /api/business-registry/system/maintenance/cleanup/outbox
+- POST /api/business-registry/system/maintenance/cleanup/outbox/report
+
+=== /api/businesses: 0 routes ===
+
+=== /api/catalog: 86 routes ===
+- GET /api/catalog/campaigns
+- POST /api/catalog/campaigns
+- GET /api/catalog/campaigns/{id}
+- PUT /api/catalog/campaigns/{id}
+- POST /api/catalog/campaigns/{id}/cancel
+- POST /api/catalog/campaigns/{id}/complete
+- POST /api/catalog/campaigns/{id}/launch
+- POST /api/catalog/campaigns/{id}/pause
+- POST /api/catalog/campaigns/{id}/resume
+- GET /api/catalog/health
+- GET /api/catalog/health/live
+- GET /api/catalog/health/metrics
+- GET /api/catalog/health/ready
+- GET /api/catalog/health/search
+- GET /api/catalog/health/version
+- POST /api/catalog/match
+- GET /api/catalog/match/audit/{productId}
+- POST /api/catalog/match/confirm/{confirmationId}
+- GET /api/catalog/match/pending
+- POST /api/catalog/pricing/calculate
+- GET /api/catalog/pricing/health
+- GET /api/catalog/pricing/health/live
+- GET /api/catalog/pricing/health/ready
+- GET /api/catalog/products/{productId}/buy-box
+- POST /api/catalog/products/{productId}/buy-box/compute
+- GET /api/catalog/seller-locations
+- POST /api/catalog/seller-locations
+- DELETE /api/catalog/seller-locations/{locationId}
+- GET /api/catalog/seller-locations/{locationId}
+- PUT /api/catalog/seller-locations/{locationId}
+- PATCH /api/catalog/seller-locations/{locationId}/activate
+- PATCH /api/catalog/seller-locations/{locationId}/deactivate
+- DELETE /api/catalog/seller-locations/{locationId}/products/{productId}
+- PUT /api/catalog/seller-locations/{locationId}/products/{productId}
+- PATCH /api/catalog/seller-locations/{locationId}/products/{productId}/stock
+- POST /api/catalog/seller-locations/internal/select-fulfillment
+- GET /api/catalog/seller-locations/products/{productId}
+- POST /api/catalog/seller-locations/transfers
+- POST /api/catalog/sellers/{sellerId}/share-url
+- GET /api/catalog/sellers/{sellerId}/storefront
+- POST /api/catalog/system/maintenance/cleanup/event-store
+- POST /api/catalog/system/maintenance/cleanup/event-store/report
+- POST /api/catalog/system/maintenance/cleanup/outbox
+- POST /api/catalog/system/maintenance/cleanup/outbox/report
+- DELETE /api/catalog/v1/admin/buy-box/anomaly-flags/{flagId}
+- GET /api/catalog/v1/admin/buy-box/history/{productId}
+- POST /api/catalog/v1/admin/buy-box/overrides
+- PUT /api/catalog/v1/admin/buy-box/strategies/{categoryId}
+- GET /api/catalog/v1/categories
+- POST /api/catalog/v1/categories
+- GET /api/catalog/v1/categories/{categoryId}/attributes
+- DELETE /api/catalog/v1/categories/{id}
+- PUT /api/catalog/v1/categories/{id}
+- POST /api/catalog/v1/media/upload
+- GET /api/catalog/v1/pricing/analytics
+- POST /api/catalog/v1/pricing/bulk-update
+- POST /api/catalog/v1/pricing/calculate
+- GET /api/catalog/v1/pricing/rules
+- POST /api/catalog/v1/pricing/rules
+- POST /api/catalog/v1/pricing/validate-rule
+- POST /api/catalog/v1/products
+- DELETE /api/catalog/v1/products/{id}
+- GET /api/catalog/v1/products/{id}
+- PUT /api/catalog/v1/products/{id}
+- GET /api/catalog/v1/products/{id}/analytics
+- PUT /api/catalog/v1/products/{id}/category
+- GET /api/catalog/v1/products/{id}/media
+- POST /api/catalog/v1/products/{id}/media
+- GET /api/catalog/v1/products/{id}/metrics
+- POST /api/catalog/v1/products/{id}/publish
+- GET /api/catalog/v1/products/{id}/reviews
+- POST /api/catalog/v1/products/{id}/reviews
+- POST /api/catalog/v1/products/{id}/unpublish
+- PUT /api/catalog/v1/products/{productId}/pricing
+- DELETE /api/catalog/v1/products/bulk
+- POST /api/catalog/v1/products/bulk
+- PUT /api/catalog/v1/products/bulk
+- POST /api/catalog/v1/products/preview-description
+- GET /api/catalog/v1/products/search
+- PUT /api/catalog/v1/reviews/{reviewId}/moderate
+- GET /api/catalog/v1/search
+- GET /api/catalog/v1/search/analytics
+- GET /api/catalog/v1/search/popular
+- GET /api/catalog/v1/search/products
+- GET /api/catalog/v1/search/suggestions
+- GET /api/catalog/v1/sellers/{sellerId}/products
+
+=== /api/chat: 30 routes ===
+- GET /api/chat/v1/admin/blocklist/domains
+- POST /api/chat/v1/admin/blocklist/domains
+- DELETE /api/chat/v1/admin/blocklist/domains/{domain}
+- GET /api/chat/v1/admin/moderation/messages
+- GET /api/chat/v1/admin/moderation/messages/{messageId}
+- POST /api/chat/v1/admin/moderation/messages/{messageId}/review
+- GET /api/chat/v1/admin/moderation/patterns
+- DELETE /api/chat/v1/admin/moderation/patterns/{id}
+- POST /api/chat/v1/admin/moderation/patterns/{id}/promote
+- POST /api/chat/v1/admin/moderation/patterns/mine
+- GET /api/chat/v1/admin/moderation/phrases
+- POST /api/chat/v1/admin/moderation/phrases
+- DELETE /api/chat/v1/admin/moderation/phrases/{id}
+- GET /api/chat/v1/admin/moderation/phrases/{id}
+- PUT /api/chat/v1/admin/moderation/phrases/{id}
+- POST /api/chat/v1/admin/moderation/phrases/seed
+- GET /api/chat/v1/conversations
+- POST /api/chat/v1/conversations
+- GET /api/chat/v1/conversations/{id}
+- GET /api/chat/v1/conversations/{id}/messages
+- POST /api/chat/v1/conversations/{id}/messages
+- DELETE /api/chat/v1/conversations/{id}/messages/{messageId}
+- DELETE /api/chat/v1/conversations/{id}/mute
+- POST /api/chat/v1/conversations/{id}/mute
+- PUT /api/chat/v1/conversations/{id}/read
+- GET /api/chat/v1/conversations/search
+- POST /api/chat/v1/media/upload
+- POST /api/chat/v1/messages/{messageId}/report
+- DELETE /api/chat/v1/users/{userId}/block
+- POST /api/chat/v1/users/{userId}/block
+
+=== /api/checkout: 17 routes ===
+- DELETE /api/checkout/{cartId}
+- GET /api/checkout/{cartId}
+- GET /api/checkout/{id}
+- POST /api/checkout/{id}/confirm
+- GET /api/checkout/current
+- POST /api/checkout/delivery-options
+- GET /api/checkout/health
+- GET /api/checkout/health/live
+- GET /api/checkout/health/ready
+- POST /api/checkout/initiate
+- DELETE /api/checkout/items
+- PATCH /api/checkout/items
+- POST /api/checkout/items
+- POST /api/checkout/merge
+- GET /api/checkout/metrics
+- POST /api/checkout/system/maintenance/cleanup/checkout-sessions
+- POST /api/checkout/system/maintenance/cleanup/checkout-sessions/report
+
+=== /api/commission: 0 routes ===
+
+=== /api/commissions: 8 routes ===
+- GET /api/commissions/{id}
+- PUT /api/commissions/{id}/approve
+- POST /api/commissions/calculate
+- GET /api/commissions/health
+- GET /api/commissions/health/live
+- GET /api/commissions/health/ready
+- GET /api/commissions/sellers/{sellerId}
+- GET /api/commissions/sellers/{sellerId}/summary
+
+=== /api/wallet: 23 routes ===
+- GET /api/wallet/health
+- GET /api/wallet/health/live
+- GET /api/wallet/health/ready
+- POST /api/wallet/system/maintenance/cleanup/idempotency
+- POST /api/wallet/system/maintenance/cleanup/idempotency/report
+- POST /api/wallet/system/maintenance/cleanup/outbox
+- POST /api/wallet/system/maintenance/cleanup/outbox/report
+- GET /api/wallet/wallets/{userId}
+- GET /api/wallet/wallets/{userId}/balance
+- POST /api/wallet/wallets/{userId}/credit
+- POST /api/wallet/wallets/{userId}/debit
+- POST /api/wallet/wallets/{userId}/freeze
+- POST /api/wallet/wallets/{userId}/hold
+- POST /api/wallet/wallets/{userId}/hold/{holdId}/capture
+- POST /api/wallet/wallets/{userId}/hold/{holdId}/release
+- GET /api/wallet/wallets/{userId}/holds
+- GET /api/wallet/wallets/{userId}/payout
+- POST /api/wallet/wallets/{userId}/payout
+- GET /api/wallet/wallets/{userId}/statement
+- POST /api/wallet/wallets/{userId}/topup
+- POST /api/wallet/wallets/{userId}/transaction/{transactionId}/reverse
+- GET /api/wallet/wallets/{userId}/transactions
+- POST /api/wallet/wallets/{userId}/unfreeze
+
+=== ALL PREFIXES ===
+/api/(root): 3
+/api/admin: 2
+/api/analytics: 25
+/api/auth: 89
+/api/business-registry: 56
+/api/catalog: 86
+/api/chat: 30
+/api/checkout: 17
+/api/commissions: 8
+/api/community: 38
+/api/enabler: 23
+/api/inventory: 19
+/api/kyc: 9
+/api/logistics: 50
+/api/maps: 5
+/api/notification: 32
+/api/order: 32
+/api/payment: 18
+/api/payout: 6
+/api/request: 29
+/api/support: 16
+/api/training: 29
+/api/user: 26
+/api/wallet: 23

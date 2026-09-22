@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/user/lookup",
+  "path": "/api/user/lookup",
+  "method": "GET",
+  "tags": [
+   "Users"
+  ],
+  "anonStatus": 403,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Internal endpoint\"}}",
+  "role": "buyer+admin",
+  "authStatus": 403,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Internal endpoint\"}}"
+ }
+]

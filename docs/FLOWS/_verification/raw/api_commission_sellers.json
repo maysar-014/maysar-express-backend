@@ -1,0 +1,28 @@
+[
+ {
+  "module": "api/commission/sellers",
+  "path": "/api/commission/sellers/{sellerId}",
+  "method": "GET",
+  "tags": [
+   "Commission"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/commission/sellers/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z not found\",\"timestamp\":\"2026-09-20T17:45:51.375Z\",\"path\":\"/api/commission/sellers/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\"}}",
+  "role": "seller",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/commission/sellers/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z not found\",\"timestamp\":\"2026-09-20T17:45:51.381Z\",\"path\":\"/api/commission/sellers/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z\"}}"
+ },
+ {
+  "module": "api/commission/sellers",
+  "path": "/api/commission/sellers/{sellerId}/summary",
+  "method": "GET",
+  "tags": [
+   "Commission"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/commission/sellers/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z/summary not found\",\"timestamp\":\"2026-09-20T17:45:51.383Z\",\"path\":\"/api/commission/sellers/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z",
+  "role": "seller",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/commission/sellers/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z/summary not found\",\"timestamp\":\"2026-09-20T17:45:51.393Z\",\"path\":\"/api/commission/sellers/usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z/summary\"}}"
+ }
+]

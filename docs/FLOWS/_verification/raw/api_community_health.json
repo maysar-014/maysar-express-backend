@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/community/health",
+  "path": "/api/community/health",
+  "method": "GET",
+  "tags": [
+   "Community"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"healthy\",\"service\":\"community-service\",\"timestamp\":\"2026-09-20T17:45:51.529Z\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"healthy\",\"service\":\"community-service\",\"timestamp\":\"2026-09-20T17:45:51.537Z\"}"
+ }
+]

@@ -1,3 +1,29 @@
+> ## ⚠️ CONFLICTING — COMPLIANCE-SERVICE REFERENCES ARE INCORRECT
+>
+> The Onboarding section and sequence diagrams in this document reference `compliance-service` (abbreviated
+> `Comp`) as an independent live service that handles KYC and AML verification for sellers.
+>
+> **`compliance-service` does not exist as a live service in the verified system inventory.**
+> It is not present in `docs/SERVICE_DEPENDENCY_MAP.md` and no `/api/compliance/*` routes were found
+> in the September 2026 endpoint sweep.
+>
+> **Actual KYC implementation:** KYC enforcement is handled by the `requireKycLevel` middleware imported
+> from `kyc-service` into the routes of other services (catalog-service, payout-service, wallet-service,
+> enabler-service). It is an in-process middleware gate, not a standalone HTTP service call.
+> The `kyc.status_changed` event is published by kyc-service and consumed by order-service.
+>
+> Additionally, the Product Publish sequence diagram uses deprecated endpoint paths
+> (`POST /api/catalog/listings`) that do not match the verified API surface
+> (`POST /api/catalog/v1/products` with KYC gate, then `POST /api/catalog/v1/products/{id}/publish`
+> with quality score ≥ 60 required).
+>
+> **Canonical replacement for seller KYC flows:** [`docs/FLOWS/kyc/user-flow/seller-flows.md`](../FLOWS/kyc/user-flow/seller-flows.md)
+> **Canonical replacement for seller catalog flows:** [`docs/FLOWS/catalog/user-flow/seller-flows.md`](../FLOWS/catalog/user-flow/seller-flows.md)
+>
+> *Conflict identified: September 2026 — service-flow-documentation spec*
+
+---
+
 # Seller Journeys
 
 This doc covers seller onboarding, catalog operations, pricing, campaigns, fulfillment, payouts, and support.

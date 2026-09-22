@@ -1,0 +1,54 @@
+[
+ {
+  "module": "api/catalog/system",
+  "path": "/api/catalog/system/maintenance/cleanup/event-store/report",
+  "method": "POST",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Health endpoint /api/catalog/system/maintenance/cleanup/event-store/report not found\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.688Z\",\"request\":{\"method\":\"POST\",\"url\":\"/api/catalog/system/mainte",
+  "role": "admin",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Health endpoint /api/catalog/system/maintenance/cleanup/event-store/report not found\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.699Z\",\"request\":{\"method\":\"POST\",\"url\":\"/api/catalog/system/maintenance/cleanup/event-store/report\",\"path\":\"/system/maintenance/cleanup/event-store/report\"}}}"
+ },
+ {
+  "module": "api/catalog/system",
+  "path": "/api/catalog/system/maintenance/cleanup/event-store",
+  "method": "POST",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Health endpoint /api/catalog/system/maintenance/cleanup/event-store not found\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.693Z\",\"request\":{\"method\":\"POST\",\"url\":\"/api/catalog/system/maintenance/c",
+  "role": "admin",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Health endpoint /api/catalog/system/maintenance/cleanup/event-store not found\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.707Z\",\"request\":{\"method\":\"POST\",\"url\":\"/api/catalog/system/maintenance/cleanup/event-store\",\"path\":\"/system/maintenance/cleanup/event-store\"}}}"
+ },
+ {
+  "module": "api/catalog/system",
+  "path": "/api/catalog/system/maintenance/cleanup/outbox",
+  "method": "POST",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Health endpoint /api/catalog/system/maintenance/cleanup/outbox not found\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.710Z\",\"request\":{\"method\":\"POST\",\"url\":\"/api/catalog/system/maintenance/cleanu",
+  "role": "admin",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Health endpoint /api/catalog/system/maintenance/cleanup/outbox not found\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.716Z\",\"request\":{\"method\":\"POST\",\"url\":\"/api/catalog/system/maintenance/cleanup/outbox\",\"path\":\"/system/maintenance/cleanup/outbox\"}}}"
+ },
+ {
+  "module": "api/catalog/system",
+  "path": "/api/catalog/system/maintenance/cleanup/outbox/report",
+  "method": "POST",
+  "tags": [
+   "Products"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Health endpoint /api/catalog/system/maintenance/cleanup/outbox/report not found\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.713Z\",\"request\":{\"method\":\"POST\",\"url\":\"/api/catalog/system/maintenance",
+  "role": "admin",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Health endpoint /api/catalog/system/maintenance/cleanup/outbox/report not found\"},\"meta\":{\"timestamp\":\"2026-09-20T17:45:49.724Z\",\"request\":{\"method\":\"POST\",\"url\":\"/api/catalog/system/maintenance/cleanup/outbox/report\",\"path\":\"/system/maintenance/cleanup/outbox/report\"}}}"
+ }
+]

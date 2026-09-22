@@ -136,3 +136,17 @@ When `available === 0`, the item has `status: "out_of_stock"`. The catalog servi
 - [ ] Show reserved count separately from available count in seller dashboard
 - [ ] Handle `Stock reservation failed` (409) in checkout with "Item no longer available" message
 - [ ] Reservation TTL is 30 minutes — if checkout takes longer, stock may be released
+
+
+---
+
+## System Maintenance Routes
+
+Mounted at `/api/inventory/system/maintenance`. Guards: `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/inventory/system/maintenance/cleanup/outbox/report` | Dry-run count of deletable inventory outbox events |
+| POST | `/api/inventory/system/maintenance/cleanup/outbox` | Batched deletion of expired outbox events. Body: `{ "dryRun": true }` to simulate |
+
+**Retention defaults:** sent/processed → 7 days, failed → 30 days. Batch size: 1000. Max runtime: 20 s.

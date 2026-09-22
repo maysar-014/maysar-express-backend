@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/auth/refresh",
+  "path": "/api/auth/refresh",
+  "method": "POST",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"message\":\"Refresh token required\"}",
+  "role": "buyer",
+  "authStatus": 401,
+  "authBody": "{\"success\":false,\"message\":\"Refresh token required\"}"
+ }
+]

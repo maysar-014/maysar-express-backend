@@ -248,6 +248,8 @@ Same response shape as list public sellers. `:industry` is also applied as a fil
 POST /api/business-registry/businesses
 ```
 
+> **Note:** The `POST /businesses` route (registration) is only mounted in `default` mode. The legacy router alias (`createLegacyBusinessRoutes`) does not expose registration — only updates, lookups, lifecycle actions, and document/compliance routes.
+
 ```jsonc
 // Request
 {
@@ -500,3 +502,23 @@ GET /api/business-registry/businesses/:id/compliance-records
 | `VERIFICATION_REJECTED` | 422 | Rejected — needs new documents via support |
 | `VERIFICATION_IN_PROGRESS` | 422 | Already in PENDING_VERIFICATION |
 | `MISSING_DOCUMENTS` | 422 | Required documents not provided (message lists them) |
+
+
+---
+
+## System Maintenance (internal/ops)
+
+These endpoints are for ops/admin use only. They are not called from the frontend.
+
+```
+POST /api/business-registry/system/maintenance/cleanup/outbox/report
+POST /api/business-registry/system/maintenance/cleanup/outbox
+```
+
+**Auth:** `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+### Outbox cleanup report
+`POST /api/business-registry/system/maintenance/cleanup/outbox/report` → **200** — dry-run count of deletable outbox events.
+
+### Outbox cleanup
+`POST /api/business-registry/system/maintenance/cleanup/outbox` → **200** — batched deletion. Body: `{ "dryRun": true }` to simulate. `maxRuntimeMs` defaults to 20 seconds.

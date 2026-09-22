@@ -1,3 +1,18 @@
+> ## ⚠️ DEPRECATED — LEGACY ARCHIVE
+>
+> **This directory (`docs/Flow Docs/`) is now a legacy archive. No new documents will be added here.**
+>
+> The canonical source for all user flow documentation and frontend guides is:
+> **[`docs/FLOWS/`](../FLOWS/README.md)**
+>
+> The files in this directory are preserved for historical reference only. They may contain conflicts,
+> obsolete diagrams, or flows that predate the verified system behavior documented in `docs/FLOWS/`.
+> Do not use these files as implementation references — always defer to `docs/FLOWS/`.
+>
+> *Deprecated: September 2026 — service-flow-documentation spec*
+
+---
+
 # Flow Docs
 
 Persona-first journey maps for the Maysar platform.

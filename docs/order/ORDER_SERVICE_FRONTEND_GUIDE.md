@@ -53,7 +53,7 @@ COD limits are controlled by a **dual-axis tier** derived from both behavioral s
 | `GOLD_BUYER` | ≥ 65 | ≥ TZS 2,000,000 | TZS 2,000,000 | 5 | nationwide |
 | `PLATINUM_BUYER` | ≥ 85 | ≥ TZS 10,000,000 | TZS 10,000,000 | unlimited | nationwide |
 
-**Critical for frontend:** The `/cod/check-eligibility` endpoint enforces all of these checks server-side. Always call it before showing the COD option — do not calculate eligibility client-side. The response includes:
+**Critical for frontend:** The `/orders/cod/validate` endpoint enforces all of these checks server-side. Always call it before showing the COD option — do not calculate eligibility client-side. The response includes:
 - `eligible` — whether COD is allowed
 - `tier` — the buyer's current tier
 - `requiresCommitmentFee` — whether a wallet hold is required
@@ -145,24 +145,52 @@ Errors:
 
 ### COD eligibility check
 ```
-POST /api/order/cod/check-eligibility
+POST /api/order/orders/cod/validate
 ```
 ```jsonc
-{ "orderAmount": 25000, "deliveryAddress": { "region": "Dar es Salaam" } }
+{
+  "buyerId": "usr_01J...",
+  "sellerId": "sel_01J...",
+  "totalAmount": 25000,
+  "deliveryFee": 3000,
+  "currency": "TZS",
+  "deliveryAddress": {
+    "street": "123 Uhuru Street",
+    "ward": "Kivukoni",
+    "district": "Ilala Cbd",
+    "region": "Dar es Salaam",
+    "postalCode": "11101",
+    "country": "Tanzania"
+  },
+  "sellerAddress": {
+    "street": "456 Samora Ave",
+    "ward": "Kariakoo",
+    "district": "Ilala Cbd",
+    "region": "Dar es Salaam",
+    "postalCode": "11102",
+    "country": "Tanzania"
+  },
+  "items": [
+    { "productId": "prd_01J...", "quantity": 1, "price": 25000 }
+  ]
+}
 ```
+
+> ⚠️ The endpoint path is `/orders/cod/validate` (not `/cod/check-eligibility`). The full URL is `POST /api/order/orders/cod/validate`.
+
+Response — **no `success`/`data` wrapper**, plain object:
 
 ```jsonc
 {
-  "success": true,
-  "data": {
-    "eligible": true,
-    "tier": "TRUSTED_BEGINNER",
-    "requiresCommitmentFee": true,
-    "commitmentFeeAmount": 3000,
-    "reason": null
-  }
+  "eligible": true,
+  "tier": "TRUSTED_BEGINNER",
+  "requiresCommitmentFee": true,
+  "commitmentFeeAmount": 3000,
+  "reason": null
 }
 ```
+
+On error: `{ "eligible": false, "error": "ELIGIBILITY_CHECK_FAILED", "message": "..." }`.
 
 If `eligible: false`, hide the COD option entirely and show `reason`.
 
@@ -292,3 +320,23 @@ Order events drive downstream flows (payment, inventory, notification, settlemen
 | `COD_PERMANENTLY_DISABLED` | 400 | COD permanently disabled for this account |
 | `INVENTORY_UNAVAILABLE` | 409 | Item no longer in stock |
 | `SELLER_VERIFICATION_TIMEOUT` | 410 | Auto-cancelled — seller did not verify in time |
+
+
+---
+
+## System Maintenance (internal/ops)
+
+These endpoints are for ops/admin use only. They are not called from the frontend.
+
+```
+POST /api/order/system/maintenance/cleanup/outbox/report
+POST /api/order/system/maintenance/cleanup/outbox
+```
+
+**Auth:** `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+### Outbox cleanup report
+`POST /api/order/system/maintenance/cleanup/outbox/report` → **200** — dry-run count of deletable outbox events.
+
+### Outbox cleanup
+`POST /api/order/system/maintenance/cleanup/outbox` → **200** — batched deletion. Body: `{ "dryRun": true }` to simulate. `maxRuntimeMs` defaults to 20 seconds.

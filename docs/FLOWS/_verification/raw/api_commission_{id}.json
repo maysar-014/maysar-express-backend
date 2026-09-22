@@ -1,0 +1,28 @@
+[
+ {
+  "module": "api/commission/{id}",
+  "path": "/api/commission/{id}/approve",
+  "method": "PUT",
+  "tags": [
+   "Commission"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route PUT /api/commission/usr_01KRFXQZC36NK3CDEWJJS21RP8/approve not found\",\"timestamp\":\"2026-09-20T17:45:51.332Z\",\"path\":\"/api/commission/usr_01KRFXQZC36NK3CDEWJJS21RP8/approve\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route PUT /api/commission/usr_01KRFXQZC36NK3CDEWJJS21RP8/approve not found\",\"timestamp\":\"2026-09-20T17:45:51.342Z\",\"path\":\"/api/commission/usr_01KRFXQZC36NK3CDEWJJS21RP8/approve\"}}"
+ },
+ {
+  "module": "api/commission/{id}",
+  "path": "/api/commission/{id}",
+  "method": "GET",
+  "tags": [
+   "Commission"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/commission/usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\",\"timestamp\":\"2026-09-20T17:45:51.410Z\",\"path\":\"/api/commission/usr_01KRFXQZC36NK3CDEWJJS21RP8\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/commission/usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\",\"timestamp\":\"2026-09-20T17:45:51.425Z\",\"path\":\"/api/commission/usr_01KRFXQZC36NK3CDEWJJS21RP8\"}}"
+ }
+]

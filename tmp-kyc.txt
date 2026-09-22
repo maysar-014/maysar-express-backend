@@ -1,0 +1,64 @@
+10:      res.status(401).json({
+11-        success: false,
+12-        error: {
+13-          code: 'UNAUTHORIZED',
+14-          message: 'Authentication required for KYC checks'
+15-        }
+16-      });
+17-      return;
+18-    }
+--
+30:      res.status(403).json({
+31-        success: false,
+32-        error: {
+33-          code: 'KYC_LISTING_CAP_REACHED',
+34-          message: `You have reached your KYC listing cap of ${maxAllowed}. Upgrade your KYC level to create more listings.`,
+35-          currentCount,
+36-          maxAllowed,
+37-          currentLevel
+38-        }
+--
+45:    res.status(500).json({
+46-      success: false,
+47-      error: {
+48-        code: 'KYC_GATE_ERROR',
+49-        message: error instanceof Error ? error.message : 'Unable to validate KYC listing capacity'
+50-      }
+51-    });
+52-  }
+53-};
+--
+59:      res.status(401).json({
+60-        success: false,
+61-        error: {
+62-          code: 'UNAUTHORIZED',
+63-          message: 'Authentication required for KYC checks'
+64-        }
+65-      });
+66-      return;
+67-    }
+--
+13:          code: 'UNAUTHORIZED',
+33:          code: 'KYC_LISTING_CAP_REACHED',
+48:        code: 'KYC_GATE_ERROR',
+62:          code: 'UNAUTHORIZED',
+83:        code: 'KYC_LEVEL_REQUIRED',
+93:        code: 'KYC_GATE_ERROR',
+33:          code: 'KYC_LISTING_CAP_REACHED',
+48:        code: 'KYC_GATE_ERROR',
+83:        code: 'KYC_LEVEL_REQUIRED',
+93:        code: 'KYC_GATE_ERROR',
+=== joi validation error shape ===
+55:        res.status(400).json({
+56-          success: false,
+57-          error: {
+58-            code: 'VALIDATION_ERROR',
+59-            message: 'Request validation failed',
+60-            details: formatValidationDetails(error),
+61-          },
+62-        });
+63-        return;
+64-      }
+65-
+66-      if (value !== undefined && section !== 'headers') {
+67-        req[section] = value as never;

@@ -1,0 +1,223 @@
+[
+ {
+  "module": "api/business-registry/public",
+  "path": "/api/business-registry/public",
+  "method": "POST",
+  "tags": [
+   "Business Registry"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 405,
+  "authBody": "{\"error\":\"Method Not Allowed\"}"
+ },
+ {
+  "module": "api/business-registry/public",
+  "path": "/api/business-registry/public/{id}",
+  "method": "GET",
+  "tags": [
+   "Business Registry"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\",\"timestamp\":\"2026-09-20T17:45:48.991Z\",\"path\":\"/api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8\"}}"
+ },
+ {
+  "module": "api/business-registry/public",
+  "path": "/api/business-registry/public/{id}",
+  "method": "PUT",
+  "tags": [
+   "Business Registry"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route PUT /api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\",\"timestamp\":\"2026-09-20T17:45:49.015Z\",\"path\":\"/api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8\"}}"
+ },
+ {
+  "module": "api/business-registry/public",
+  "path": "/api/business-registry/public/{id}",
+  "method": "DELETE",
+  "tags": [
+   "Business Registry"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route DELETE /api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\",\"timestamp\":\"2026-09-20T17:45:49.017Z\",\"path\":\"/api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8\"}}"
+ },
+ {
+  "module": "api/business-registry/public",
+  "path": "/api/business-registry/public/{id}/compliance-records",
+  "method": "GET",
+  "tags": [
+   "Business Registry"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/compliance-records not found\",\"timestamp\":\"2026-09-20T17:45:49.045Z\",\"path\":\"/api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/compliance-records\"}}"
+ },
+ {
+  "module": "api/business-registry/public",
+  "path": "/api/business-registry/public/{id}/compliance-records",
+  "method": "POST",
+  "tags": [
+   "Business Registry"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/compliance-records not found\",\"timestamp\":\"2026-09-20T17:45:49.048Z\",\"path\":\"/api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/compliance-records\"}}"
+ },
+ {
+  "module": "api/business-registry/public",
+  "path": "/api/business-registry/public/{id}/documents",
+  "method": "GET",
+  "tags": [
+   "Business Registry"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/documents not found\",\"timestamp\":\"2026-09-20T17:45:49.051Z\",\"path\":\"/api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/documents\"}}"
+ },
+ {
+  "module": "api/business-registry/public",
+  "path": "/api/business-registry/public/{id}/documents",
+  "method": "POST",
+  "tags": [
+   "Business Registry"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/documents not found\",\"timestamp\":\"2026-09-20T17:45:49.076Z\",\"path\":\"/api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/documents\"}}"
+ },
+ {
+  "module": "api/business-registry/public",
+  "path": "/api/business-registry/public/{id}/reactivate",
+  "method": "POST",
+  "tags": [
+   "Business Registry"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/reactivate not found\",\"timestamp\":\"2026-09-20T17:45:49.079Z\",\"path\":\"/api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/reactivate\"}}"
+ },
+ {
+  "module": "api/business-registry/public",
+  "path": "/api/business-registry/public/{id}/suspend",
+  "method": "POST",
+  "tags": [
+   "Business Registry"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/suspend not found\",\"timestamp\":\"2026-09-20T17:45:49.081Z\",\"path\":\"/api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/suspend\"}}"
+ },
+ {
+  "module": "api/business-registry/public",
+  "path": "/api/business-registry/public/{id}/verify",
+  "method": "POST",
+  "tags": [
+   "Business Registry"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/verify not found\",\"timestamp\":\"2026-09-20T17:45:49.174Z\",\"path\":\"/api/business-registry/public/usr_01KRFXQZC36NK3CDEWJJS21RP8/verify\"}}"
+ },
+ {
+  "module": "api/business-registry/public",
+  "path": "/api/business-registry/public/owner/{ownerId}",
+  "method": "GET",
+  "tags": [
+   "Business Registry"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/public/owner/usr_01KRFXQZC36NK3CDEWJJS21RP8 not found\",\"timestamp\":\"2026-09-20T17:45:49.176Z\",\"path\":\"/api/business-registry/public/owner/usr_01KRFXQZC36NK3CDEWJJS21RP8\"}}"
+ },
+ {
+  "module": "api/business-registry/public",
+  "path": "/api/business-registry/public/search",
+  "method": "GET",
+  "tags": [
+   "Business Registry"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/public/search not found\",\"timestamp\":\"2026-09-20T17:45:49.192Z\",\"path\":\"/api/business-registry/public/search\"}}"
+ },
+ {
+  "module": "api/business-registry/public",
+  "path": "/api/business-registry/public/industries/{industry}/sellers",
+  "method": "GET",
+  "tags": [
+   "Seller Discovery"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"items\":[],\"pagination\":{\"limit\":20,\"offset\":0,\"hasMore\":false}}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"items\":[],\"pagination\":{\"limit\":20,\"offset\":0,\"hasMore\":false}}}"
+ },
+ {
+  "module": "api/business-registry/public",
+  "path": "/api/business-registry/public/sellers",
+  "method": "GET",
+  "tags": [
+   "Seller Discovery"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"items\":[],\"pagination\":{\"limit\":20,\"offset\":0,\"hasMore\":false}}}",
+  "role": "seller",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"items\":[],\"pagination\":{\"limit\":20,\"offset\":0,\"hasMore\":false}}}"
+ },
+ {
+  "module": "api/business-registry/public",
+  "path": "/api/business-registry/public/sellers/{sellerId}",
+  "method": "GET",
+  "tags": [
+   "Seller Discovery"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"BUSINESS_NOT_FOUND\",\"message\":\"Seller not found\"}}",
+  "role": "seller",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"BUSINESS_NOT_FOUND\",\"message\":\"Seller not found\"}}"
+ },
+ {
+  "module": "api/business-registry/public",
+  "path": "/api/business-registry/public/sellers/{sellerId}/industries",
+  "method": "GET",
+  "tags": [
+   "Seller Discovery"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"BUSINESS_NOT_FOUND\",\"message\":\"Seller not found\"}}",
+  "role": "seller",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"BUSINESS_NOT_FOUND\",\"message\":\"Seller not found\"}}"
+ }
+]

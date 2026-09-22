@@ -1,0 +1,93 @@
+[
+ {
+  "module": "api/auth/health",
+  "path": "/api/auth/health",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:47.911Z\",\"uptime\":4827,\"version\":\"1.0.0\",\"environment\":\"development\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:47.921Z\",\"uptime\":4827,\"version\":\"1.0.0\",\"environment\":\"development\"}}"
+ },
+ {
+  "module": "api/auth/health",
+  "path": "/api/auth/health/circuit-breaker",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"userService\":{\"state\":\"closed\",\"failures\":0,\"successes\":0,\"rejections\":0,\"timeouts\":0}}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"userService\":{\"state\":\"closed\",\"failures\":0,\"successes\":0,\"rejections\":0,\"timeouts\":0}}}"
+ },
+ {
+  "module": "api/auth/health",
+  "path": "/api/auth/health/detailed",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:47.944Z\",\"uptime\":4827,\"version\":\"1.0.0\",\"environment\":\"development\",\"components\":{\"serviceDiscovery\":{\"userService\":{\"totalInstances\":1,\"healthyInstances\":1,\"unhealthyInstances",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"status\":\"healthy\",\"timestamp\":\"2026-09-20T17:45:47.950Z\",\"uptime\":4827,\"version\":\"1.0.0\",\"environment\":\"development\",\"components\":{\"serviceDiscovery\":{\"userService\":{\"totalInstances\":1,\"healthyInstances\":1,\"unhealthyInstances\":0,\"instances\":[{\"url\":\"http://localhost:3000/api/user\",\"healthy\":true,\"consecutiveFailures\":0,\"lastHealthCheck\":\"2026-09-20T16:25:15.143Z\"}]}},\"userService\":true,\"database\":true,\"cache\":true}}}"
+ },
+ {
+  "module": "api/auth/health",
+  "path": "/api/auth/health/discovery",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"userService\":{\"totalInstances\":1,\"healthyInstances\":1,\"unhealthyInstances\":0,\"instances\":[{\"url\":\"http://localhost:3000/api/user\",\"healthy\":true,\"consecutiveFailures\":0,\"lastHealthCheck\":\"2026-09-20T16:25:15.143Z\"}]}}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"userService\":{\"totalInstances\":1,\"healthyInstances\":1,\"unhealthyInstances\":0,\"instances\":[{\"url\":\"http://localhost:3000/api/user\",\"healthy\":true,\"consecutiveFailures\":0,\"lastHealthCheck\":\"2026-09-20T16:25:15.143Z\"}]}}}"
+ },
+ {
+  "module": "api/auth/health",
+  "path": "/api/auth/health/live",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"message\":\"Service is alive\",\"timestamp\":\"2026-09-20T17:45:47.977Z\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"message\":\"Service is alive\",\"timestamp\":\"2026-09-20T17:45:47.995Z\"}"
+ },
+ {
+  "module": "api/auth/health",
+  "path": "/api/auth/health/ready",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"message\":\"Service is ready to accept traffic\",\"timestamp\":\"2026-09-20T17:45:48.052Z\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"message\":\"Service is ready to accept traffic\",\"timestamp\":\"2026-09-20T17:45:48.067Z\"}"
+ },
+ {
+  "module": "api/auth/health",
+  "path": "/api/auth/health/metrics",
+  "method": "GET",
+  "tags": [
+   "Auth"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"success\":true,\"data\":{\"uptime\":4827,\"timestamp\":\"2026-09-20T17:45:48.062Z\",\"version\":\"1.0.0\",\"environment\":\"development\",\"serviceDiscovery\":{\"userService\":{\"totalInstances\":1,\"healthyInstances\":1,\"unhealthyInstances\":0,\"instances\":[{\"url\":\"http://l",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"success\":true,\"data\":{\"uptime\":4827,\"timestamp\":\"2026-09-20T17:45:48.084Z\",\"version\":\"1.0.0\",\"environment\":\"development\",\"serviceDiscovery\":{\"userService\":{\"totalInstances\":1,\"healthyInstances\":1,\"unhealthyInstances\":0,\"instances\":[{\"url\":\"http://localhost:3000/api/user\",\"healthy\":true,\"consecutiveFailures\":0,\"lastHealthCheck\":\"2026-09-20T16:25:15.143Z\"}]}},\"memory\":{\"rss\":309104640,\"heapTotal\":285315072,\"heapUsed\":250980208,\"external\":9528198,\"arrayBuffers\":1046381},\"cpu\":{\"user\":57187000,\"system\":23421000}}}"
+ }
+]

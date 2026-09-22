@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/business-registry/industries",
+  "path": "/api/business-registry/industries/{industry}/sellers",
+  "method": "GET",
+  "tags": [
+   "Business Registry"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "seller",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/business-registry/industries/test-000/sellers not found\",\"timestamp\":\"2026-09-20T17:45:48.950Z\",\"path\":\"/api/business-registry/industries/test-000/sellers\"}}"
+ }
+]

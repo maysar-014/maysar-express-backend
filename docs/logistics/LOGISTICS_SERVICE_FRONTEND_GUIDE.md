@@ -169,10 +169,12 @@ All courier endpoints require auth.
 ```
 GET    /api/logistics/v1/couriers
 GET    /api/logistics/v1/couriers/:courierId
-POST   /api/logistics/v1/couriers                          (register/provision courier profile)
+POST   /api/logistics/v1/couriers     (provision/ensure courier profile exists — returns 200 with courierId + status: "offline")
 PUT    /api/logistics/v1/couriers/:courierId/status
-PATCH  /api/logistics/v1/couriers/:courierId/status        (alias)
+PATCH  /api/logistics/v1/couriers/:courierId/status   (alias)
 ```
+
+> **`POST /couriers` note:** This endpoint is idempotent and always returns 200 (not 201). It does not persist a new record — it returns a stub `{ courierId, status: "offline", message: "Courier profile ready" }` based on the authenticated user's ID. It is used to ensure the courier context is established before other calls.
 
 ### Courier Status Values
 
@@ -259,7 +261,7 @@ GET /api/logistics/v1/analytics/courier/:courierId
 
 | Param | Values |
 |-------|--------|
-| `status` | `assigned`, `picked_up`, `in_transit`, `delivered`, `cancelled` |
+| `status` | `assigned`, `picked_up`, `in_transit`, `delivered`, `cancelled` (server validates these exact values — `pending` is **not** a valid filter) |
 | `courierId` | ULID-format string |
 | `page` | integer ≥ 1 |
 | `limit` | integer 1–100 |
@@ -287,3 +289,23 @@ GET /api/logistics/v1/analytics/courier/:courierId
 - When `status = DELIVERY_UNAVAILABLE`, show `unavailableReason` and offer the user an alternative (e.g. contact support).
 - The `breakdown` object is for transparency/audit display — show it in an expandable "Pricing details" section.
 - Courier status `online`/`offline` maps to "Available"/"Unavailable" in the UI.
+
+
+---
+
+## System Maintenance (internal/ops)
+
+These endpoints are for ops/admin use only. They are not called from the frontend.
+
+```
+POST /api/logistics/system/maintenance/cleanup/outbox/report
+POST /api/logistics/system/maintenance/cleanup/outbox
+```
+
+**Auth:** `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+### Outbox cleanup report
+`POST /api/logistics/system/maintenance/cleanup/outbox/report` → **200** — dry-run count of deletable outbox events.
+
+### Outbox cleanup
+`POST /api/logistics/system/maintenance/cleanup/outbox` → **200** — batched deletion. Body: `{ "dryRun": true }` to simulate. `maxRuntimeMs` defaults to 20 seconds.

@@ -1,0 +1,15 @@
+[
+ {
+  "module": "api/governance/constitution",
+  "path": "/api/governance/constitution",
+  "method": "GET",
+  "tags": [
+   "Governance"
+  ],
+  "anonStatus": 404,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/governance/constitution not found\",\"timestamp\":\"2026-09-20T17:45:51.911Z\",\"path\":\"/api/governance/constitution\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route GET /api/governance/constitution not found\",\"timestamp\":\"2026-09-20T17:45:51.919Z\",\"path\":\"/api/governance/constitution\"}}"
+ }
+]

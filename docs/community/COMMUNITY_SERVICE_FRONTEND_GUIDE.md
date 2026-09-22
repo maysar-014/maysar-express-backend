@@ -25,22 +25,23 @@
 ```
 
 ```jsonc
-// Response 201
+// Response 201 — post published immediately
 {
-  "success": true,
-  "data": {
-    "id": "pst_01J...",
-    "authorId": "usr_01J...",
-    "content": "Just launched my new product line in Dar es Salaam!",
-    "type": "text",
-    "visibility": "public",
-    "status": "PUBLISHED",
-    "likesCount": 0,
-    "commentsCount": 0,
-    "createdAt": "2024-09-01T10:00:00.000Z"
-  }
+  "message": "Post published successfully",
+  "postId": "pst_01J...",
+  "status": "published"
+}
+
+// Response 202 — post requires moderation
+{
+  "message": "Post submitted for moderation",
+  "postId": "pst_01J...",
+  "status": "pending_moderation",
+  "moderationRequired": true
 }
 ```
+
+> ⚠️ The actual response does **not** use a `{ success, data }` wrapper. The fields are `message`, `postId`, and `status` (lowercase string). A `202` is returned when the post type or content triggers moderation — always check the HTTP status code, not just the body.
 
 **Daily post limits by reputation tier:**
 
@@ -63,20 +64,34 @@ When limit is reached → 403 `DAILY_LIMIT_REACHED`.
 ### Get Published Posts (Global Feed)
 `GET /api/community/posts/published?limit=20&offset=0`
 
+Returns `{ posts: [...], pagination: { limit, offset, count } }` — no `success`/`data` wrapper.
+
 ### Get a Post
 `GET /api/community/posts/:postId`
+
+Returns `{ post: { ...postFields } }` — no `success`/`data` wrapper. `404` returns `{ error: "NotFoundError", message: "Post not found" }`.
 
 ### Search Posts
 `GET /api/community/posts/search?q=fashion&type=text&limit=20&offset=0`
 
+Returns `{ query, posts: [...], count }`.
+
 ### Get Trending Topics
-`GET /api/community/posts/trending`
+`GET /api/community/posts/trending?hours=24`
+
+Returns `{ topics: [...], timeWindowHours: 24 }`.
 
 ### Get Posts by Author
 `GET /api/community/posts/authors/:authorId`
 
+Returns `{ posts: [...], pagination: { limit, offset, count } }`.
+
 ### Get Personalised Feed
-`GET /api/community/posts/users/:userId/feed?limit=20&offset=0` — requires auth
+`GET /api/community/posts/users/:userId/feed?limit=20` — requires auth
+
+Returns `{ userId, includeFollowed, posts: [...], count }`.
+
+> **Response envelope note:** Unlike most other services, the community posts controller does NOT use `{ success: true, data: ... }` wrappers. All posts endpoints return plain objects. Error responses use `{ error: "ErrorType", message: "..." }` (not `{ success: false, error: { code, message } }`).
 
 ---
 
@@ -350,3 +365,23 @@ POST /api/community/expertise/validate          — validate expertise claim (re
 - [ ] Edit window: hide edit button when the edit window has expired (`EDIT_WINDOW_EXPIRED` 409) — do not attempt silent recovery
 - [ ] Character counters: enforce minimum lengths client-side before submission (post min 1, discussion content min 50, article section min 100)
 - [ ] Challenges `successCriteria`: at least one criterion must have `measurable: true` — validate client-side
+
+
+---
+
+## System Maintenance (internal/ops)
+
+These endpoints are for ops/admin use only. They are not called from the frontend.
+
+```
+POST /api/community/system/maintenance/cleanup/outbox/report
+POST /api/community/system/maintenance/cleanup/outbox
+```
+
+**Auth:** `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+### Outbox cleanup report
+`POST /api/community/system/maintenance/cleanup/outbox/report` → **200** — dry-run count of deletable outbox events.
+
+### Outbox cleanup
+`POST /api/community/system/maintenance/cleanup/outbox` → **200** — batched deletion. Body: `{ "dryRun": true }` to simulate. `maxRuntimeMs` defaults to 20 seconds.

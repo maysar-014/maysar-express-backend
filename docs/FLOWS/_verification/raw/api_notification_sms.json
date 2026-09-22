@@ -1,0 +1,119 @@
+[
+ {
+  "module": "api/notification/sms",
+  "path": "/api/notification/sms/health",
+  "method": "GET",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"healthy\",\"service\":\"sms-service\",\"timestamp\":\"2026-09-20T17:45:53.130Z\",\"uptime\":\"4920s\"}"
+ },
+ {
+  "module": "api/notification/sms",
+  "path": "/api/notification/sms/health/live",
+  "method": "GET",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"alive\",\"service\":\"sms-service\",\"timestamp\":\"2026-09-20T17:45:53.161Z\"}"
+ },
+ {
+  "module": "api/notification/sms",
+  "path": "/api/notification/sms/send",
+  "method": "POST",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 400,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"\\\"phoneNumber\\\" is required\"}}"
+ },
+ {
+  "module": "api/notification/sms",
+  "path": "/api/notification/sms/health/ready",
+  "method": "GET",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"ready\",\"service\":\"sms-service\",\"timestamp\":\"2026-09-20T17:45:53.192Z\"}"
+ },
+ {
+  "module": "api/notification/sms",
+  "path": "/api/notification/sms/retry/failed",
+  "method": "POST",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"totalProcessed\":0,\"totalRetried\":0,\"totalFailed\":0,\"results\":[]}"
+ },
+ {
+  "module": "api/notification/sms",
+  "path": "/api/notification/sms/retry/{messageId}",
+  "method": "POST",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"messageId\":\"no-fixture\",\"success\":false,\"newStatus\":\"NOT_FOUND\",\"retryCount\":0,\"message\":\"Message not found\"}"
+ },
+ {
+  "module": "api/notification/sms",
+  "path": "/api/notification/sms/statistics",
+  "method": "GET",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"total\":0,\"queued\":0,\"sending\":0,\"sent\":0,\"delivered\":0,\"failed\":0,\"cancelled\":0,\"undelivered\":0,\"deliveryRate\":0,\"failureRate\":0}"
+ },
+ {
+  "module": "api/notification/sms",
+  "path": "/api/notification/sms/webhook/africastalking",
+  "method": "POST",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"success\":false,\"error\":{\"code\":\"RESOURCE_NOT_FOUND\",\"message\":\"Route POST /api/notification/sms/webhook/africastalking not found\",\"timestamp\":\"2026-09-20T17:45:53.237Z\",\"path\":\"/api/notification/sms/webhook/africastalking\"}}"
+ },
+ {
+  "module": "api/notification/sms",
+  "path": "/api/notification/sms/status/{messageId}",
+  "method": "GET",
+  "tags": [
+   "Notifications"
+  ],
+  "anonStatus": 401,
+  "anonBody": "{\"success\":false,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}",
+  "role": "buyer",
+  "authStatus": 404,
+  "authBody": "{\"error\":{\"message\":\"SMS message not found: no-fixture\",\"status\":404,\"timestamp\":\"2026-09-20T17:45:53.281Z\",\"path\":\"/api/notification/sms/status/no-fixture\"}}"
+ }
+]

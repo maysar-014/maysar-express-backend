@@ -134,3 +134,10 @@ These are consumed internally by the logistics service via the `MapsRegistry`:
 - In-memory store — not persisted across restarts
 - Anomaly detection: `speed > 100 km/h` → `SPEED_VIOLATION`
 - ETA calculation returns a fixed 15 minutes (placeholder — production uses routing)
+
+
+---
+
+## System Maintenance Routes
+
+The maps service does not expose outbox maintenance routes (no outbox pattern — it is a stateless routing/geocoding proxy with no domain events). No maintenance endpoints exist.

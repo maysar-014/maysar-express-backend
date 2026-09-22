@@ -1,0 +1,41 @@
+[
+ {
+  "module": "api/business-registry/health",
+  "path": "/api/business-registry/health",
+  "method": "GET",
+  "tags": [
+   "Business"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"ok\",\"service\":\"business-registry-service\",\"timestamp\":\"2026-09-20T17:45:48.903Z\",\"eventBus\":{\"subscribers\":{\"BusinessRegistered\":1,\"BusinessVerified\":1,\"BusinessUpdated\":1},\"dlqSizes\":{\"BusinessRegistered\":0,\"BusinessVerified\":0,\"BusinessU",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"ok\",\"service\":\"business-registry-service\",\"timestamp\":\"2026-09-20T17:45:48.909Z\",\"eventBus\":{\"subscribers\":{\"BusinessRegistered\":1,\"BusinessVerified\":1,\"BusinessUpdated\":1},\"dlqSizes\":{\"BusinessRegistered\":0,\"BusinessVerified\":0,\"BusinessUpdated\":0}}}"
+ },
+ {
+  "module": "api/business-registry/health",
+  "path": "/api/business-registry/health/live",
+  "method": "GET",
+  "tags": [
+   "Business"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"alive\",\"timestamp\":\"2026-09-20T17:45:48.914Z\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"alive\",\"timestamp\":\"2026-09-20T17:45:48.920Z\"}"
+ },
+ {
+  "module": "api/business-registry/health",
+  "path": "/api/business-registry/health/ready",
+  "method": "GET",
+  "tags": [
+   "Business"
+  ],
+  "anonStatus": 200,
+  "anonBody": "{\"status\":\"ready\",\"database\":\"connected\",\"timestamp\":\"2026-09-20T17:45:48.952Z\"}",
+  "role": "buyer",
+  "authStatus": 200,
+  "authBody": "{\"status\":\"ready\",\"database\":\"connected\",\"timestamp\":\"2026-09-20T17:45:48.995Z\"}"
+ }
+]

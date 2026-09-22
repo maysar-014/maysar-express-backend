@@ -43,7 +43,7 @@ export function createApp(): Express {
     app.use('/health', healthRoutes);
 
     // Routes
-    app.use('/api/payments', createPaymentRoutes(container.paymentController));
+    app.use('/api/payments', createPaymentRoutes(container.paymentController, container.paymentAdminController));
     app.use('/api/v1/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
 
     // Prometheus metrics

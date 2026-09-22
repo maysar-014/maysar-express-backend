@@ -104,3 +104,10 @@ Enabler commission data is accessed via the commission frontend guide endpoints 
   }
 }
 ```
+
+
+---
+
+## System Maintenance Routes
+
+The commission service does not currently expose outbox maintenance routes (no `maintenance.routes.ts` file in `services/commission-service/`). If added in future, the standard pattern applies: mount at `/api/commissions/system/maintenance` behind `requireRoleOrService(['admin','system'])` and `x-service-key`.

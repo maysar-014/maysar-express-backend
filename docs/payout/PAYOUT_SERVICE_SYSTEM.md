@@ -99,3 +99,17 @@ Note: phone numbers are masked in responses — show last 3 digits only.
 - [ ] Show processing time estimate based on method
 - [ ] Handle `FAILED` status with support contact CTA
 - [ ] Sellers can configure preferred payout method in profile settings
+
+
+---
+
+## System Maintenance Routes
+
+Mounted at `/api/payout/system/maintenance`. Guards: `requireRoleOrService(['admin','system'])` **and** `x-service-key` header.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/payout/system/maintenance/cleanup/outbox/report` | Dry-run count of deletable payout outbox events |
+| POST | `/api/payout/system/maintenance/cleanup/outbox` | Batched deletion of expired outbox events. Body: `{ "dryRun": true }` to simulate |
+
+**Retention defaults:** sent/processed → 7 days, failed → 30 days. Batch size: 1000. Max runtime: 20 s.

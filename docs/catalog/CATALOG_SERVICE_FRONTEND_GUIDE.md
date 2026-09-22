@@ -566,3 +566,44 @@ Non-blocking suggestions (returned in response `warnings[]`):
 - [ ] Content validation errors: show `warnings[]` from product creation response as non-blocking suggestions
 - [ ] Buy-box anomaly flags: show a warning badge on listings with `anomalyFlags` populated
 - [ ] ARCHIVED status is terminal — hide edit/publish/unpublish actions for archived products
+
+
+---
+
+## System Maintenance (internal/ops)
+
+These endpoints are for ops/admin use only. They are not called from the frontend.
+
+```
+POST /api/catalog/system/maintenance/cleanup/outbox/report
+POST /api/catalog/system/maintenance/cleanup/outbox
+```
+
+**Auth:** `requireRoleOrService(['admin','system'])` **and** `x-service-key` header (value must be in `ALLOWED_SERVICE_KEYS` env var).
+
+### Outbox cleanup report
+`POST /api/catalog/system/maintenance/cleanup/outbox/report` → **200**
+
+Returns a dry-run count of outbox events eligible for deletion without deleting anything.
+
+```jsonc
+{
+  "success": true,
+  "batchSize": 1000,
+  "retentionDays": { "sent": 7, "failed": 30 },
+  "counts": { "processed": 4200, "failed": 12 },
+  "estimatedBatches": { "processed": 5, "failed": 1 },
+  "durationMs": 45
+}
+```
+
+### Outbox cleanup
+`POST /api/catalog/system/maintenance/cleanup/outbox` → **200**
+
+Deletes eligible outbox events in batches. Pass `{ "dryRun": true }` in body to simulate.
+
+```jsonc
+{ "dryRun": true }
+```
+
+`maxRuntimeMs` defaults to **20 seconds**. Re-run if more batches remain.
