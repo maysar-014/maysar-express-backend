@@ -21,7 +21,8 @@ const mockPricingController = {
   bulkUpdatePricing: jest.fn(),
   getPricingRules: jest.fn(),
   createPricingRule: jest.fn(),
-  getPricingAnalytics: jest.fn()
+  getPricingAnalytics: jest.fn(),
+  validatePricingRule: jest.fn()
 };
 
 // Mock Express app for integration testing
@@ -314,7 +315,14 @@ describe('Pricing Routes', () => {
     });
 
     describe('POST /v1/pricing/validate-rule - Validate Pricing Rule', () => {
-      it('should return not implemented status', async () => {
+      it('should delegate to controller validatePricingRule method', async () => {
+        mockPricingController.validatePricingRule.mockImplementation(async (_req, res) => {
+          res.status(200).json({
+            success: true,
+            data: { valid: true, errors: [] }
+          });
+        });
+
         const response = await request(app)
           .post('/v1/pricing/validate-rule')
           .send({
@@ -324,9 +332,21 @@ describe('Pricing Routes', () => {
             conditions: []
           });
 
-        expect(response.status).toBe(501);
-        expect(response.body.success).toBe(false);
-        expect(response.body.error.code).toBe('NOT_IMPLEMENTED');
+        expect(mockPricingController.validatePricingRule).toHaveBeenCalled();
+        expect(response.status).toBe(200);
+        expect(response.body.data.valid).toBe(true);
+      });
+
+      it('should report rule errors through the real controller contract', async () => {
+        const realApp = createTestApp(createPricingRoutes(new PricingController() as any, {}));
+
+        const response = await request(realApp)
+          .post('/v1/pricing/validate-rule')
+          .send({ type: 'percentage', value: 10 });
+
+        expect(response.status).toBe(200);
+        expect(response.body.data.valid).toBe(false);
+        expect(response.body.data.errors).toContain('Rule name is required');
       });
     });
   });

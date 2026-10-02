@@ -9,11 +9,37 @@ export class HoldExpiryJob {
         private readonly expireHoldUseCase: ExpireHoldUseCase
     ) { }
 
-    async start(): Promise<void> {
-        // This could be triggered by a scheduler
+    private timer: ReturnType<typeof setInterval> | null = null;
+
+    /**
+     * Starts recurring expiry.
+     *
+     * This job used to expose only `start()`, which ran the sweep exactly once
+     * — and it was never invoked at all, so expired holds were never reclaimed.
+     * `start()` is kept for compatibility and simply schedules the sweep.
+     */
+    start(intervalMs: number = 60_000): void {
+        if (this.timer) return;
+        void this.runSweep();
+        this.timer = setInterval(() => {
+            void this.runSweep();
+        }, intervalMs);
+        this.timer.unref?.();
+        console.log(`[HoldExpiryJob] started (interval ${intervalMs}ms)`);
+    }
+
+    stop(): void {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+            console.log('[HoldExpiryJob] stopped');
+        }
+    }
+
+    /** Runs a single sweep. Exposed for tests and manual invocation. */
+    async runSweep(): Promise<void> {
         if (this.isRunning) return;
         this.isRunning = true;
-
         try {
             await this.processExpiredHolds();
         } finally {

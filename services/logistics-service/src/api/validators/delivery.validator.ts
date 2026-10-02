@@ -1,6 +1,7 @@
 ﻿// @ts-nocheck
 import { body, param, query } from 'express-validator';
 import { isSystemId } from '@shared/validation/id';
+import { isOrderNumber } from '@shared/ids/human-readable-ids';
 
 const isContractTestRequest = (req: any): boolean =>
   String(req.headers?.['x-contract-test'] || '').trim() === '1' && process.env.NODE_ENV !== 'production';
@@ -8,12 +9,12 @@ const isContractTestRequest = (req: any): boolean =>
 export class DeliveryValidator {
   static createDelivery(): ValidationChain[] {
     return [
-      // Order validation - allow both ID and string formats for testing flexibility
+      // An order reference is exactly an ORDER NUMBER (ORD-YYYYMMDD-NLNL).
       body('orderId')
         .notEmpty()
         .withMessage('Order ID is required')
-        .isLength({ min: 1, max: 100 })
-        .withMessage('Order ID must be between 1 and 100 characters'),
+        .custom(isOrderNumber)
+        .withMessage('Order ID must be an order number (ORD-YYYYMMDD-NLNL)'),
 
       // Courier validation (optional for creation)
       body('courierId')

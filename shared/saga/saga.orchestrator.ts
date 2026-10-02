@@ -8,6 +8,14 @@ import { Counter, Histogram, Gauge } from 'prom-client';
 import { metricsRegistry } from '../metrics/metrics.factory';
 import { createLogger } from '../logger/logger';
 
+export interface SagaStartOptions {
+    /**
+     * Wait for the saga to reach a terminal state and throw if it did not complete.
+     * Off by default: most callers only need the saga persisted, not finished.
+     */
+    awaitCompletion?: boolean;
+}
+
 export interface SagaStep<T> {
     name: string;
     execute: (payload: T, sagaId: string) => Promise<void>;
@@ -103,9 +111,19 @@ export abstract class DistributedSagaOrchestrator<T = unknown> {
     protected async onCompensate(_sagaId: string, _failedStepName: string): Promise<void> { }
 
     /**
-     * Start a new saga instance
+     * Start a new saga instance.
+     *
+     * Execution is fire-and-forget by default: the returned promise resolves as soon
+     * as the saga is persisted, so a caller cannot tell a running saga from a failed
+     * one. That is correct for most callers but unsafe where the result is reported
+     * straight back to a user - `VerifyCODDeliveryUseCase` would answer "verification
+     * successful" for a saga that had already failed and compensated.
+     *
+     * Pass `{ awaitCompletion: true }` to instead wait for the saga to reach a
+     * terminal state and throw if it did not complete. Opt-in, so the existing
+     * fire-and-forget callers are unaffected.
      */
-    async start(payload: T, correlationId?: string): Promise<string> {
+    async start(payload: T, correlationId?: string, options?: SagaStartOptions): Promise<string> {
         const sagaId = uuidv4();
         const entry: SagaLogEntry = {
             sagaId,
@@ -148,11 +166,40 @@ export abstract class DistributedSagaOrchestrator<T = unknown> {
         }
 
         // Start execution from the first step
-        this.executeNextStep(sagaId, payload, 0).catch(err => {
+        const execution = this.executeNextStep(sagaId, payload, 0);
+        execution.catch(err => {
             this.logger.error(`Unhandled error starting saga ${sagaId}:`, err, { sagaId });
         });
 
+        if (options?.awaitCompletion) {
+            // `executeNextStep` never rejects: on step failure it compensates and
+            // records a terminal status, so completion alone proves nothing. The
+            // saga log is the source of truth for whether it actually succeeded.
+            await execution;
+            await this.assertCompleted(sagaId);
+        }
+
         return sagaId;
+    }
+
+    /**
+     * Throws unless the saga reached `COMPLETED`.
+     *
+     * A failed step leaves the saga `COMPENSATED` or `FAILED`, never `COMPLETED`, so
+     * this is what turns "the saga ran" into "the saga succeeded".
+     */
+    protected async assertCompleted(sagaId: string): Promise<void> {
+        const saga = await this.sagaLogRepository.getById(sagaId);
+
+        if (!saga) {
+            throw new Error(`Saga ${sagaId} could not be read back after execution`);
+        }
+
+        if (saga.status === SagaStatus.COMPLETED) {
+            return;
+        }
+
+        throw new Error(saga.error || `Saga ${sagaId} finished in state ${saga.status}`);
     }
 
     private async executeNextStep(sagaId: string, payload: T, stepIndex: number): Promise<void> {

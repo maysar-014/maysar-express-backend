@@ -56,11 +56,14 @@ src/
 ## API Endpoints
 
 ```
-GET    /api/commissions/:id               # Get commission record
-GET    /api/commissions/seller/:sellerId  # List seller commissions
-GET    /api/commissions/enabler/:enablerId # List enabler commissions
-GET    /api/commissions/summary/:actorId  # Commission summary with quality metrics
-GET    /health                            # Health check
+POST   /api/commission/calculate                    # Calculate commission
+PUT    /api/commission/:id/approve                  # Approve commission
+GET    /api/commission/:id                          # Get commission record
+GET    /api/commission/sellers/:sellerId            # List seller commissions
+GET    /api/commission/sellers/:sellerId/summary    # Commission summary
+GET    /api/commission/health                       # Health check
+GET    /api/commission/health/live                  # Liveness probe
+GET    /api/commission/health/ready                 # Readiness probe
 ```
 
 ## Database Schema

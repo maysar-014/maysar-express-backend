@@ -1,21 +1,182 @@
 {
-  "generatedAt": "2026-05-29T19:05:24.514Z",
+  "generatedAt": "2026-09-27T19:54:01.681Z",
   "summary": {
-    "sourceFiles": 1813,
-    "testFiles": 1440,
-    "missingTests": 188,
-    "domainPurityViolations": 0,
+    "sourceFiles": 2001,
+    "testFiles": 1506,
+    "missingTests": 383,
+    "domainPurityViolations": 2,
     "domainTestPurityViolations": 0,
-    "coverageViolations": 622,
-    "filesWithoutCoverageData": 512
+    "coverageViolations": 588,
+    "filesWithoutCoverageData": 741
   },
   "missingTests": [
     {
-      "file": "services/governance-service/src/api/controllers/governance.controller.ts",
+      "file": "services/chat-service/src/infrastructure/repositories/prisma-moderation.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 487
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/delivery-pricing.engine.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 413
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/fulfillment-option.engine.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 370
+    },
+    {
+      "file": "services/chat-service/src/infrastructure/jobs/order-chat.handler.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 353
+    },
+    {
+      "file": "services/catalog-service/src/api/controllers/seller-location.controller.ts",
       "layer": "api",
       "component": "api-controller",
       "targetCoverage": 85,
-      "lines": 215
+      "lines": 316
+    },
+    {
+      "file": "services/chat-service/src/api/routes/chat.routes.ts",
+      "layer": "api",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 312
+    },
+    {
+      "file": "services/logistics-service/src/application/services/shipment-pool.service.ts",
+      "layer": "application",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 292
+    },
+    {
+      "file": "services/logistics-service/src/domain/value-objects/pricing-config.value-object.ts",
+      "layer": "domain",
+      "component": "value-object",
+      "targetCoverage": 98,
+      "lines": 292
+    },
+    {
+      "file": "services/request-service/src/api/controllers/provider-request.controller.ts",
+      "layer": "api",
+      "component": "api-controller",
+      "targetCoverage": 85,
+      "lines": 288
+    },
+    {
+      "file": "services/order-service/src/domain/engines/enhanced-cod-eligibility.engine.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 285
+    },
+    {
+      "file": "services/logistics-service/src/application/services/consolidation-orchestrator.service.ts",
+      "layer": "application",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 283
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/consolidation.engine.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 261
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/convert-quote-to-order.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 247
+    },
+    {
+      "file": "services/logistics-service/src/application/services/logistics-kpi.service.ts",
+      "layer": "application",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 241
+    },
+    {
+      "file": "services/order-service/src/domain/engines/cod-trust/identity-graph.service.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 241
+    },
+    {
+      "file": "services/logistics-service/src/application/use-cases/create-order-shipments.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 227
+    },
+    {
+      "file": "services/checkout-service/src/application/use-cases/get-delivery-options.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 212
+    },
+    {
+      "file": "services/order-service/src/domain/engines/cod-trust/per-order-risk.assessor.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 206
+    },
+    {
+      "file": "services/logistics-service/src/application/use-cases/generate-fulfillment-options.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 204
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-cost-model.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 199
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-phase5.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 196
+    },
+    {
+      "file": "shared/errors/api-errors.ts",
+      "layer": "shared",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 192
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/providers/local-tanzania-locations.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 190
+    },
+    {
+      "file": "services/order-service/src/domain/engines/progressive-cod-eligibility.engine.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 186
     },
     {
       "file": "services/logistics-service/src/application/services/tracking-update.service.ts",
@@ -25,11 +186,67 @@
       "lines": 185
     },
     {
+      "file": "services/order-service/src/application/use-cases/buyer-confirm-checkout.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 183
+    },
+    {
+      "file": "src/app.ts",
+      "layer": "shared",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 183
+    },
+    {
+      "file": "services/catalog-service/src/application/use-cases/manage-seller-locations.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 180
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-vehicle-tariff.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 180
+    },
+    {
+      "file": "services/request-service/src/api/routes/request.routes.ts",
+      "layer": "api",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 180
+    },
+    {
       "file": "services/user-service/src/internal/user-service.facade.ts",
       "layer": "shared",
       "component": "other",
       "targetCoverage": 80,
       "lines": 179
+    },
+    {
+      "file": "services/logistics-service/src/application/use-cases/match-drivers.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 177
+    },
+    {
+      "file": "services/order-service/src/api/controllers/verification.controller.ts",
+      "layer": "api",
+      "component": "api-controller",
+      "targetCoverage": 85,
+      "lines": 177
+    },
+    {
+      "file": "services/catalog-service/src/application/use-cases/manage-product-inventory.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 175
     },
     {
       "file": "services/catalog-service/src/infrastructure/jobs/rolling-average.job.ts",
@@ -39,11 +256,25 @@
       "lines": 175
     },
     {
-      "file": "services/order-service/src/domain/engines/progressive-cod-eligibility.engine.ts",
-      "layer": "domain",
-      "component": "engine",
-      "targetCoverage": 95,
-      "lines": 173
+      "file": "services/order-service/src/infrastructure/jobs/cod-trust-backfill.job.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 175
+    },
+    {
+      "file": "services/request-service/src/api/controllers/request.controller.ts",
+      "layer": "api",
+      "component": "api-controller",
+      "targetCoverage": 85,
+      "lines": 168
+    },
+    {
+      "file": "services/catalog-service/src/api/controllers/buy-box-admin.controller.ts",
+      "layer": "api",
+      "component": "api-controller",
+      "targetCoverage": 85,
+      "lines": 166
     },
     {
       "file": "services/catalog-service/src/application/use-cases/compute-buy-box-ranking.use-case.ts",
@@ -53,6 +284,27 @@
       "lines": 165
     },
     {
+      "file": "services/enabler-service/src/api/controllers/enabler-lifecycle.controller.ts",
+      "layer": "api",
+      "component": "api-controller",
+      "targetCoverage": 85,
+      "lines": 165
+    },
+    {
+      "file": "shared/ids/id.ts",
+      "layer": "shared",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 163
+    },
+    {
+      "file": "services/logistics-service/src/application/use-cases/record-job-completion-ledger.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 161
+    },
+    {
       "file": "services/catalog-service/src/domain/buy-box/repositories/buy-box-ranking.repository.interface.ts",
       "layer": "domain",
       "component": "other",
@@ -60,18 +312,11 @@
       "lines": 159
     },
     {
-      "file": "shared/ids/id.ts",
-      "layer": "shared",
-      "component": "other",
+      "file": "services/checkout-service/src/infrastructure/services/catalog-price-validator.service.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
       "targetCoverage": 80,
-      "lines": 157
-    },
-    {
-      "file": "services/catalog-service/src/api/controllers/buy-box-admin.controller.ts",
-      "layer": "api",
-      "component": "api-controller",
-      "targetCoverage": 85,
-      "lines": 156
+      "lines": 159
     },
     {
       "file": "services/notification-service/src/sms/application/use-cases/handle-delivery-report.use-case.ts",
@@ -81,14 +326,56 @@
       "lines": 156
     },
     {
-      "file": "services/governance-service/src/domain/phase-certification.ts",
-      "layer": "domain",
-      "component": "other",
+      "file": "services/request-service/src/infrastructure/repositories/prisma-request.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
       "targetCoverage": 80,
-      "lines": 150
+      "lines": 154
+    },
+    {
+      "file": "services/payment-service/src/infrastructure/providers/internal-wallet.adapter.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 149
+    },
+    {
+      "file": "services/order-service/src/domain/engines/cod-trust/trust-score.functions.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 148
+    },
+    {
+      "file": "services/order-service/src/domain/engines/cod-trust/seller-cod-risk.service.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 147
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/driver-compensation.engine.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 146
+    },
+    {
+      "file": "services/order-service/src/application/use-cases/admin-order-actions.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 146
     },
     {
       "file": "services/chat-service/src/infrastructure/jobs/marketplace-intelligence.job.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 145
+    },
+    {
+      "file": "services/chat-service/src/infrastructure/media/s3-media.store.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
       "targetCoverage": 80,
@@ -102,14 +389,28 @@
       "lines": 137
     },
     {
-      "file": "services/payment-service/src/api/controllers/paymentGateway-webhook.utils.ts",
+      "file": "services/logistics-service/src/api/controllers/quote-pricing.controller.ts",
+      "layer": "api",
+      "component": "api-controller",
+      "targetCoverage": 85,
+      "lines": 137
+    },
+    {
+      "file": "services/logistics-service/src/domain/entities/delivery-group.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity",
+      "targetCoverage": 95,
+      "lines": 136
+    },
+    {
+      "file": "services/payment-service/src/api/controllers/payment-webhook.utils.ts",
       "layer": "api",
       "component": "api-controller",
       "targetCoverage": 85,
       "lines": 136
     },
     {
-      "file": "services/payment-service/src/api/routes/paymentGateway-webhook.middleware.ts",
+      "file": "services/payment-service/src/api/routes/payment-webhook.middleware.ts",
       "layer": "api",
       "component": "other",
       "targetCoverage": 80,
@@ -123,11 +424,60 @@
       "lines": 131
     },
     {
+      "file": "services/order-service/src/api/controllers/master-order.controller.ts",
+      "layer": "api",
+      "component": "api-controller",
+      "targetCoverage": 85,
+      "lines": 129
+    },
+    {
+      "file": "services/order-service/src/infrastructure/repositories/prisma-master-order.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 127
+    },
+    {
       "file": "services/catalog-service/src/infrastructure/jobs/buy-box-recomputation.job.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
       "targetCoverage": 80,
       "lines": 125
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/fulfillment-cost.engine.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 125
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-shipment.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 125
+    },
+    {
+      "file": "services/request-service/src/domain/entities/request-supplier.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity",
+      "targetCoverage": 95,
+      "lines": 125
+    },
+    {
+      "file": "services/chat-service/src/api/controllers/conversation.controller.ts",
+      "layer": "api",
+      "component": "api-controller",
+      "targetCoverage": 85,
+      "lines": 122
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/option-ranking.engine.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 122
     },
     {
       "file": "services/logistics-service/src/infrastructure/repositories/prisma-earnings.repository.ts",
@@ -137,9 +487,30 @@
       "lines": 122
     },
     {
+      "file": "services/order-service/src/domain/state-machine/verification-state-machine.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 122
+    },
+    {
+      "file": "services/request-service/src/domain/entities/request-item.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity",
+      "targetCoverage": 95,
+      "lines": 122
+    },
+    {
       "file": "services/catalog-service/src/domain/buy-box/category-strategy.service.ts",
       "layer": "domain",
       "component": "other",
+      "targetCoverage": 80,
+      "lines": 121
+    },
+    {
+      "file": "services/checkout-service/src/infrastructure/services/quote-validation.service.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
       "targetCoverage": 80,
       "lines": 121
     },
@@ -151,6 +522,27 @@
       "lines": 120
     },
     {
+      "file": "services/chat-service/src/domain/repositories/moderation.repository.interface.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 119
+    },
+    {
+      "file": "services/order-service/src/application/use-cases/seller-verify-stock.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 119
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/publish-quote.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 119
+    },
+    {
       "file": "services/catalog-service/src/application/use-cases/submit-product-review.use-case.ts",
       "layer": "application",
       "component": "use-case",
@@ -158,11 +550,11 @@
       "lines": 118
     },
     {
-      "file": "services/chat-service/src/infrastructure/media/s3-media.store.ts",
-      "layer": "infrastructure",
-      "component": "infrastructure",
-      "targetCoverage": 80,
-      "lines": 118
+      "file": "services/logistics-service/src/application/use-cases/settle-delivery-job.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 117
     },
     {
       "file": "services/auth-service/src/application/use-cases/verify-phone-otp.use-case.ts",
@@ -179,10 +571,31 @@
       "lines": 116
     },
     {
-      "file": "services/governance-service/src/infrastructure/governance-report-store.ts",
+      "file": "services/order-service/src/infrastructure/repositories/prisma-cod-trust-score.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
       "targetCoverage": 80,
+      "lines": 116
+    },
+    {
+      "file": "services/logistics-service/src/application/use-cases/assign-shipments-to-jobs.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 114
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/assess-request.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 114
+    },
+    {
+      "file": "services/request-service/src/domain/entities/request-procurement.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity",
+      "targetCoverage": 95,
       "lines": 113
     },
     {
@@ -200,11 +613,25 @@
       "lines": 112
     },
     {
-      "file": "services/governance-service/src/domain/governance.types.ts",
+      "file": "services/chat-service/src/domain/risk/suspicious-phrase.provider.ts",
       "layer": "domain",
       "component": "other",
       "targetCoverage": 80,
+      "lines": 111
+    },
+    {
+      "file": "services/enabler-service/src/application/use-cases/apply-enabler-enforcement.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
       "lines": 110
+    },
+    {
+      "file": "services/catalog-service/src/api/routes/seller-location.routes.ts",
+      "layer": "api",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 109
     },
     {
       "file": "services/community-service/src/infrastructure/repositories/prisma-follow.repository.ts",
@@ -214,10 +641,66 @@
       "lines": 109
     },
     {
-      "file": "services/chat-service/src/api/controllers/conversation.controller.ts",
+      "file": "services/order-service/src/infrastructure/repositories/prisma-seller-cod-risk.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 109
+    },
+    {
+      "file": "services/request-service/src/infrastructure/repositories/prisma-request-quote.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 109
+    },
+    {
+      "file": "services/logistics-service/src/application/use-cases/record-cost-adjustment.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 108
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/create-quote.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 108
+    },
+    {
+      "file": "services/enabler-service/src/infrastructure/services/enabler-training-gate.service.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 107
+    },
+    {
+      "file": "services/logistics-service/src/application/use-cases/evaluate-route-insertions.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 107
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/get-demand-analytics.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 107
+    },
+    {
+      "file": "services/catalog-service/src/application/use-cases/select-fulfillment-location.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 106
+    },
+    {
+      "file": "services/payout-service/src/api/routes/payout.routes.ts",
       "layer": "api",
-      "component": "api-controller",
-      "targetCoverage": 85,
+      "component": "other",
+      "targetCoverage": 80,
       "lines": 106
     },
     {
@@ -228,17 +711,45 @@
       "lines": 104
     },
     {
-      "file": "services/kyc-service/src/application/use-cases/admin-verify-kyc.use-case.ts",
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-delivery-job.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 104
+    },
+    {
+      "file": "services/order-service/src/application/use-cases/seller-decline-stock.use-case.ts",
       "layer": "application",
       "component": "use-case",
       "targetCoverage": 90,
-      "lines": 103
+      "lines": 104
     },
     {
-      "file": "services/chat-service/src/api/routes/chat.routes.ts",
+      "file": "services/enabler-service/src/api/middleware/enabler-lifecycle-authorization.middleware.ts",
       "layer": "api",
       "component": "other",
       "targetCoverage": 80,
+      "lines": 103
+    },
+    {
+      "file": "services/order-service/src/application/use-cases/admin-query.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 102
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/pool-clustering.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 101
+    },
+    {
+      "file": "services/logistics-service/src/domain/entities/fulfillment-commitment.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity",
+      "targetCoverage": 95,
       "lines": 101
     },
     {
@@ -256,6 +767,20 @@
       "lines": 100
     },
     {
+      "file": "services/enabler-service/src/application/use-cases/browse-enabler-hub.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 100
+    },
+    {
+      "file": "services/request-service/src/domain/entities/request-source.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity",
+      "targetCoverage": 95,
+      "lines": 100
+    },
+    {
       "file": "services/chat-service/src/infrastructure/notifications/notification.client.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
@@ -263,10 +788,80 @@
       "lines": 99
     },
     {
+      "file": "services/logistics-service/src/domain/entities/quote.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity",
+      "targetCoverage": 95,
+      "lines": 99
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-optimization-config.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 99
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/set-item-source.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 99
+    },
+    {
+      "file": "services/order-service/src/domain/engines/cod-trust/ward-centroid.resolver.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 98
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-buyer-profile.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 97
+    },
+    {
       "file": "services/auth-service/src/api/controllers/phone-verification.controller.ts",
       "layer": "api",
       "component": "api-controller",
       "targetCoverage": 85,
+      "lines": 96
+    },
+    {
+      "file": "services/logistics-service/src/domain/entities/ledger-entry.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity",
+      "targetCoverage": 95,
+      "lines": 96
+    },
+    {
+      "file": "services/logistics-service/src/domain/entities/vehicle-tariff.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity",
+      "targetCoverage": 95,
+      "lines": 96
+    },
+    {
+      "file": "services/logistics-service/src/domain/services/zone-classifier.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 96
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-quote.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 96
+    },
+    {
+      "file": "services/order-service/src/domain/engines/cod-trust/trust-signal.types.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
       "lines": 96
     },
     {
@@ -284,6 +879,27 @@
       "lines": 94
     },
     {
+      "file": "shared/middleware/global-error-handler.middleware.ts",
+      "layer": "shared",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 94
+    },
+    {
+      "file": "services/logistics-service/src/domain/entities/cost-adjustment.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity",
+      "targetCoverage": 95,
+      "lines": 92
+    },
+    {
+      "file": "services/order-service/src/application/use-cases/mark-orders-overdue.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 92
+    },
+    {
       "file": "services/logistics-service/src/application/services/courier-assignment.service.ts",
       "layer": "application",
       "component": "other",
@@ -298,6 +914,13 @@
       "lines": 90
     },
     {
+      "file": "services/request-service/src/application/use-cases/create-request.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 90
+    },
+    {
       "file": "services/chat-service/src/infrastructure/jobs/archive-courier-conversations.job.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
@@ -305,11 +928,46 @@
       "lines": 89
     },
     {
+      "file": "services/logistics-service/src/application/use-cases/execute-route-insertion.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 89
+    },
+    {
+      "file": "services/order-service/src/infrastructure/messaging/order-delivery-confirmed.handler.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 89
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/generate-assessment-link.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 89
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-pricing-config.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 88
+    },
+    {
       "file": "services/notification-service/src/internal/notification.facade.ts",
       "layer": "shared",
       "component": "other",
       "targetCoverage": 80,
       "lines": 87
+    },
+    {
+      "file": "services/order-service/src/infrastructure/messaging/dispute-raised.handler.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 86
     },
     {
       "file": "services/production-service/src/application/dto/bulk-order.dto.ts",
@@ -340,17 +998,17 @@
       "lines": 83
     },
     {
-      "file": "services/governance-service/src/infrastructure/inspectors/index-roundtrip-inspector.ts",
-      "layer": "infrastructure",
-      "component": "infrastructure",
-      "targetCoverage": 80,
-      "lines": 83
-    },
-    {
       "file": "services/catalog-service/src/api/routes/buy-box-admin.routes.ts",
       "layer": "api",
       "component": "other",
       "targetCoverage": 80,
+      "lines": 82
+    },
+    {
+      "file": "services/chat-service/src/domain/entities/moderation.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity",
+      "targetCoverage": 95,
       "lines": 82
     },
     {
@@ -368,14 +1026,28 @@
       "lines": 82
     },
     {
-      "file": "services/chat-service/src/infrastructure/repositories/prisma-moderation.repository.ts",
+      "file": "services/request-service/src/application/use-cases/resolve-assessment-link.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 82
+    },
+    {
+      "file": "services/request-service/src/infrastructure/repositories/prisma-request-procurement.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
       "targetCoverage": 80,
-      "lines": 81
+      "lines": 82
     },
     {
       "file": "services/catalog-service/src/domain/buy-box/exploration-allocator.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 80
+    },
+    {
+      "file": "services/chat-service/src/domain/repositories/conversation.repository.interface.ts",
       "layer": "domain",
       "component": "other",
       "targetCoverage": 80,
@@ -389,7 +1061,7 @@
       "lines": 80
     },
     {
-      "file": "services/governance-service/src/infrastructure/inspectors/node-script-report-inspector.ts",
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-delivery-group.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
       "targetCoverage": 80,
@@ -410,11 +1082,102 @@
       "lines": 79
     },
     {
+      "file": "services/logistics-service/src/domain/engines/cost-allocator.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 79
+    },
+    {
+      "file": "services/catalog-service/src/domain/entities/product-location.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity",
+      "targetCoverage": 95,
+      "lines": 78
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/mark-supplier-invite.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 78
+    },
+    {
+      "file": "services/request-service/src/infrastructure/repositories/prisma-request-access-link.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 78
+    },
+    {
+      "file": "services/request-service/src/infrastructure/repositories/prisma-request-source.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 78
+    },
+    {
       "file": "services/catalog-service/src/domain/entities/product-review.entity.ts",
       "layer": "domain",
       "component": "domain-entity",
       "targetCoverage": 95,
       "lines": 77
+    },
+    {
+      "file": "services/order-service/src/domain/engines/master-order-status.engine.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 77
+    },
+    {
+      "file": "services/payment-service/src/infrastructure/providers/sandbox-simulation/sandbox-webhook-router.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 77
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/providers/routing-cache.decorator.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 76
+    },
+    {
+      "file": "services/notification-service/src/sms/infrastructure/providers/meseji-sms.provider.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 76
+    },
+    {
+      "file": "services/request-service/src/infrastructure/repositories/prisma-request-item.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 76
+    },
+    {
+      "file": "services/catalog-service/src/api/controllers/media.controller.ts",
+      "layer": "api",
+      "component": "api-controller",
+      "targetCoverage": 85,
+      "lines": 75
+    },
+    {
+      "file": "services/order-service/src/infrastructure/database/prisma-verification-audit-log.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 75
+    },
+    {
+      "file": "services/request-service/src/application/services/request-audit.ts",
+      "layer": "application",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 75
     },
     {
       "file": "services/community-service/src/infrastructure/repositories/prisma-report.repository.ts",
@@ -427,6 +1190,13 @@
       "file": "services/enabler-service/src/domain/repositories/enabler-commission.repository.interface.ts",
       "layer": "domain",
       "component": "other",
+      "targetCoverage": 80,
+      "lines": 74
+    },
+    {
+      "file": "services/request-service/src/infrastructure/repositories/prisma-request-supplier.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
       "targetCoverage": 80,
       "lines": 74
     },
@@ -452,6 +1222,13 @@
       "lines": 72
     },
     {
+      "file": "services/payment-service/src/app.ts",
+      "layer": "shared",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 72
+    },
+    {
       "file": "services/kyc-service/src/domain/types/kyc.types.ts",
       "layer": "domain",
       "component": "other",
@@ -473,18 +1250,88 @@
       "lines": 70
     },
     {
-      "file": "services/governance-service/src/infrastructure/inspectors/http-endpoint-inspector.ts",
+      "file": "services/logistics-service/src/domain/entities/route-insertion-candidate.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity",
+      "targetCoverage": 95,
+      "lines": 70
+    },
+    {
+      "file": "services/payment-service/src/infrastructure/providers/internal-bank-transfer.adapter.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 70
+    },
+    {
+      "file": "services/request-service/src/domain/entities/request-assessment.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity",
+      "targetCoverage": 95,
+      "lines": 70
+    },
+    {
+      "file": "services/enabler-service/src/application/use-cases/get-enabler-capability-status.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 69
+    },
+    {
+      "file": "services/logistics-service/src/api/controllers/fulfillment-options.controller.ts",
+      "layer": "api",
+      "component": "api-controller",
+      "targetCoverage": 85,
+      "lines": 69
+    },
+    {
+      "file": "services/order-service/src/infrastructure/repositories/prisma-cod-identity-links.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
       "targetCoverage": 80,
       "lines": 69
     },
     {
-      "file": "services/governance-service/src/infrastructure/filesystem-roundtrip-inspector.ts",
+      "file": "services/request-service/src/domain/entities/request-message.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity",
+      "targetCoverage": 95,
+      "lines": 69
+    },
+    {
+      "file": "services/logistics-service/src/domain/entities/driver-match-audit.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity",
+      "targetCoverage": 95,
+      "lines": 68
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/providers/prisma-driver-candidate.source.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
       "targetCoverage": 80,
       "lines": 68
+    },
+    {
+      "file": "services/kyc-service/src/api/routes/kyc.routes.ts",
+      "layer": "api",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 67
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/buyer-price.engine.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 67
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/post-message.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 66
     },
     {
       "file": "services/support-service/src/infrastructure/messaging/support-outbox.repository.ts",
@@ -508,6 +1355,13 @@
       "lines": 64
     },
     {
+      "file": "services/logistics-service/src/application/services/settlement-lifecycle.service.ts",
+      "layer": "application",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 63
+    },
+    {
       "file": "services/community-service/src/infrastructure/messaging/community-outbox.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
@@ -522,10 +1376,24 @@
       "lines": 62
     },
     {
+      "file": "services/order-service/src/domain/repositories/master-order.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 62
+    },
+    {
       "file": "services/order-service/src/infrastructure/messaging/order-outbox.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
       "targetCoverage": 80,
+      "lines": 62
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/advance-procurement.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
       "lines": 62
     },
     {
@@ -539,13 +1407,6 @@
       "file": "services/order-service/src/infrastructure/repositories/prisma-cod-score-event.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
-      "targetCoverage": 80,
-      "lines": 61
-    },
-    {
-      "file": "services/payout-service/src/api/routes/payout.routes.ts",
-      "layer": "api",
-      "component": "other",
       "targetCoverage": 80,
       "lines": 61
     },
@@ -564,14 +1425,21 @@
       "lines": 60
     },
     {
-      "file": "services/chat-service/src/domain/repositories/conversation.repository.interface.ts",
-      "layer": "domain",
-      "component": "other",
+      "file": "services/community-service/src/infrastructure/repositories/prisma-challenge-solution.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
       "targetCoverage": 80,
       "lines": 59
     },
     {
-      "file": "services/community-service/src/infrastructure/repositories/prisma-challenge-solution.repository.ts",
+      "file": "services/logistics-service/src/domain/engines/delivery-strategy.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 59
+    },
+    {
+      "file": "services/order-service/src/infrastructure/jobs/verification-timeout.job.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
       "targetCoverage": 80,
@@ -585,8 +1453,36 @@
       "lines": 59
     },
     {
+      "file": "services/enabler-service/src/application/use-cases/accept-enabler-terms.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 58
+    },
+    {
+      "file": "services/enabler-service/src/application/use-cases/activate-enabler-capability.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 58
+    },
+    {
       "file": "services/logistics-service/src/application/subscribers/delivery-events.subscriber.ts",
       "layer": "application",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 58
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/register-supplier.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 58
+    },
+    {
+      "file": "services/support-service/src/api/validators/dispute.validator.ts",
+      "layer": "api",
       "component": "other",
       "targetCoverage": 80,
       "lines": 58
@@ -599,10 +1495,24 @@
       "lines": 57
     },
     {
-      "file": "services/user-service/src/application/use-cases/reset-password.use-case.ts",
+      "file": "services/enabler-service/src/application/dto/enabler-lifecycle.dto.ts",
       "layer": "application",
-      "component": "use-case",
-      "targetCoverage": 90,
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 57
+    },
+    {
+      "file": "services/logistics-service/src/domain/services/haversine.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 57
+    },
+    {
+      "file": "services/order-service/src/domain/repositories/cod-trust-score.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
       "lines": 57
     },
     {
@@ -628,6 +1538,20 @@
     },
     {
       "file": "services/community-service/src/infrastructure/repositories/prisma-bookmark.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 55
+    },
+    {
+      "file": "services/order-service/src/infrastructure/repositories/prisma-cod-risk-assessment.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 55
+    },
+    {
+      "file": "services/request-service/src/infrastructure/repositories/prisma-request-message.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
       "targetCoverage": 80,
@@ -669,11 +1593,39 @@
       "lines": 54
     },
     {
-      "file": "services/order-service/src/domain/engines/cod-trust/trust-signal.types.ts",
-      "layer": "domain",
-      "component": "engine",
-      "targetCoverage": 95,
-      "lines": 54
+      "file": "services/chat-service/src/application/use-cases/search-conversations.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 53
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/providers/maps-routing-adapter.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 53
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-pricing-audit-record.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 53
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/cancel-request.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 53
+    },
+    {
+      "file": "services/request-service/src/infrastructure/repositories/prisma-request-assessment.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 53
     },
     {
       "file": "services/community-service/src/infrastructure/repositories/prisma-share.repository.ts",
@@ -704,13 +1656,6 @@
       "lines": 50
     },
     {
-      "file": "services/chat-service/src/application/use-cases/search-conversations.use-case.ts",
-      "layer": "application",
-      "component": "use-case",
-      "targetCoverage": 90,
-      "lines": 50
-    },
-    {
       "file": "services/community-service/src/infrastructure/repositories/prisma-article-review.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
@@ -718,8 +1663,22 @@
       "lines": 50
     },
     {
-      "file": "services/support-service/src/api/validators/dispute.validator.ts",
-      "layer": "api",
+      "file": "services/enabler-service/src/infrastructure/repositories/prisma-enabler-enforcement.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 50
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/delivery-strategy.classifier.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 50
+    },
+    {
+      "file": "shared/auth/token-blacklist.ts",
+      "layer": "shared",
       "component": "other",
       "targetCoverage": 80,
       "lines": 50
@@ -739,6 +1698,20 @@
       "lines": 49
     },
     {
+      "file": "services/chat-service/src/infrastructure/jobs/emerging-patterns.job.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 49
+    },
+    {
+      "file": "services/request-service/src/application/mappers/customer-quote.mapper.ts",
+      "layer": "application",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 49
+    },
+    {
       "file": "src/async-errors.ts",
       "layer": "shared",
       "component": "other",
@@ -746,16 +1719,9 @@
       "lines": 49
     },
     {
-      "file": "services/kyc-service/src/api/controllers/kyc.controller.ts",
-      "layer": "api",
-      "component": "api-controller",
-      "targetCoverage": 85,
-      "lines": 48
-    },
-    {
-      "file": "services/kyc-service/src/api/middleware/kyc-gate.middleware.ts",
-      "layer": "api",
-      "component": "other",
+      "file": "services/logistics-service/src/infrastructure/messaging/delivery-job-event-publisher.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
       "targetCoverage": 80,
       "lines": 48
     },
@@ -781,9 +1747,23 @@
       "lines": 47
     },
     {
+      "file": "services/chat-service/src/domain/repositories/message.repository.interface.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 47
+    },
+    {
       "file": "services/community-service/src/infrastructure/repositories/prisma-peer-endorsement.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 47
+    },
+    {
+      "file": "services/support-service/src/app.ts",
+      "layer": "shared",
+      "component": "other",
       "targetCoverage": 80,
       "lines": 47
     },
@@ -792,6 +1772,13 @@
       "layer": "application",
       "component": "use-case",
       "targetCoverage": 90,
+      "lines": 46
+    },
+    {
+      "file": "services/request-service/src/infrastructure/messaging/request-outbox.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
       "lines": 46
     },
     {
@@ -823,9 +1810,37 @@
       "lines": 45
     },
     {
+      "file": "services/production-service/src/app.ts",
+      "layer": "shared",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 45
+    },
+    {
+      "file": "services/wallet-service/src/app.ts",
+      "layer": "shared",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 45
+    },
+    {
       "file": "services/business-registry-service/src/infrastructure/repositories/prisma-business-compliance.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 44
+    },
+    {
+      "file": "services/logistics-service/src/api/routes/driver-matching.routes.ts",
+      "layer": "api",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 44
+    },
+    {
+      "file": "services/order-service/src/api/routes/master-order.routes.ts",
+      "layer": "api",
+      "component": "other",
       "targetCoverage": 80,
       "lines": 44
     },
@@ -851,7 +1866,7 @@
       "lines": 43
     },
     {
-      "file": "services/order-service/src/infrastructure/repositories/prisma-cod-trust-score.repository.ts",
+      "file": "services/order-service/src/infrastructure/repositories/catalog-product.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
       "targetCoverage": 80,
@@ -867,6 +1882,20 @@
     {
       "file": "services/catalog-service/src/domain/buy-box/signals/seller-trust.signal.ts",
       "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 42
+    },
+    {
+      "file": "services/logistics-service/src/domain/entities/pricing-audit-record.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity",
+      "targetCoverage": 95,
+      "lines": 42
+    },
+    {
+      "file": "services/payment-service/src/api/routes/payment-admin.routes.ts",
+      "layer": "api",
       "component": "other",
       "targetCoverage": 80,
       "lines": 42
@@ -900,6 +1929,13 @@
       "lines": 41
     },
     {
+      "file": "services/logistics-service/src/domain/engines/cost-attribution.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 41
+    },
+    {
       "file": "services/auth-service/src/domain/errors/phone-verification.errors.ts",
       "layer": "domain",
       "component": "other",
@@ -914,6 +1950,13 @@
       "lines": 39
     },
     {
+      "file": "services/chat-service/src/domain/entities/message.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity",
+      "targetCoverage": 95,
+      "lines": 39
+    },
+    {
       "file": "services/order-service/src/infrastructure/repositories/order-payment.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
@@ -921,7 +1964,21 @@
       "lines": 39
     },
     {
+      "file": "services/request-service/src/application/use-cases/get-provider-request-detail.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 38
+    },
+    {
       "file": "services/enabler-service/src/infrastructure/repositories/prisma-enabler-policy.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure",
+      "targetCoverage": 80,
+      "lines": 37
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-fairness-flag.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
       "targetCoverage": 80,
@@ -942,6 +1999,20 @@
       "lines": 36
     },
     {
+      "file": "services/request-service/src/application/use-cases/list-suppliers.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 36
+    },
+    {
+      "file": "services/enabler-service/src/api/validators/enabler-lifecycle.validator.ts",
+      "layer": "api",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 35
+    },
+    {
       "file": "services/logistics-service/src/domain/engines/courier-selection.engine.ts",
       "layer": "domain",
       "component": "engine",
@@ -956,8 +2027,29 @@
       "lines": 35
     },
     {
-      "file": "services/kyc-service/src/api/routes/kyc.routes.ts",
-      "layer": "api",
+      "file": "services/payout-service/src/app.ts",
+      "layer": "shared",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 35
+    },
+    {
+      "file": "services/training-service/src/app.ts",
+      "layer": "shared",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 35
+    },
+    {
+      "file": "services/catalog-service/src/pricing/app.ts",
+      "layer": "shared",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 34
+    },
+    {
+      "file": "services/logistics-service/src/application/services/buyer-profile.service.ts",
+      "layer": "application",
       "component": "other",
       "targetCoverage": 80,
       "lines": 34
@@ -991,14 +2083,35 @@
       "lines": 33
     },
     {
-      "file": "services/chat-service/src/domain/entities/conversation.entity.ts",
+      "file": "services/logistics-service/src/domain/engines/ports/routing-provider.port.ts",
       "layer": "domain",
-      "component": "domain-entity",
+      "component": "engine",
       "targetCoverage": 95,
-      "lines": 32
+      "lines": 33
     },
     {
-      "file": "services/chat-service/src/domain/entities/message.entity.ts",
+      "file": "services/logistics-service/src/domain/repositories/cost-model.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 33
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/assign-request-provider.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 33
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/list-messages.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 33
+    },
+    {
+      "file": "services/chat-service/src/domain/entities/conversation.entity.ts",
       "layer": "domain",
       "component": "domain-entity",
       "targetCoverage": 95,
@@ -1007,6 +2120,20 @@
     {
       "file": "services/chat-service/src/shared/response.ts",
       "layer": "shared",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 32
+    },
+    {
+      "file": "services/order-service/src/domain/repositories/seller-cod-risk.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 32
+    },
+    {
+      "file": "services/payment-service/src/api/routes/payment-methods.routes.ts",
+      "layer": "api",
       "component": "other",
       "targetCoverage": 80,
       "lines": 32
@@ -1040,8 +2167,22 @@
       "lines": 31
     },
     {
+      "file": "shared/business/minimum-basket-value.ts",
+      "layer": "shared",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 31
+    },
+    {
       "file": "services/business-registry-service/src/application/dto/seller-discovery.dto.ts",
       "layer": "application",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 30
+    },
+    {
+      "file": "services/catalog-service/src/domain/repositories/seller-location.repository.interface.ts",
+      "layer": "domain",
       "component": "other",
       "targetCoverage": 80,
       "lines": 30
@@ -1054,16 +2195,16 @@
       "lines": 30
     },
     {
+      "file": "services/logistics-service/src/domain/repositories/buyer-profile.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 30
+    },
+    {
       "file": "services/catalog-service/src/infrastructure/messaging/catalog-outbox.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
-      "targetCoverage": 80,
-      "lines": 29
-    },
-    {
-      "file": "services/chat-service/src/domain/repositories/message.repository.interface.ts",
-      "layer": "domain",
-      "component": "other",
       "targetCoverage": 80,
       "lines": 29
     },
@@ -1075,6 +2216,13 @@
       "lines": 29
     },
     {
+      "file": "services/catalog-service/src/config/media.config.ts",
+      "layer": "shared",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 28
+    },
+    {
       "file": "src/config/normalize-database-url.ts",
       "layer": "shared",
       "component": "other",
@@ -1082,8 +2230,22 @@
       "lines": 28
     },
     {
+      "file": "services/logistics-service/src/domain/repositories/phase5.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 27
+    },
+    {
       "file": "services/order-service/src/domain/repositories/cod-restriction.repository.ts",
       "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 27
+    },
+    {
+      "file": "shared/geo/haversine.ts",
+      "layer": "shared",
       "component": "other",
       "targetCoverage": 80,
       "lines": 27
@@ -1110,10 +2272,10 @@
       "lines": 25
     },
     {
-      "file": "services/order-service/src/domain/engines/cod-trust/trust-score.functions.ts",
-      "layer": "domain",
-      "component": "engine",
-      "targetCoverage": 95,
+      "file": "services/logistics-service/src/api/routes/kpi.routes.ts",
+      "layer": "api",
+      "component": "other",
+      "targetCoverage": 80,
       "lines": 25
     },
     {
@@ -1124,6 +2286,20 @@
       "lines": 25
     },
     {
+      "file": "services/request-service/src/application/use-cases/list-customer-quotes.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 25
+    },
+    {
+      "file": "services/enabler-service/src/domain/repositories/enabler-enforcement.repository.interface.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 24
+    },
+    {
       "file": "services/order-service/src/domain/repositories/cod-score-event.repository.ts",
       "layer": "domain",
       "component": "other",
@@ -1131,22 +2307,15 @@
       "lines": 24
     },
     {
-      "file": "services/chat-service/src/domain/entities/moderation.entity.ts",
+      "file": "services/request-service/src/domain/repositories/request.repository.ts",
       "layer": "domain",
-      "component": "domain-entity",
-      "targetCoverage": 95,
-      "lines": 23
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 24
     },
     {
       "file": "services/enabler-service/src/domain/repositories/promotion-job.repository.interface.ts",
       "layer": "domain",
-      "component": "other",
-      "targetCoverage": 80,
-      "lines": 23
-    },
-    {
-      "file": "services/governance-service/src/cli/run-audit.ts",
-      "layer": "shared",
       "component": "other",
       "targetCoverage": 80,
       "lines": 23
@@ -1159,7 +2328,49 @@
       "lines": 23
     },
     {
+      "file": "services/request-service/src/application/use-cases/list-provider-requests.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 23
+    },
+    {
+      "file": "services/support-service/src/domain/closed-tickets.registry.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 23
+    },
+    {
+      "file": "services/logistics-service/src/domain/repositories/fairness-flag.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 22
+    },
+    {
       "file": "services/catalog-service/src/application/use-cases/clear-anomaly-flag.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 21
+    },
+    {
+      "file": "services/logistics-service/src/domain/repositories/shipment.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 21
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/get-request.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 21
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/list-requests.use-case.ts",
       "layer": "application",
       "component": "use-case",
       "targetCoverage": 90,
@@ -1180,6 +2391,34 @@
       "lines": 21
     },
     {
+      "file": "services/catalog-service/src/campaigns/app.ts",
+      "layer": "shared",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 20
+    },
+    {
+      "file": "services/logistics-service/src/domain/repositories/vehicle-tariff.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 20
+    },
+    {
+      "file": "services/order-service/src/domain/entities/verification-audit-log.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity",
+      "targetCoverage": 95,
+      "lines": 20
+    },
+    {
+      "file": "services/order-service/src/domain/repositories/cod-identity-links.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 20
+    },
+    {
       "file": "services/chat-service/src/infrastructure/redis/presence.store.ts",
       "layer": "infrastructure",
       "component": "infrastructure",
@@ -1187,10 +2426,10 @@
       "lines": 19
     },
     {
-      "file": "services/governance-service/src/api/routes/governance.routes.ts",
-      "layer": "api",
-      "component": "other",
-      "targetCoverage": 80,
+      "file": "services/request-service/src/application/use-cases/get-provider-quote-detail.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
       "lines": 19
     },
     {
@@ -1212,6 +2451,20 @@
       "layer": "application",
       "component": "use-case",
       "targetCoverage": 90,
+      "lines": 18
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/three-engine-breakdown.ts",
+      "layer": "domain",
+      "component": "engine",
+      "targetCoverage": 95,
+      "lines": 18
+    },
+    {
+      "file": "services/order-service/src/domain/repositories/cod-risk-assessment.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
       "lines": 18
     },
     {
@@ -1250,6 +2503,20 @@
       "lines": 17
     },
     {
+      "file": "services/order-service/src/config/verification.config.ts",
+      "layer": "shared",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 17
+    },
+    {
+      "file": "services/request-service/src/domain/repositories/request-quote.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 17
+    },
+    {
       "file": "services/catalog-service/src/domain/buy-box/signals/rate-signals.signal.ts",
       "layer": "domain",
       "component": "other",
@@ -1257,11 +2524,67 @@
       "lines": 16
     },
     {
-      "file": "services/order-service/src/domain/repositories/cod-trust-score.repository.ts",
+      "file": "services/logistics-service/src/domain/repositories/delivery-job.repository.ts",
       "layer": "domain",
       "component": "other",
       "targetCoverage": 80,
       "lines": 16
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/list-procurement.use-case.ts",
+      "layer": "application",
+      "component": "use-case",
+      "targetCoverage": 90,
+      "lines": 16
+    },
+    {
+      "file": "services/catalog-service/src/app.ts",
+      "layer": "shared",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 15
+    },
+    {
+      "file": "services/order-service/src/domain/repositories/verification-audit-log.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 15
+    },
+    {
+      "file": "services/payment-service/src/domain/repositories/payment-method-provider.registry.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 14
+    },
+    {
+      "file": "services/logistics-service/src/domain/repositories/vehicle.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 13
+    },
+    {
+      "file": "services/request-service/src/domain/repositories/request-access-link.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 13
+    },
+    {
+      "file": "services/request-service/src/domain/repositories/request-message.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 12
+    },
+    {
+      "file": "services/request-service/src/domain/repositories/request-procurement.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 12
     },
     {
       "file": "services/production-service/src/application/use-cases/CreateBulkOrderRequest.ts",
@@ -1285,6 +2608,13 @@
       "lines": 11
     },
     {
+      "file": "services/request-service/src/domain/repositories/request-assessment.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 11
+    },
+    {
       "file": "shared/config/service-base-url.ts",
       "layer": "shared",
       "component": "other",
@@ -1292,18 +2622,46 @@
       "lines": 11
     },
     {
-      "file": "services/chat-service/src/domain/repositories/moderation.repository.interface.ts",
+      "file": "services/logistics-service/src/domain/repositories/delivery-group.repository.ts",
       "layer": "domain",
       "component": "other",
       "targetCoverage": 80,
-      "lines": 10
+      "lines": 9
     },
     {
-      "file": "services/governance-service/src/infrastructure/constitution-loader.ts",
-      "layer": "infrastructure",
-      "component": "infrastructure",
+      "file": "services/logistics-service/src/domain/repositories/pricing-config.repository.ts",
+      "layer": "domain",
+      "component": "other",
       "targetCoverage": 80,
-      "lines": 10
+      "lines": 9
+    },
+    {
+      "file": "services/logistics-service/src/domain/repositories/quote.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 9
+    },
+    {
+      "file": "services/request-service/src/domain/repositories/request-source.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 9
+    },
+    {
+      "file": "services/request-service/src/domain/repositories/request-supplier.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 9
+    },
+    {
+      "file": "services/request-service/src/domain/repositories/request-item.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 8
     },
     {
       "file": "shared/middleware/async-handler.ts",
@@ -1311,6 +2669,13 @@
       "component": "other",
       "targetCoverage": 80,
       "lines": 8
+    },
+    {
+      "file": "services/logistics-service/src/domain/repositories/pricing-audit-record.repository.ts",
+      "layer": "domain",
+      "component": "other",
+      "targetCoverage": 80,
+      "lines": 7
     },
     {
       "file": "services/production-service/src/application/interfaces/ICapacityRepository.ts",
@@ -1328,18 +2693,6 @@
     }
   ],
   "coverageViolations": [
-    {
-      "file": "services/analytics-service/src/main.ts",
-      "component": "other",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
-      "file": "services/auth-service/src/2fa/api/main.ts",
-      "component": "other",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
     {
       "file": "services/auth-service/src/2fa/api/middleware/error.middleware.ts",
       "component": "other",
@@ -1359,12 +2712,6 @@
       "actualCoverage": 0
     },
     {
-      "file": "services/auth-service/src/2fa/app.ts",
-      "component": "other",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
       "file": "services/auth-service/src/2fa/application/use-cases/verify-two-factor-setup.use-case.ts",
       "component": "use-case",
       "targetCoverage": 90,
@@ -1379,12 +2726,6 @@
     {
       "file": "services/auth-service/src/2fa/infrastructure/services/logger.service.ts",
       "component": "infrastructure",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
-      "file": "services/auth-service/src/2fa/main.ts",
-      "component": "other",
       "targetCoverage": 80,
       "actualCoverage": 0
     },
@@ -1443,27 +2784,9 @@
       "actualCoverage": 0
     },
     {
-      "file": "services/auth-service/src/main.ts",
-      "component": "other",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
-      "file": "services/auth-service/src/session/api/main.ts",
-      "component": "other",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
       "file": "services/auth-service/src/session/application/use-cases/create-session.use-case.ts",
       "component": "use-case",
       "targetCoverage": 90,
-      "actualCoverage": 0
-    },
-    {
-      "file": "services/auth-service/src/session/main.ts",
-      "component": "other",
-      "targetCoverage": 80,
       "actualCoverage": 0
     },
     {
@@ -1551,12 +2874,6 @@
       "actualCoverage": 0
     },
     {
-      "file": "services/business-registry-service/src/main.ts",
-      "component": "other",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
       "file": "services/business-registry-service/src/test-setup.ts",
       "component": "other",
       "targetCoverage": 80,
@@ -1638,12 +2955,6 @@
       "file": "services/catalog-service/src/application/use-cases/preview-generated-description.use-case.ts",
       "component": "use-case",
       "targetCoverage": 90,
-      "actualCoverage": 0
-    },
-    {
-      "file": "services/catalog-service/src/campaigns/api/main.ts",
-      "component": "other",
-      "targetCoverage": 80,
       "actualCoverage": 0
     },
     {
@@ -1803,12 +3114,6 @@
       "actualCoverage": 0
     },
     {
-      "file": "services/catalog-service/src/pricing/api/main.ts",
-      "component": "other",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
       "file": "services/catalog-service/src/pricing/api/middleware/error.middleware.ts",
       "component": "other",
       "targetCoverage": 80,
@@ -1875,12 +3180,6 @@
       "actualCoverage": 0
     },
     {
-      "file": "services/checkout-service/src/main.ts",
-      "component": "other",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
       "file": "services/checkout-service/src/shared/utilities.ts",
       "component": "other",
       "targetCoverage": 80,
@@ -1913,12 +3212,6 @@
     {
       "file": "services/commission-service/src/infrastructure/services/logger.service.ts",
       "component": "infrastructure",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
-      "file": "services/commission-service/src/main.ts",
-      "component": "other",
       "targetCoverage": 80,
       "actualCoverage": 0
     },
@@ -1983,12 +3276,6 @@
       "actualCoverage": 0
     },
     {
-      "file": "services/community-service/src/main.ts",
-      "component": "other",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
       "file": "services/enabler-service/src/api/routes/index.ts",
       "component": "other",
       "targetCoverage": 80,
@@ -2025,12 +3312,6 @@
       "actualCoverage": 0
     },
     {
-      "file": "services/enabler-service/src/main.ts",
-      "component": "other",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
       "file": "services/inventory-service/src/api/middleware/error.middleware.ts",
       "component": "other",
       "targetCoverage": 80,
@@ -2058,12 +3339,6 @@
       "file": "services/inventory-service/src/domain/engines/stock.engine.ts",
       "component": "engine",
       "targetCoverage": 95,
-      "actualCoverage": 0
-    },
-    {
-      "file": "services/inventory-service/src/index.ts",
-      "component": "other",
-      "targetCoverage": 80,
       "actualCoverage": 0
     },
     {
@@ -2151,18 +3426,6 @@
       "actualCoverage": 0
     },
     {
-      "file": "services/logistics-service/src/main.ts",
-      "component": "other",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
-      "file": "services/maps-service/src/api/main.ts",
-      "component": "other",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
       "file": "services/maps-service/src/api/middleware/error.middleware.ts",
       "component": "other",
       "targetCoverage": 80,
@@ -2176,12 +3439,6 @@
     },
     {
       "file": "services/maps-service/src/api/routes/index.ts",
-      "component": "other",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
-      "file": "services/maps-service/src/app.ts",
       "component": "other",
       "targetCoverage": 80,
       "actualCoverage": 0
@@ -2219,12 +3476,6 @@
     {
       "file": "services/maps-service/src/infrastructure/services/logger.service.ts",
       "component": "infrastructure",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
-      "file": "services/maps-service/src/main.ts",
-      "component": "other",
       "targetCoverage": 80,
       "actualCoverage": 0
     },
@@ -2391,21 +3642,9 @@
       "actualCoverage": 0
     },
     {
-      "file": "services/notification-service/src/main.ts",
-      "component": "other",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
       "file": "services/notification-service/src/sms/api/controllers/sms.controller.ts",
       "component": "api-controller",
       "targetCoverage": 85,
-      "actualCoverage": 0
-    },
-    {
-      "file": "services/notification-service/src/sms/api/main.ts",
-      "component": "other",
-      "targetCoverage": 80,
       "actualCoverage": 0
     },
     {
@@ -2422,12 +3661,6 @@
     },
     {
       "file": "services/notification-service/src/sms/api/routes/health.routes.ts",
-      "component": "other",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
-      "file": "services/notification-service/src/sms/app.ts",
       "component": "other",
       "targetCoverage": 80,
       "actualCoverage": 0
@@ -2459,12 +3692,6 @@
     {
       "file": "services/notification-service/src/sms/infrastructure/services/logger.service.ts",
       "component": "infrastructure",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
-      "file": "services/notification-service/src/sms/main.ts",
-      "component": "other",
       "targetCoverage": 80,
       "actualCoverage": 0
     },
@@ -2553,20 +3780,8 @@
       "actualCoverage": 0
     },
     {
-      "file": "services/order-service/src/infrastructure/providers/paymentGateway.adapter.ts",
-      "component": "infrastructure",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
       "file": "services/order-service/src/infrastructure/repositories/saga.repository.ts",
       "component": "infrastructure",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
-      "file": "services/order-service/src/main.ts",
-      "component": "other",
       "targetCoverage": 80,
       "actualCoverage": 0
     },
@@ -2619,12 +3834,6 @@
       "actualCoverage": 0
     },
     {
-      "file": "services/payment-service/src/index.ts",
-      "component": "other",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
       "file": "services/payout-service/src/api/controllers/payout.controller.ts",
       "component": "api-controller",
       "targetCoverage": 85,
@@ -2667,12 +3876,6 @@
       "actualCoverage": 0
     },
     {
-      "file": "services/payout-service/src/index.ts",
-      "component": "other",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
       "file": "services/payout-service/src/infrastructure/messaging/outbox-processor.ts",
       "component": "infrastructure",
       "targetCoverage": 80,
@@ -2700,12 +3903,6 @@
       "file": "services/production-service/src/api/controllers/ProductionController.ts",
       "component": "api-controller",
       "targetCoverage": 85,
-      "actualCoverage": 0
-    },
-    {
-      "file": "services/production-service/src/api/main.ts",
-      "component": "other",
-      "targetCoverage": 80,
       "actualCoverage": 0
     },
     {
@@ -2841,12 +4038,6 @@
       "actualCoverage": 0
     },
     {
-      "file": "services/support-service/src/api/main.ts",
-      "component": "other",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
       "file": "services/support-service/src/api/routes/ticket.routes.ts",
       "component": "other",
       "targetCoverage": 80,
@@ -2910,12 +4101,6 @@
       "file": "services/training-service/src/api/controllers/health.controller.ts",
       "component": "api-controller",
       "targetCoverage": 85,
-      "actualCoverage": 0
-    },
-    {
-      "file": "services/training-service/src/api/main.ts",
-      "component": "other",
-      "targetCoverage": 80,
       "actualCoverage": 0
     },
     {
@@ -2993,12 +4178,6 @@
     {
       "file": "services/training-service/src/infrastructure/monitoring/metrics.ts",
       "component": "infrastructure",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
-      "file": "services/training-service/src/main.ts",
-      "component": "other",
       "targetCoverage": 80,
       "actualCoverage": 0
     },
@@ -3106,12 +4285,6 @@
     },
     {
       "file": "services/wallet-service/src/container.ts",
-      "component": "other",
-      "targetCoverage": 80,
-      "actualCoverage": 0
-    },
-    {
-      "file": "services/wallet-service/src/index.ts",
       "component": "other",
       "targetCoverage": 80,
       "actualCoverage": 0
@@ -3672,12 +4845,6 @@
       "file": "services/notification-service/src/domain/entities/notification-preference.entity.ts",
       "component": "domain-entity",
       "targetCoverage": 95,
-      "actualCoverage": 43.75
-    },
-    {
-      "file": "services/payment-service/src/infrastructure/providers/paymentGateway.adapter.ts",
-      "component": "infrastructure",
-      "targetCoverage": 80,
       "actualCoverage": 43.75
     },
     {
@@ -4315,12 +5482,6 @@
       "component": "saga",
       "targetCoverage": 95,
       "actualCoverage": 73.07
-    },
-    {
-      "file": "services/logistics-service/src/simple-main.ts",
-      "component": "other",
-      "targetCoverage": 80,
-      "actualCoverage": 73.17
     },
     {
       "file": "services/payout-service/src/domain/policies/payout.policy.ts",
@@ -5061,7 +6222,18 @@
       "actualCoverage": 97.36
     }
   ],
-  "domainPurityViolations": [],
+  "domainPurityViolations": [
+    {
+      "file": "services/chat-service/src/domain/risk/pattern-miner.ts",
+      "import": "@prisma/client",
+      "reason": "forbidden external dependency in domain layer"
+    },
+    {
+      "file": "services/logistics-service/src/domain/services/zone-classifier.ts",
+      "import": "../../infrastructure/providers/local-tanzania-locations",
+      "reason": "domain depends on outward layer"
+    }
+  ],
   "domainTestPurityViolations": [],
   "filesWithoutCoverageData": [
     {
@@ -5190,7 +6362,17 @@
       "component": "other"
     },
     {
+      "file": "services/auth-service/src/application/use-cases/forgot-password.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
       "file": "services/auth-service/src/application/use-cases/initiate-phone-verification.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/auth-service/src/application/use-cases/reset-password.use-case.ts",
       "layer": "application",
       "component": "use-case"
     },
@@ -5251,6 +6433,11 @@
     },
     {
       "file": "services/auth-service/src/infrastructure/repositories/prisma-user-index.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/auth-service/src/infrastructure/services/email.service.ts",
       "layer": "infrastructure",
       "component": "infrastructure"
     },
@@ -5350,11 +6537,6 @@
       "component": "infrastructure"
     },
     {
-      "file": "services/catalog-service/catalogService.ts",
-      "layer": "shared",
-      "component": "other"
-    },
-    {
       "file": "services/catalog-service/index.ts",
       "layer": "shared",
       "component": "other"
@@ -5365,7 +6547,17 @@
       "component": "api-controller"
     },
     {
+      "file": "services/catalog-service/src/api/controllers/media.controller.ts",
+      "layer": "api",
+      "component": "api-controller"
+    },
+    {
       "file": "services/catalog-service/src/api/controllers/review.controller.ts",
+      "layer": "api",
+      "component": "api-controller"
+    },
+    {
+      "file": "services/catalog-service/src/api/controllers/seller-location.controller.ts",
       "layer": "api",
       "component": "api-controller"
     },
@@ -5381,6 +6573,11 @@
     },
     {
       "file": "services/catalog-service/src/api/routes/review.routes.ts",
+      "layer": "api",
+      "component": "other"
+    },
+    {
+      "file": "services/catalog-service/src/api/routes/seller-location.routes.ts",
       "layer": "api",
       "component": "other"
     },
@@ -5445,7 +6642,22 @@
       "component": "use-case"
     },
     {
+      "file": "services/catalog-service/src/application/use-cases/manage-product-inventory.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/catalog-service/src/application/use-cases/manage-seller-locations.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
       "file": "services/catalog-service/src/application/use-cases/moderate-review.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/catalog-service/src/application/use-cases/select-fulfillment-location.use-case.ts",
       "layer": "application",
       "component": "use-case"
     },
@@ -5472,6 +6684,11 @@
     {
       "file": "services/catalog-service/src/campaigns/domain/repositories/campaign.repository.interface.ts",
       "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/catalog-service/src/config/media.config.ts",
+      "layer": "shared",
       "component": "other"
     },
     {
@@ -5555,9 +6772,39 @@
       "component": "other"
     },
     {
+      "file": "services/catalog-service/src/domain/engines/attribute-alias-resolver.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/catalog-service/src/domain/engines/fulfillment-location-selector.engine.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/catalog-service/src/domain/entities/product-location.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
       "file": "services/catalog-service/src/domain/entities/product-review.entity.ts",
       "layer": "domain",
       "component": "domain-entity"
+    },
+    {
+      "file": "services/catalog-service/src/domain/entities/seller-location.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/catalog-service/src/domain/policies/consistency-validation.policy.ts",
+      "layer": "domain",
+      "component": "policy"
+    },
+    {
+      "file": "services/catalog-service/src/domain/policies/image-quality.policy.ts",
+      "layer": "domain",
+      "component": "policy"
     },
     {
       "file": "services/catalog-service/src/domain/repositories/product-review.repository.interface.ts",
@@ -5566,6 +6813,11 @@
     },
     {
       "file": "services/catalog-service/src/domain/repositories/repository.interfaces.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/catalog-service/src/domain/repositories/seller-location.repository.interface.ts",
       "layer": "domain",
       "component": "other"
     },
@@ -5580,7 +6832,27 @@
       "component": "other"
     },
     {
+      "file": "services/catalog-service/src/domain/value-objects/product-content-version.value-object.ts",
+      "layer": "domain",
+      "component": "value-object"
+    },
+    {
+      "file": "services/catalog-service/src/domain/value-objects/product-lifecycle.value-object.ts",
+      "layer": "domain",
+      "component": "value-object"
+    },
+    {
+      "file": "services/catalog-service/src/domain/value-objects/product-quality-report.value-object.ts",
+      "layer": "domain",
+      "component": "value-object"
+    },
+    {
       "file": "services/catalog-service/src/domain/value-objects/seller-listing-input.value-object.ts",
+      "layer": "domain",
+      "component": "value-object"
+    },
+    {
+      "file": "services/catalog-service/src/domain/value-objects/structured-product-content.value-object.ts",
       "layer": "domain",
       "component": "value-object"
     },
@@ -5596,6 +6868,11 @@
     },
     {
       "file": "services/catalog-service/src/infrastructure/jobs/rolling-average.job.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/catalog-service/src/infrastructure/media/product-media.store.ts",
       "layer": "infrastructure",
       "component": "infrastructure"
     },
@@ -5690,6 +6967,11 @@
       "component": "other"
     },
     {
+      "file": "services/chat-service/src/application/use-cases/admin-moderation.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
       "file": "services/chat-service/src/application/use-cases/get-conversation-list.use-case.ts",
       "layer": "application",
       "component": "use-case"
@@ -5721,6 +7003,11 @@
     },
     {
       "file": "services/chat-service/src/application/use-cases/send-message.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/chat-service/src/application/use-cases/suspicious-phrase.use-case.ts",
       "layer": "application",
       "component": "use-case"
     },
@@ -5760,7 +7047,27 @@
       "component": "other"
     },
     {
+      "file": "services/chat-service/src/domain/risk/pattern-miner.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/chat-service/src/domain/risk/phone-detector.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
       "file": "services/chat-service/src/domain/risk/risk-engine.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/chat-service/src/domain/risk/suspicious-phrase.provider.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/chat-service/src/domain/risk/suspicious-phrases.ts",
       "layer": "domain",
       "component": "other"
     },
@@ -5770,7 +7077,17 @@
       "component": "infrastructure"
     },
     {
+      "file": "services/chat-service/src/infrastructure/jobs/emerging-patterns.job.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
       "file": "services/chat-service/src/infrastructure/jobs/marketplace-intelligence.job.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/chat-service/src/infrastructure/jobs/order-chat.handler.ts",
       "layer": "infrastructure",
       "component": "infrastructure"
     },
@@ -5855,6 +7172,16 @@
       "component": "other"
     },
     {
+      "file": "services/checkout-service/src/application/use-cases/get-delivery-options.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/checkout-service/src/application/use-cases/multi-seller-checkout.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
       "file": "services/checkout-service/src/infrastructure/database/prisma-client.ts",
       "layer": "infrastructure",
       "component": "infrastructure"
@@ -5880,9 +7207,14 @@
       "component": "infrastructure"
     },
     {
-      "file": "services/commission-service/commissionService.ts",
-      "layer": "shared",
-      "component": "other"
+      "file": "services/checkout-service/src/infrastructure/services/catalog-price-validator.service.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/checkout-service/src/infrastructure/services/quote-validation.service.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
     },
     {
       "file": "services/commission-service/index.ts",
@@ -6005,6 +7337,11 @@
       "component": "api-controller"
     },
     {
+      "file": "services/enabler-service/src/api/controllers/enabler-lifecycle.controller.ts",
+      "layer": "api",
+      "component": "api-controller"
+    },
+    {
       "file": "services/enabler-service/src/api/controllers/promotion-job.controller.ts",
       "layer": "api",
       "component": "api-controller"
@@ -6015,12 +7352,22 @@
       "component": "api-controller"
     },
     {
+      "file": "services/enabler-service/src/api/middleware/enabler-lifecycle-authorization.middleware.ts",
+      "layer": "api",
+      "component": "other"
+    },
+    {
       "file": "services/enabler-service/src/api/routes/maintenance.routes.ts",
       "layer": "api",
       "component": "other"
     },
     {
       "file": "services/enabler-service/src/api/validators/earnings.validator.ts",
+      "layer": "api",
+      "component": "other"
+    },
+    {
+      "file": "services/enabler-service/src/api/validators/enabler-lifecycle.validator.ts",
       "layer": "api",
       "component": "other"
     },
@@ -6040,6 +7387,11 @@
       "component": "other"
     },
     {
+      "file": "services/enabler-service/src/application/dto/enabler-lifecycle.dto.ts",
+      "layer": "application",
+      "component": "other"
+    },
+    {
       "file": "services/enabler-service/src/application/dto/enabler-referral.dto.ts",
       "layer": "application",
       "component": "other"
@@ -6050,12 +7402,37 @@
       "component": "other"
     },
     {
+      "file": "services/enabler-service/src/application/use-cases/accept-enabler-terms.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
       "file": "services/enabler-service/src/application/use-cases/accept-promotion-job.use-case.ts",
       "layer": "application",
       "component": "use-case"
     },
     {
+      "file": "services/enabler-service/src/application/use-cases/activate-enabler-capability.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/enabler-service/src/application/use-cases/apply-enabler-enforcement.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/enabler-service/src/application/use-cases/browse-enabler-hub.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
       "file": "services/enabler-service/src/application/use-cases/generate-enabler-referral-link.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/enabler-service/src/application/use-cases/get-enabler-capability-status.use-case.ts",
       "layer": "application",
       "component": "use-case"
     },
@@ -6090,12 +7467,22 @@
       "component": "domain-entity"
     },
     {
+      "file": "services/enabler-service/src/domain/policies/enabler-lifecycle.policy.ts",
+      "layer": "domain",
+      "component": "policy"
+    },
+    {
       "file": "services/enabler-service/src/domain/repositories/enabler-analytics.repository.interface.ts",
       "layer": "domain",
       "component": "other"
     },
     {
       "file": "services/enabler-service/src/domain/repositories/enabler-commission.repository.interface.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/enabler-service/src/domain/repositories/enabler-enforcement.repository.interface.ts",
       "layer": "domain",
       "component": "other"
     },
@@ -6140,6 +7527,11 @@
       "component": "infrastructure"
     },
     {
+      "file": "services/enabler-service/src/infrastructure/repositories/prisma-enabler-enforcement.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
       "file": "services/enabler-service/src/infrastructure/repositories/prisma-enabler-policy.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure"
@@ -6155,94 +7547,9 @@
       "component": "infrastructure"
     },
     {
-      "file": "services/governance-service/index.ts",
-      "layer": "shared",
-      "component": "other"
-    },
-    {
-      "file": "services/governance-service/src/api/controllers/governance.controller.ts",
-      "layer": "api",
-      "component": "api-controller"
-    },
-    {
-      "file": "services/governance-service/src/api/routes/governance.routes.ts",
-      "layer": "api",
-      "component": "other"
-    },
-    {
-      "file": "services/governance-service/src/application/governance-runner.ts",
-      "layer": "application",
-      "component": "other"
-    },
-    {
-      "file": "services/governance-service/src/bootstrap.ts",
-      "layer": "shared",
-      "component": "other"
-    },
-    {
-      "file": "services/governance-service/src/cli/run-audit.ts",
-      "layer": "shared",
-      "component": "other"
-    },
-    {
-      "file": "services/governance-service/src/domain/governance.types.ts",
-      "layer": "domain",
-      "component": "other"
-    },
-    {
-      "file": "services/governance-service/src/domain/phase-certification.ts",
-      "layer": "domain",
-      "component": "other"
-    },
-    {
-      "file": "services/governance-service/src/infrastructure/constitution-loader.ts",
+      "file": "services/enabler-service/src/infrastructure/services/enabler-training-gate.service.ts",
       "layer": "infrastructure",
       "component": "infrastructure"
-    },
-    {
-      "file": "services/governance-service/src/infrastructure/filesystem-roundtrip-inspector.ts",
-      "layer": "infrastructure",
-      "component": "infrastructure"
-    },
-    {
-      "file": "services/governance-service/src/infrastructure/governance-report-store.ts",
-      "layer": "infrastructure",
-      "component": "infrastructure"
-    },
-    {
-      "file": "services/governance-service/src/infrastructure/inspectors/auth-user-sync-inspector.ts",
-      "layer": "infrastructure",
-      "component": "infrastructure"
-    },
-    {
-      "file": "services/governance-service/src/infrastructure/inspectors/http-endpoint-inspector.ts",
-      "layer": "infrastructure",
-      "component": "infrastructure"
-    },
-    {
-      "file": "services/governance-service/src/infrastructure/inspectors/index-roundtrip-inspector.ts",
-      "layer": "infrastructure",
-      "component": "infrastructure"
-    },
-    {
-      "file": "services/governance-service/src/infrastructure/inspectors/node-script-report-inspector.ts",
-      "layer": "infrastructure",
-      "component": "infrastructure"
-    },
-    {
-      "file": "services/governance-service/src/infrastructure/inspectors/service-readiness-inspector.ts",
-      "layer": "infrastructure",
-      "component": "infrastructure"
-    },
-    {
-      "file": "services/governance-service/src/infrastructure/inspectors/wallet-ledger-inspector.ts",
-      "layer": "infrastructure",
-      "component": "infrastructure"
-    },
-    {
-      "file": "services/governance-service/src/main.ts",
-      "layer": "shared",
-      "component": "other"
     },
     {
       "file": "services/index.ts",
@@ -6390,6 +7697,16 @@
       "component": "other"
     },
     {
+      "file": "services/logistics-service/src/api/controllers/fulfillment-options.controller.ts",
+      "layer": "api",
+      "component": "api-controller"
+    },
+    {
+      "file": "services/logistics-service/src/api/controllers/quote-pricing.controller.ts",
+      "layer": "api",
+      "component": "api-controller"
+    },
+    {
       "file": "services/logistics-service/src/api/dtos/courier.dto.ts",
       "layer": "api",
       "component": "other"
@@ -6400,7 +7717,22 @@
       "component": "other"
     },
     {
+      "file": "services/logistics-service/src/api/routes/driver-matching.routes.ts",
+      "layer": "api",
+      "component": "other"
+    },
+    {
+      "file": "services/logistics-service/src/api/routes/kpi.routes.ts",
+      "layer": "api",
+      "component": "other"
+    },
+    {
       "file": "services/logistics-service/src/api/routes/maintenance.routes.ts",
+      "layer": "api",
+      "component": "other"
+    },
+    {
+      "file": "services/logistics-service/src/api/routes/quote.routes.ts",
       "layer": "api",
       "component": "other"
     },
@@ -6425,7 +7757,32 @@
       "component": "saga"
     },
     {
+      "file": "services/logistics-service/src/application/services/buyer-profile.service.ts",
+      "layer": "application",
+      "component": "other"
+    },
+    {
+      "file": "services/logistics-service/src/application/services/consolidation-orchestrator.service.ts",
+      "layer": "application",
+      "component": "other"
+    },
+    {
       "file": "services/logistics-service/src/application/services/courier-assignment.service.ts",
+      "layer": "application",
+      "component": "other"
+    },
+    {
+      "file": "services/logistics-service/src/application/services/logistics-kpi.service.ts",
+      "layer": "application",
+      "component": "other"
+    },
+    {
+      "file": "services/logistics-service/src/application/services/settlement-lifecycle.service.ts",
+      "layer": "application",
+      "component": "other"
+    },
+    {
+      "file": "services/logistics-service/src/application/services/shipment-pool.service.ts",
       "layer": "application",
       "component": "other"
     },
@@ -6440,7 +7797,57 @@
       "component": "other"
     },
     {
+      "file": "services/logistics-service/src/application/use-cases/assign-shipments-to-jobs.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/logistics-service/src/application/use-cases/create-order-shipments.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/logistics-service/src/application/use-cases/evaluate-route-insertions.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/logistics-service/src/application/use-cases/execute-route-insertion.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/logistics-service/src/application/use-cases/generate-fulfillment-options.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
       "file": "services/logistics-service/src/application/use-cases/index.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/logistics-service/src/application/use-cases/match-drivers.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/logistics-service/src/application/use-cases/record-cost-adjustment.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/logistics-service/src/application/use-cases/record-job-completion-ledger.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/logistics-service/src/application/use-cases/request-delivery-quote.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/logistics-service/src/application/use-cases/settle-delivery-job.use-case.ts",
       "layer": "application",
       "component": "use-case"
     },
@@ -6450,7 +7857,87 @@
       "component": "algorithm"
     },
     {
+      "file": "services/logistics-service/src/domain/engines/buyer-price.engine.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/consolidation.engine.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/cost-allocator.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/cost-attribution.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/courier-cost-calculator.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
       "file": "services/logistics-service/src/domain/engines/courier-selection.engine.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/delivery-job-events.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/delivery-pricing.engine.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/delivery-strategy.classifier.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/delivery-strategy.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/driver-compensation.engine.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/driver-matching.engine.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/fairness.engine.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/fulfillment-cost.engine.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/fulfillment-option.engine.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/option-ranking.engine.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/pool-clustering.ts",
       "layer": "domain",
       "component": "engine"
     },
@@ -6461,6 +7948,11 @@
     },
     {
       "file": "services/logistics-service/src/domain/engines/ports/route-optimization.port.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/ports/routing-provider.port.ts",
       "layer": "domain",
       "component": "engine"
     },
@@ -6480,7 +7972,77 @@
       "component": "engine"
     },
     {
+      "file": "services/logistics-service/src/domain/engines/route-insertion.engine.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/logistics-service/src/domain/engines/three-engine-breakdown.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/logistics-service/src/domain/entities/cost-adjustment.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/logistics-service/src/domain/entities/delivery-group.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/logistics-service/src/domain/entities/delivery-job.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
       "file": "services/logistics-service/src/domain/entities/delivery.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/logistics-service/src/domain/entities/driver-match-audit.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/logistics-service/src/domain/entities/fulfillment-commitment.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/logistics-service/src/domain/entities/ledger-entry.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/logistics-service/src/domain/entities/pricing-audit-record.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/logistics-service/src/domain/entities/quote.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/logistics-service/src/domain/entities/route-insertion-candidate.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/logistics-service/src/domain/entities/shipment.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/logistics-service/src/domain/entities/vehicle-tariff.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/logistics-service/src/domain/entities/vehicle.entity.ts",
       "layer": "domain",
       "component": "domain-entity"
     },
@@ -6500,9 +8062,89 @@
       "component": "policy"
     },
     {
+      "file": "services/logistics-service/src/domain/repositories/buyer-profile.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/logistics-service/src/domain/repositories/cost-model.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/logistics-service/src/domain/repositories/delivery-group.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/logistics-service/src/domain/repositories/delivery-job.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/logistics-service/src/domain/repositories/fairness-flag.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
       "file": "services/logistics-service/src/domain/repositories/index.ts",
       "layer": "domain",
       "component": "other"
+    },
+    {
+      "file": "services/logistics-service/src/domain/repositories/phase5.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/logistics-service/src/domain/repositories/pricing-audit-record.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/logistics-service/src/domain/repositories/pricing-config.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/logistics-service/src/domain/repositories/quote.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/logistics-service/src/domain/repositories/shipment.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/logistics-service/src/domain/repositories/vehicle-tariff.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/logistics-service/src/domain/repositories/vehicle.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/logistics-service/src/domain/services/haversine.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/logistics-service/src/domain/services/zone-classifier.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/logistics-service/src/domain/value-objects/optimization-config.value-object.ts",
+      "layer": "domain",
+      "component": "value-object"
+    },
+    {
+      "file": "services/logistics-service/src/domain/value-objects/pricing-config.value-object.ts",
+      "layer": "domain",
+      "component": "value-object"
     },
     {
       "file": "services/logistics-service/src/infrastructure/circuit-breaker.ts",
@@ -6511,6 +8153,11 @@
     },
     {
       "file": "services/logistics-service/src/infrastructure/database/prisma-client.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/messaging/delivery-job-event-publisher.ts",
       "layer": "infrastructure",
       "component": "infrastructure"
     },
@@ -6525,7 +8172,47 @@
       "component": "infrastructure"
     },
     {
+      "file": "services/logistics-service/src/infrastructure/providers/local-tanzania-locations.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/providers/maps-routing-adapter.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/providers/prisma-driver-candidate.source.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/providers/routing-cache.decorator.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
       "file": "services/logistics-service/src/infrastructure/repositories/index.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-buyer-profile.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-cost-model.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-delivery-group.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-delivery-job.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure"
     },
@@ -6540,7 +8227,47 @@
       "component": "infrastructure"
     },
     {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-fairness-flag.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-optimization-config.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-phase5.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-pricing-audit-record.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-pricing-config.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-quote.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-shipment.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
       "file": "services/logistics-service/src/infrastructure/repositories/prisma-tracking.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/logistics-service/src/infrastructure/repositories/prisma-vehicle-tariff.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure"
     },
@@ -6591,11 +8318,6 @@
     },
     {
       "file": "services/notification-service/index.ts",
-      "layer": "shared",
-      "component": "other"
-    },
-    {
-      "file": "services/notification-service/notification-service/notificationService.ts",
       "layer": "shared",
       "component": "other"
     },
@@ -6685,6 +8407,11 @@
       "component": "other"
     },
     {
+      "file": "services/notification-service/src/sms/infrastructure/providers/meseji-sms.provider.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
       "file": "services/notification-service/src/sms/infrastructure/providers/sms-provider.interface.ts",
       "layer": "infrastructure",
       "component": "infrastructure"
@@ -6700,7 +8427,22 @@
       "component": "other"
     },
     {
+      "file": "services/order-service/src/api/controllers/master-order.controller.ts",
+      "layer": "api",
+      "component": "api-controller"
+    },
+    {
+      "file": "services/order-service/src/api/controllers/verification.controller.ts",
+      "layer": "api",
+      "component": "api-controller"
+    },
+    {
       "file": "services/order-service/src/api/routes/maintenance.routes.ts",
+      "layer": "api",
+      "component": "other"
+    },
+    {
+      "file": "services/order-service/src/api/routes/master-order.routes.ts",
       "layer": "api",
       "component": "other"
     },
@@ -6715,6 +8457,56 @@
       "component": "other"
     },
     {
+      "file": "services/order-service/src/application/use-cases/admin-order-actions.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/order-service/src/application/use-cases/admin-query.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/order-service/src/application/use-cases/buyer-confirm-checkout.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/order-service/src/application/use-cases/mark-orders-overdue.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/order-service/src/application/use-cases/seller-decline-stock.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/order-service/src/application/use-cases/seller-verify-stock.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/order-service/src/config/verification.config.ts",
+      "layer": "shared",
+      "component": "other"
+    },
+    {
+      "file": "services/order-service/src/domain/engines/cod-trust/identity-graph.service.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/order-service/src/domain/engines/cod-trust/per-order-risk.assessor.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/order-service/src/domain/engines/cod-trust/seller-cod-risk.service.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
       "file": "services/order-service/src/domain/engines/cod-trust/trust-score.functions.ts",
       "layer": "domain",
       "component": "engine"
@@ -6725,12 +8517,42 @@
       "component": "engine"
     },
     {
+      "file": "services/order-service/src/domain/engines/cod-trust/ward-centroid.resolver.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/order-service/src/domain/engines/enhanced-cod-eligibility.engine.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
+      "file": "services/order-service/src/domain/engines/master-order-status.engine.ts",
+      "layer": "domain",
+      "component": "engine"
+    },
+    {
       "file": "services/order-service/src/domain/engines/progressive-cod-eligibility.engine.ts",
       "layer": "domain",
       "component": "engine"
     },
     {
+      "file": "services/order-service/src/domain/entities/verification-audit-log.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/order-service/src/domain/repositories/cod-identity-links.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
       "file": "services/order-service/src/domain/repositories/cod-restriction.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/order-service/src/domain/repositories/cod-risk-assessment.repository.ts",
       "layer": "domain",
       "component": "other"
     },
@@ -6745,12 +8567,67 @@
       "component": "other"
     },
     {
+      "file": "services/order-service/src/domain/repositories/master-order.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
       "file": "services/order-service/src/domain/repositories/order.repository.ts",
       "layer": "domain",
       "component": "other"
     },
     {
+      "file": "services/order-service/src/domain/repositories/seller-cod-risk.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/order-service/src/domain/repositories/verification-audit-log.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/order-service/src/domain/state-machine/verification-state-machine.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/order-service/src/infrastructure/database/prisma-verification-audit-log.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/order-service/src/infrastructure/jobs/cod-trust-backfill.job.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/order-service/src/infrastructure/jobs/verification-timeout.job.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/order-service/src/infrastructure/messaging/dispute-raised.handler.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/order-service/src/infrastructure/messaging/order-delivery-confirmed.handler.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
       "file": "services/order-service/src/infrastructure/messaging/order-outbox.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/order-service/src/infrastructure/providers/selcom-pesa.adapter.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/order-service/src/infrastructure/repositories/catalog-product.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure"
     },
@@ -6765,7 +8642,17 @@
       "component": "infrastructure"
     },
     {
+      "file": "services/order-service/src/infrastructure/repositories/prisma-cod-identity-links.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
       "file": "services/order-service/src/infrastructure/repositories/prisma-cod-restriction.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/order-service/src/infrastructure/repositories/prisma-cod-risk-assessment.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure"
     },
@@ -6780,7 +8667,17 @@
       "component": "infrastructure"
     },
     {
+      "file": "services/order-service/src/infrastructure/repositories/prisma-master-order.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
       "file": "services/order-service/src/infrastructure/repositories/prisma-order-saga-log.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/order-service/src/infrastructure/repositories/prisma-seller-cod-risk.repository.ts",
       "layer": "infrastructure",
       "component": "infrastructure"
     },
@@ -6790,7 +8687,17 @@
       "component": "other"
     },
     {
-      "file": "services/payment-service/src/api/controllers/paymentGateway-webhook.utils.ts",
+      "file": "services/payment-service/src/api/controllers/payment-admin.controller.ts",
+      "layer": "api",
+      "component": "api-controller"
+    },
+    {
+      "file": "services/payment-service/src/api/controllers/payment-methods.controller.ts",
+      "layer": "api",
+      "component": "api-controller"
+    },
+    {
+      "file": "services/payment-service/src/api/controllers/payment-webhook.utils.ts",
       "layer": "api",
       "component": "api-controller"
     },
@@ -6800,7 +8707,17 @@
       "component": "other"
     },
     {
-      "file": "services/payment-service/src/api/routes/paymentGateway-webhook.middleware.ts",
+      "file": "services/payment-service/src/api/routes/payment-admin.routes.ts",
+      "layer": "api",
+      "component": "other"
+    },
+    {
+      "file": "services/payment-service/src/api/routes/payment-methods.routes.ts",
+      "layer": "api",
+      "component": "other"
+    },
+    {
+      "file": "services/payment-service/src/api/routes/payment-webhook.middleware.ts",
       "layer": "api",
       "component": "other"
     },
@@ -6820,12 +8737,27 @@
       "component": "other"
     },
     {
+      "file": "services/payment-service/src/application/use-cases/handle-payment-webhook.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/payment-service/src/config/payment-methods.config.ts",
+      "layer": "shared",
+      "component": "other"
+    },
+    {
       "file": "services/payment-service/src/domain/events/payment.events.ts",
       "layer": "domain",
       "component": "other"
     },
     {
       "file": "services/payment-service/src/domain/repositories/fraud.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/payment-service/src/domain/repositories/payment-method-provider.registry.ts",
       "layer": "domain",
       "component": "other"
     },
@@ -6846,6 +8778,51 @@
     },
     {
       "file": "services/payment-service/src/infrastructure/messaging/event-bus.interface.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/payment-service/src/infrastructure/providers/internal-bank-transfer.adapter.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/payment-service/src/infrastructure/providers/internal-wallet.adapter.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/payment-service/src/infrastructure/providers/payment-provider.registry.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/payment-service/src/infrastructure/providers/sandbox-simulation/index.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/payment-service/src/infrastructure/providers/sandbox-simulation/sandbox-behavior.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/payment-service/src/infrastructure/providers/sandbox-simulation/sandbox-ledger.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/payment-service/src/infrastructure/providers/sandbox-simulation/sandbox-simulator.adapter.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/payment-service/src/infrastructure/providers/sandbox-simulation/sandbox-webhook-router.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/payment-service/src/infrastructure/providers/selcom-pesa.adapter.ts",
       "layer": "infrastructure",
       "component": "infrastructure"
     },
@@ -7005,6 +8982,311 @@
       "component": "infrastructure"
     },
     {
+      "file": "services/request-service/index.ts",
+      "layer": "shared",
+      "component": "other"
+    },
+    {
+      "file": "services/request-service/src/api/controllers/provider-request.controller.ts",
+      "layer": "api",
+      "component": "api-controller"
+    },
+    {
+      "file": "services/request-service/src/api/controllers/request.controller.ts",
+      "layer": "api",
+      "component": "api-controller"
+    },
+    {
+      "file": "services/request-service/src/api/routes/health.routes.ts",
+      "layer": "api",
+      "component": "other"
+    },
+    {
+      "file": "services/request-service/src/api/routes/request.routes.ts",
+      "layer": "api",
+      "component": "other"
+    },
+    {
+      "file": "services/request-service/src/application/mappers/customer-quote.mapper.ts",
+      "layer": "application",
+      "component": "other"
+    },
+    {
+      "file": "services/request-service/src/application/services/request-audit.ts",
+      "layer": "application",
+      "component": "other"
+    },
+    {
+      "file": "services/request-service/src/application/services/request-expiration-sweeper.ts",
+      "layer": "application",
+      "component": "other"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/advance-procurement.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/assess-request.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/assign-request-provider.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/cancel-request.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/convert-quote-to-order.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/create-quote.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/create-request.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/generate-assessment-link.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/get-demand-analytics.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/get-provider-quote-detail.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/get-provider-request-detail.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/get-request.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/list-customer-quotes.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/list-messages.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/list-procurement.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/list-provider-requests.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/list-requests.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/list-suppliers.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/mark-supplier-invite.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/post-message.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/publish-quote.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/register-supplier.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/resolve-assessment-link.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/application/use-cases/set-item-source.use-case.ts",
+      "layer": "application",
+      "component": "use-case"
+    },
+    {
+      "file": "services/request-service/src/domain/entities/request-access-link.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/request-service/src/domain/entities/request-assessment.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/request-service/src/domain/entities/request-item.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/request-service/src/domain/entities/request-message.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/request-service/src/domain/entities/request-procurement.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/request-service/src/domain/entities/request-quote.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/request-service/src/domain/entities/request-source.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/request-service/src/domain/entities/request-supplier.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/request-service/src/domain/entities/request.entity.ts",
+      "layer": "domain",
+      "component": "domain-entity"
+    },
+    {
+      "file": "services/request-service/src/domain/repositories/request-access-link.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/request-service/src/domain/repositories/request-assessment.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/request-service/src/domain/repositories/request-item.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/request-service/src/domain/repositories/request-message.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/request-service/src/domain/repositories/request-procurement.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/request-service/src/domain/repositories/request-quote.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/request-service/src/domain/repositories/request-source.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/request-service/src/domain/repositories/request-supplier.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/request-service/src/domain/repositories/request.repository.ts",
+      "layer": "domain",
+      "component": "other"
+    },
+    {
+      "file": "services/request-service/src/infrastructure/database/prisma-client.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/request-service/src/infrastructure/messaging/request-outbox.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/request-service/src/infrastructure/repositories/prisma-request-access-link.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/request-service/src/infrastructure/repositories/prisma-request-assessment.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/request-service/src/infrastructure/repositories/prisma-request-item.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/request-service/src/infrastructure/repositories/prisma-request-message.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/request-service/src/infrastructure/repositories/prisma-request-procurement.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/request-service/src/infrastructure/repositories/prisma-request-quote.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/request-service/src/infrastructure/repositories/prisma-request-source.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/request-service/src/infrastructure/repositories/prisma-request-supplier.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
+      "file": "services/request-service/src/infrastructure/repositories/prisma-request.repository.ts",
+      "layer": "infrastructure",
+      "component": "infrastructure"
+    },
+    {
       "file": "services/support-service/index.ts",
       "layer": "shared",
       "component": "other"
@@ -7042,6 +9324,11 @@
     {
       "file": "services/support-service/src/application/dto/ticket.dto.ts",
       "layer": "application",
+      "component": "other"
+    },
+    {
+      "file": "services/support-service/src/domain/closed-tickets.registry.ts",
+      "layer": "domain",
       "component": "other"
     },
     {
@@ -7340,6 +9627,16 @@
       "component": "infrastructure"
     },
     {
+      "file": "shared/auth/token-blacklist.ts",
+      "layer": "shared",
+      "component": "other"
+    },
+    {
+      "file": "shared/business/minimum-basket-value.ts",
+      "layer": "shared",
+      "component": "other"
+    },
+    {
       "file": "shared/config/service-base-url.ts",
       "layer": "shared",
       "component": "other"
@@ -7351,6 +9648,21 @@
     },
     {
       "file": "shared/database/prisma-id-middleware.ts",
+      "layer": "shared",
+      "component": "other"
+    },
+    {
+      "file": "shared/errors/api-errors.ts",
+      "layer": "shared",
+      "component": "other"
+    },
+    {
+      "file": "shared/geo/haversine.ts",
+      "layer": "shared",
+      "component": "other"
+    },
+    {
+      "file": "shared/ids/human-readable-ids.ts",
       "layer": "shared",
       "component": "other"
     },
@@ -7381,6 +9693,11 @@
     },
     {
       "file": "shared/middleware/auth-context.middleware.ts",
+      "layer": "shared",
+      "component": "other"
+    },
+    {
+      "file": "shared/middleware/global-error-handler.middleware.ts",
       "layer": "shared",
       "component": "other"
     },

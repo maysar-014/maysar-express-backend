@@ -1,19 +1,19 @@
 ﻿# Buyer Flows — Checkout Service
 
-> **Verification status:** Partially Verified (confirm flow and session status Verified at data-level; legacy cart endpoints return 405)
+> **Verification status:** Partially Verified (confirm flow and session status Verified at data-level; cart surface contract-verified at the canonical `/api/checkout/cart/*` paths — live re-verification pending)
 > **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` (September 2026)
 > **Last updated:** September 2026
 
 ---
 
-> **⚠️ Conflicting/Obsolete endpoints:** The following endpoints return **405 Method Not Allowed** and are NOT valid checkout operations. Do not document them as working flows:
+> **⚠️ Conflicting/Obsolete endpoints (DEF-005):** The paths below were never mounted — the September 2026 live sweep returned **405 Method Not Allowed** for every one of them, because OpenAPI documented paths the router does not serve. Do not call them:
 > - `POST /api/checkout/items`
 > - `PATCH /api/checkout/items`
 > - `DELETE /api/checkout/items`
 > - `POST /api/checkout/merge`
 > - `DELETE /api/checkout/{cartId}`
 >
-> Only the confirm flow and session status endpoints are operational.
+> The cart surface **is implemented** — it is served under the canonical prefix `/api/checkout/cart/*`: `POST|PATCH|DELETE /api/checkout/cart/items`, `POST /api/checkout/cart/merge`, `GET /api/checkout/cart/current`, `GET|DELETE /api/checkout/cart/{cartId}` (plus a legacy `/api/cart` alias). All of these are mounted, documented in `openapi.yaml`, and covered by `services/checkout-service/src/api/routes/checkout.routes.test.ts`; the contract ratchet (`scripts/contract/openapi-coverage.test.js`) guarantees the spec cannot drift from the mount again. The flows documented below remain the confirm and session-status flows; cart manipulation must use the canonical paths above.
 
 ---
 
@@ -28,7 +28,7 @@ This document covers checkout-service flows from the buyer's perspective: confir
 | # | Flow Name | Verification Status | Primary Endpoint |
 |---|---|---|---|
 | 1 | Checkout Confirmation | Partially Verified | `POST /api/checkout/{id}/confirm` |
-| 2 | Get Checkout Session Status | Verified (data-level 404 observed) | `GET /api/checkout/{cartId}` |
+| 2 | Get Checkout Session Status | Verified (data-level 404 observed) | `GET /api/checkout/{id}` |
 
 ---
 
@@ -114,7 +114,7 @@ POST /api/checkout/{id}/confirm
 
 | Step | Actor/System | Action | Endpoint | Auth | Expected Response |
 |---|---|---|---|---|---|
-| 1 | Buyer | Requests current session state | `GET /api/checkout/{cartId}` | Bearer JWT | 200 `{ sessionId, status, buyerId, expiresAt, orderId? }` |
+| 1 | Buyer | Requests current session state | `GET /api/checkout/{id}` | Bearer JWT | 200 `{ sessionId, status, buyerId, expiresAt, orderId? }` |
 | 2 | Buyer | Reads `status` field | — | — | One of: `ACTIVE`, `CONFIRMED`, `EXPIRED`, `ABANDONED` |
 | 3 | Buyer | If `CONFIRMED`, reads `orderId` from response | — | — | Order exists; buyer can navigate to order detail |
 
@@ -129,7 +129,7 @@ POST /api/checkout/{id}/confirm
 
 ### Service Interaction Chain
 
-`GET /api/checkout/{cartId}` is handled entirely within checkout-service. No inter-service calls are made. The `orderId` field is populated if confirmation has completed.
+`GET /api/checkout/{id}` is handled entirely within checkout-service. No inter-service calls are made. The `orderId` field is populated if confirmation has completed.
 
 ### Unhappy Path Branches
 

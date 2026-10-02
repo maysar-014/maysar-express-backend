@@ -20,8 +20,29 @@ export interface CODEligibilityResponse {
     reason?: string;
 }
 
+/**
+ * Narrow port for the product-level COD gate. Declared structurally so the use
+ * case depends on the one method it calls rather than the whole repository.
+ */
+export interface ProductCodLookup {
+    findNonCodProductIds(productIds: string[]): Promise<string[]>;
+}
+
 export class CheckCODEligibilityUseCase {
-    constructor(private readonly eligibilityEngine: CODEligibilityEngine) { }
+    /**
+     * `productRepository` is injected rather than `new`-ed inside
+     * `resolveProductCodBlock`. It was previously constructed inline, which made
+     * the product-level COD gate untestable: every test hit the real repository,
+     * the catalog lookup failed, the guard failed closed, and the use case returned
+     * early - so `checkBuyerEligibility` was never called and the suite's
+     * assertions passed vacuously.
+     *
+     * The default keeps existing construction sites working; tests inject a stub.
+     */
+    constructor(
+        private readonly eligibilityEngine: CODEligibilityEngine,
+        private readonly productRepository: ProductCodLookup = new CatalogProductRepository(),
+    ) { }
 
     async execute(input: CheckCODEligibilityInput): Promise<CODEligibilityResponse> {
         const minimumBasketValueAssessment = assessMinimumBasketValue(input.totalAmount);
@@ -93,7 +114,7 @@ export class CheckCODEligibilityUseCase {
         if (productIds.length === 0) return null;
 
         try {
-            const nonCod = await new CatalogProductRepository().findNonCodProductIds(productIds);
+            const nonCod = await this.productRepository.findNonCodProductIds(productIds);
             return nonCod.length > 0
                 ? 'One or more items do not support Cash on Delivery'
                 : null;

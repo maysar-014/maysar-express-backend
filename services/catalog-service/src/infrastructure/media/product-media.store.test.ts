@@ -11,6 +11,7 @@ type SharpPipeline = {
   resize: jest.Mock<SharpPipeline, unknown[]>;
   webp: jest.Mock<SharpPipeline, unknown[]>;
   withMetadata: jest.Mock<SharpPipeline, unknown[]>;
+  flatten: jest.Mock<SharpPipeline, unknown[]>;
   toBuffer: jest.Mock<Promise<Buffer>, []>;
 };
 
@@ -18,6 +19,7 @@ const mockSharp = jest.fn(() => {
   const pipeline = {} as SharpPipeline;
   pipeline.rotate = jest.fn(() => pipeline);
   pipeline.resize = jest.fn(() => pipeline);
+  pipeline.flatten = jest.fn(() => pipeline);
   pipeline.webp = jest.fn(() => pipeline);
   pipeline.withMetadata = jest.fn(() => pipeline);
   pipeline.toBuffer = jest.fn(async () => Buffer.from('processed-webp'));

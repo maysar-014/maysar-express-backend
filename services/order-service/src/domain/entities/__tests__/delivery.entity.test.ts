@@ -23,7 +23,8 @@ describe('Delivery Entity', () => {
             expect(delivery.id).toBe(validData.id);
             expect(delivery.status).toBe(DeliveryStatus.PENDING);
             expect(delivery.trackingNumber).toBeDefined();
-            expect(delivery.trackingNumber).toMatch(/^MYS/);
+            // Shipment tracking numbers are TRK-NLNLNL and independent of the order number.
+            expect(delivery.trackingNumber).toMatch(/^TRK-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$/);
             expect(delivery.retryCount).toBe(0);
         });
 

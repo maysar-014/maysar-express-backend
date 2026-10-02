@@ -214,6 +214,38 @@ export class EventBus implements IEventBus {
     this.deadLetterQueue.clear();
   }
 
+  /**
+   * Read-only view of the bus for health checks.
+   *
+   * Health endpoints previously reported messaging as "healthy" while admitting
+   * the check was a stub. These accessors let a service report what is actually
+   * wired (subscription count, dead-letter depth) instead of asserting a
+   * capability it never tested. Deliberately read-only: it exposes no
+   * subscription handles and cannot mutate the bus.
+   */
+  getSubscriptionCount(eventType?: string): number {
+    if (eventType) {
+      return this.handlers.get(eventType)?.length ?? 0;
+    }
+    let total = 0;
+    for (const entries of this.handlers.values()) {
+      total += entries.length;
+    }
+    return total;
+  }
+
+  getEventTypeCount(): number {
+    return this.handlers.size;
+  }
+
+  getDeadLetterCount(): number {
+    let total = 0;
+    for (const entries of this.deadLetterQueue.values()) {
+      total += entries.length;
+    }
+    return total;
+  }
+
   private pushToDLQ(envelope: EventEnvelope, subscriberName: string, error: string): void {
     const eventType = envelope.eventType || 'unknown';
     const current = this.deadLetterQueue.get(eventType) || [];

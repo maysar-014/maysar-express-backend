@@ -318,24 +318,6 @@ The SMS sub-module is initialized as a separate component within the notificatio
 
 ---
 
-## Governance service: constitutional compliance as executable infrastructure
-
-The governance service exists to answer one question at any moment: is the platform operating within the bounds of its own stated commitments?
-
-This is built as a constitutional inspection engine. The service loads a phase constitution document — a versioned, machine-readable file that defines the gates the platform must pass to be considered compliant with its current launch phase. Each gate has an ID, a category, a severity threshold, a verification method, and the conditions that constitute a pass or fail.
-
-The service runs inspectors against the live platform — not against test data, not against mocks, but against the actual running system. The current inspector set covers: HTTP endpoint liveness checks (OPS1.1, OPS1.2), node script report validation (R1.1, R1.2), filesystem round-trip integrity (OPS1.3), search index round-trip (OPS1.4), auth-user sync verification (D1.1), wallet ledger integrity (FIN1.1), service readiness checks against all 14 core services (OPS1.5), Phase 2 live feature gates (F2.1 through F2.8 — COD trust system, buy-box ranking, phone OTP), Phase 3 live feature gates (F3.1 through F3.10, D3.1 through D3.4 — chat system, request service, logistics three-engine cost model), and Phase 4 live feature gates (F4.2, F4.3, F4.5, OPS4.1, OPS4.2, D4.2 — enabler network, supplier B2B, KYC trust integration).
-
-Service readiness checks probe the `/health/ready` endpoint of every core service in the platform: auth, user, order, payment, wallet, inventory, logistics, notification, commission, checkout, KYC, business registry, maps, and catalog. If any service is not ready, the governance gate OPS1.5 fails with the specific service identified. This creates a live deploy gate: the platform cannot be considered constitutionally compliant if any core service is not reporting ready.
-
-Inspection results are stored as immutable runs in a report store. Each run captures: the gate ID, the pass/fail verdict, the severity classification, a human-readable summary, evidence references (API responses, snapshots, script outputs), and timestamps. The full run history is queryable through the governance API. This means the platform has a permanent, independently auditable record of every constitutional inspection it has undergone.
-
-The governance controller exposes: a list of current phase gates and their status, the full run history, individual gate detail, the latest run verdict, and the ability to trigger a new inspection run on demand. Reports are available in machine-readable form for CI/CD integration.
-
-The CI/CD pipeline uses the governance service as a release gate: a deployment to production is blocked unless the governance service reports an APPROVED verdict for all P0 gates. This means every production deploy is a constitutional inspection that runs against the live environment, not just a test environment, before traffic is shifted.
-
----
-
 ## The end-to-end test suite: commercial claims as machine-verified facts
 
 The test suites run in three tiers. P0 tests are the deploy gate — they must pass on every deployment or the deploy is blocked. P1 tests run daily in CI and represent the full operational surface. P2 tests run weekly and cover enforcement boundaries and edge cases.
@@ -356,7 +338,6 @@ The test suite is structured to mirror the platform's business flywheel:
 - Courier execution → delivery and checkout saga (COD OTP) tests
 - Enabler attribution → enabler and commission tests
 - Platform integrity → wallet, platform-ops, and admin tests
-- Governance → admin and support tests
 - Communication → chat tests
 
 Each layer depends on the ones below it. A failure in auth breaks everything above it. A failure in wallet breaks order settlement. The layered structure makes the failure surface immediately clear.

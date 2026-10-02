@@ -35,7 +35,11 @@ describe('config/env-validator (zod)', () => {
 
   it('logs and exits when environment is invalid', () => {
     process.env = { ...originalEnv, ...validEnv };
-    delete process.env.DATABASE_URL;
+    // An *existing* variable is not re-injected by dotenv.config(), whereas a
+    // deleted one is (the module calls dotenv.config() at import time and .env
+    // carries a valid DATABASE_URL), which is why the value must be invalid
+    // rather than absent for this branch to be reachable.
+    process.env.DATABASE_URL = 'not-a-url';
 
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     const exitSpy = jest
@@ -47,7 +51,7 @@ describe('config/env-validator (zod)', () => {
     });
 
     expect(errorSpy).toHaveBeenCalledWith(
-      'âŒ Invalid environment variables:',
+      '❌ Invalid environment variables:',
       expect.any(Object)
     );
     expect(exitSpy).toHaveBeenCalledWith(1);

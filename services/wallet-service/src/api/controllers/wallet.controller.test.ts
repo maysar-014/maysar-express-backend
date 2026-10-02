@@ -34,6 +34,12 @@ describe('WalletController', () => {
   const walletRepository = { findByUserId: jest.fn() };
   const initiatePayoutUseCase = { execute: jest.fn() };
   const holdRepository = { findActiveByWalletId: jest.fn() };
+  const payoutServiceClient = {
+    initiatePayout: jest.fn(),
+    getPayoutStatus: jest.fn(),
+    getPayoutsByUserId: jest.fn(),
+    cancelPayout: jest.fn()
+  };
 
   const controller = new WalletController(
     creditWalletUseCase as never,
@@ -48,7 +54,8 @@ describe('WalletController', () => {
     topUpUseCase as never,
     walletRepository as never,
     initiatePayoutUseCase as never,
-    holdRepository as never
+    holdRepository as never,
+    payoutServiceClient as never
   );
 
   beforeEach(() => {
@@ -141,14 +148,14 @@ describe('WalletController', () => {
     );
   });
 
-  it('listHolds returns an empty collection when the wallet does not exist', async () => {
+  it('listHolds returns 404 when the wallet does not exist', async () => {
     walletRepository.findByUserId.mockResolvedValueOnce(null);
 
     const res = makeRes();
     await controller.listHolds(makeReq({ method: 'GET' }), res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ success: true, data: { holds: [], total: 0 } });
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Wallet not found' });
     expect(holdRepository.findActiveByWalletId).not.toHaveBeenCalled();
   });
 
@@ -377,5 +384,97 @@ describe('WalletController', () => {
     const badRes = makeRes();
     await controller.freezeFunds(makeReq({ body: { amount: 5000, idempotencyKey: 'frz-2' } }), badRes);
     expect(badRes.status).toHaveBeenCalledWith(409);
+  });
+
+  it('getPayoutHistory returns 404 when the wallet does not exist', async () => {
+    walletRepository.findByUserId.mockResolvedValueOnce(null);
+
+    const res = makeRes();
+    await controller.getPayoutHistory(makeReq({ method: 'GET' }), res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Wallet not found' });
+    expect(payoutServiceClient.getPayoutsByUserId).not.toHaveBeenCalled();
+  });
+
+  it('getPayoutHistory returns the persisted payouts for an existing wallet', async () => {
+    walletRepository.findByUserId.mockResolvedValueOnce({ id: 'wallet-1', userId: 'user-1' });
+    payoutServiceClient.getPayoutsByUserId.mockResolvedValueOnce({
+      success: true,
+      total: 1,
+      payouts: [
+        {
+          payoutId: 'pyo_1',
+          userId: 'user-1',
+          userRole: 'enabler',
+          amount: 40000,
+          currency: 'TZS',
+          fee: 1000,
+          netAmount: 39000,
+          method: 'MOBILE_MONEY',
+          status: 'COMPLETED',
+          createdAt: '2030-01-01T00:00:00.000Z',
+          updatedAt: '2030-01-01T00:00:00.000Z',
+          processedAt: null,
+          completedAt: '2030-01-01T01:00:00.000Z',
+          failedAt: null
+        }
+      ]
+    });
+
+    const res = makeRes();
+    await controller.getPayoutHistory(makeReq({ method: 'GET' }), res);
+
+    expect(payoutServiceClient.getPayoutsByUserId).toHaveBeenCalledWith('user-1', 20);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        data: expect.objectContaining({
+          userId: 'user-1',
+          walletId: 'wallet-1',
+          total: 1,
+          payouts: [expect.objectContaining({ payoutId: 'pyo_1', status: 'COMPLETED' })]
+        })
+      })
+    );
+  });
+
+  it('getPayoutHistory returns an empty genuine list when the wallet has no payouts', async () => {
+    walletRepository.findByUserId.mockResolvedValueOnce({ id: 'wallet-1', userId: 'user-1' });
+    payoutServiceClient.getPayoutsByUserId.mockResolvedValueOnce({
+      success: true,
+      payouts: [],
+      total: 0
+    });
+
+    const res = makeRes();
+    await controller.getPayoutHistory(makeReq({ method: 'GET', query: { limit: '5' } }), res);
+
+    expect(payoutServiceClient.getPayoutsByUserId).toHaveBeenCalledWith('user-1', 5);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      data: { userId: 'user-1', walletId: 'wallet-1', payouts: [], total: 0 }
+    });
+  });
+
+  it('getPayoutHistory maps payout-service failures to a non-success status', async () => {
+    walletRepository.findByUserId.mockResolvedValueOnce({ id: 'wallet-1', userId: 'user-1' });
+    payoutServiceClient.getPayoutsByUserId.mockResolvedValueOnce({
+      success: false,
+      payouts: [],
+      total: 0,
+      message: 'Payout repository unavailable'
+    });
+
+    const res = makeRes();
+    await controller.getPayoutHistory(makeReq({ method: 'GET' }), res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'Payout repository unavailable'
+    });
   });
 });

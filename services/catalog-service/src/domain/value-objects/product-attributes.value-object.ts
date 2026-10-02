@@ -108,7 +108,7 @@ export class StructuredProductAttributes {
           const invalidOption = selectedOptions.find((item) => !schema.options!.includes(item));
           if (invalidOption || selectedOptions.length === 0) {
             throw new DomainError(
-              `${schema.displayLabel} must contain valid options: ${schema.options.join(', ')}`,
+              `${schema.displayLabel} must be one of: ${schema.options.join(', ')}`,
               'INVALID_ATTRIBUTE_VALUE'
             );
           }

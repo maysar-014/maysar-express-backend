@@ -1896,7 +1896,7 @@ Preconditions: entity ids exist. Protected endpoints require auth.
 
 ### Logistics (Delivery, Routing, Courier Ops)
 
-Preconditions: order exists, courier exists, and tracking number is known for tracking operations.
+Preconditions: order exists, courier exists, and either the order number (ORD-YYYYMMDD-NLNL) or a shipment tracking number (TRK-NLNLNL) is known for tracking operations.
 
 | Step | User Intent / Action | Endpoint | Happy Status | Unhappy Status / Failure Path |
 |---|---|---|---|---|
@@ -1914,7 +1914,7 @@ Preconditions: order exists, courier exists, and tracking number is known for tr
 | 12 | Get route details | `GET {{platform_base_url}}/api/logistics/api/v1/routes/:routeId` | 200 | 404, 500 |
 | 13 | Update route progress | `PUT {{platform_base_url}}/api/logistics/api/v1/routes/:routeId/progress` | 200 | 400, 404, 500 |
 | 14 | Route alternatives | `POST {{platform_base_url}}/api/logistics/api/v1/routes/:routeId/alternatives` | 200 | 400, 404, 500 |
-| 15 | Track shipment | `GET {{platform_base_url}}/api/logistics/api/v1/tracking/:trackingNumber` | 200 | 404, 500 |
+| 15 | Track shipment | `GET {{platform_base_url}}/api/logistics/api/v1/tracking/:identifier` | 200 | 404, 500 |
 | 16 | Track location update | `POST {{platform_base_url}}/api/logistics/api/v1/tracking/location` | 200 | 400, 422, 500 |
 | 17 | Courier tracking history | `GET {{platform_base_url}}/api/logistics/api/v1/tracking/courier/:courierId/history` | 200 | 404, 500 |
 | 18 | Logistics analytics | `GET {{platform_base_url}}/api/logistics/api/v1/analytics` | 200 | 500 |

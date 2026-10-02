@@ -4,6 +4,7 @@ import { ReservationEngine } from '../reservation/reservationEngine';
 import { WarehouseManager } from '../warehouse/warehouseManager';
 import { eventBus } from '@shared-events/eventBus';
 import { isSystemId } from '@shared/ids/id';
+import { isOrderNumber } from '@shared/ids/human-readable-ids';
 
 interface InventoryCountRecord {
   id: string;
@@ -340,6 +341,12 @@ export class StockApi {
     try {
       const { orderId } = req.params;
 
+      // Reservations are keyed by the ORDER NUMBER (ORD-YYYYMMDD-NLNL) - nothing else.
+      if (!isOrderNumber(orderId)) {
+        res.status(400).json({ error: 'orderId must be an order number (ORD-YYYYMMDD-NLNL)' });
+        return;
+      }
+
       await this.reservationEngine.cancelReservations(orderId);
 
       res.json({
@@ -605,6 +612,12 @@ export class StockApi {
   async getOrderReservations(req: Request, res: Response): Promise<void> {
     try {
       const { orderId } = req.params;
+
+      // Reservations are keyed by the ORDER NUMBER (ORD-YYYYMMDD-NLNL) - nothing else.
+      if (!isOrderNumber(orderId)) {
+        res.status(400).json({ error: 'orderId must be an order number (ORD-YYYYMMDD-NLNL)' });
+        return;
+      }
 
       const reservations = await this.reservationEngine.getActiveReservations(orderId);
 

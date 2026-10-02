@@ -42,6 +42,11 @@ import {
   resetCourierStatus,
 } from './helpers/live-api';
 import { SEEDED_USERS, WALLET_TOP_UP_MINIMUM } from './fixtures/seeded-users';
+import {
+  createCodDeliveryFixture,
+  waitForDeliveryOtp,
+  deleteCodDeliveryFixture,
+} from './helpers/cod-delivery-fixture';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -93,6 +98,42 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
     // 6. Reset courier status to online — delivery creation sets courier to 'busy'
     //    which would prevent subsequent tests from finding an available courier
     await resetCourierStatus(courierToken);
+
+    // 7. Cancel any COD orders left active by earlier suites.
+    //    The NEW_BUYER "1 active COD order" cap is now genuinely enforced at
+    //    placement (it silently counted zero before, because every order sits in
+    //    PENDING_SELLER_VERIFICATION and that status was missing from the count).
+    //    Without this, a leaked COD order makes every later COD spec fail with
+    //    422 for reasons unrelated to what it asserts.
+    try {
+      const active = await requestJson(
+        `/api/order/orders?buyerId=${SEEDED_USERS.buyer.id}&limit=50`,
+        { headers: authHeader(adminToken) }
+      );
+      if (active.ok) {
+        const body = active.body as Record<string, unknown>;
+        const orders = (body['orders'] as Array<Record<string, unknown>>) ?? [];
+        for (const o of orders) {
+          const status = String(o['status'] ?? '').toLowerCase();
+          const method = String(o['paymentMethod'] ?? '').toUpperCase();
+          const cancellable = [
+            'pending', 'pending_seller_verification', 'seller_verified',
+            'seller_declined', 'verification_overdue', 'confirmed', 'assigned', 'in_transit',
+          ];
+          if (method === 'COD' && cancellable.includes(status)) {
+            const oid = String(o['id'] ?? o['orderId'] ?? '');
+            if (oid) {
+              // Cancel as admin: a buyer cannot cancel a CONFIRMED order
+              // (CancellationPolicy requires seller consent), so a buyer-scoped
+              // cleanup would leave paid COD orders open.
+              await cancelOrder(adminToken, oid).catch(() => {});
+            }
+          }
+        }
+      }
+    } catch {
+      // Cleanup failure is non-fatal.
+    }
   }, 120_000);
 
   // =========================================================================
@@ -226,47 +267,37 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
       // 2. Seller verifies stock
       const verifyRes = await requestJson(`/api/order/orders/${orderId}/verify`, {
         method: 'POST',
-        headers: { ...authHeader(sellerToken), 'content-type': 'application/json' },
+        headers: { ...authHeader(sellerToken), 'content-type': 'application/json', 'idempotency-key': createIdempotencyKey('e2e-api-order-orders-orderId-verify') },
       });
       expect(verifyRes.status).toBe(200);
 
       // 3. Buyer confirms checkout (wallet debit happens here)
       const checkoutRes = await requestJson(`/api/order/orders/${orderId}/buyer/confirm-checkout`, {
         method: 'POST',
-        headers: { ...authHeader(buyerToken), 'content-type': 'application/json' },
+        headers: { ...authHeader(buyerToken), 'content-type': 'application/json', 'idempotency-key': createIdempotencyKey('e2e-api-order-orders-orderId-buyer-confirm-c') },
       });
       expect(checkoutRes.status).toBe(200);
 
-      // 4. Wait for saga to create delivery
-      deliveryId = await pollForDelivery(courierToken, orderId!, trackingNumber);
+      // 4. Obtain this order's own delivery.
+      //
+      // The previous code polled for a delivery, then fell back to
+      // `deliveries?courierId=...` and took `items[0]` — i.e. *whatever delivery
+      // the courier happened to have*. Once the fixture began creating real
+      // deliveries for other tests in this file, that fallback picked up another
+      // test's row and drove it through the state machine, corrupting both
+      // tests. Binding the delivery to this orderId removes the ambiguity.
+      deliveryId = (
+        await createCodDeliveryFixture({
+          orderId: orderId!,
+          courierId: SEEDED_USERS.courier.id,
+          buyerId: SEEDED_USERS.buyer.id,
+          sellerId: SEEDED_USERS.seller.id,
+          codAmount: 0,
+          isCOD: false,
+        })
+      ).deliveryId;
 
-      if (!deliveryId) {
-        // Fallback to seed delivery
-        const listRes = await requestJson(
-          `/api/logistics/api/v1/deliveries?courierId=${SEEDED_USERS.courier.id}&limit=20`,
-          { headers: authHeader(courierToken) }
-        );
-        if (listRes.ok) {
-          const body = listRes.body as Record<string, unknown>;
-          const dataField = body['data'];
-          const items: unknown[] =
-            (Array.isArray(body['deliveries']) ? body['deliveries'] as unknown[] : null) ??
-            (dataField && typeof dataField === 'object' && !Array.isArray(dataField) && Array.isArray((dataField as any)['deliveries'])
-              ? (dataField as any)['deliveries'] as unknown[]
-              : null) ??
-            (Array.isArray(dataField) ? dataField as unknown[] : null) ??
-            [];
-          if (items.length > 0) {
-            const first = items[0] as Record<string, unknown>;
-            deliveryId = String(first['id'] ?? first['deliveryId'] ?? '');
-          }
-        }
-      }
-
-      if (!deliveryId) {
-        console.warn('[checkout-saga.e2e] No delivery found for saga test — skipping state machine assertions');
-        return;
-      }
+      expect(deliveryId).toBeTruthy();
 
       // 5. Drive delivery through the state machine
       const currentRes = await requestJson(
@@ -300,6 +331,9 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
         deliveryRes.body as Record<string, unknown>;
       expect(String((deliveryBody as Record<string, unknown>)['status'])).toBe('delivered');
     } finally {
+      if (orderId) {
+        await deleteCodDeliveryFixture(orderId).catch(() => {});
+      }
       if (orderId && !deliveryId) {
         await cancelOrder(buyerToken, orderId);
       }
@@ -333,55 +367,39 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
       // 2. Seller verifies stock
       const sellerVerifyRes = await requestJson(`/api/order/orders/${orderId}/verify`, {
         method: 'POST',
-        headers: { ...authHeader(sellerToken), 'content-type': 'application/json' },
+        headers: { ...authHeader(sellerToken), 'content-type': 'application/json', 'idempotency-key': createIdempotencyKey('e2e-api-order-orders-orderId-verify') },
       });
       expect(sellerVerifyRes.status).toBe(200);
 
       // 3. Buyer confirms checkout (COD commitment placed here)
       const checkoutRes = await requestJson(`/api/order/orders/${orderId}/buyer/confirm-checkout`, {
         method: 'POST',
-        headers: { ...authHeader(buyerToken), 'content-type': 'application/json' },
+        headers: { ...authHeader(buyerToken), 'content-type': 'application/json', 'idempotency-key': createIdempotencyKey('e2e-api-order-orders-orderId-buyer-confirm-c') },
       });
       expect(checkoutRes.status).toBe(200);
 
-      // 4. Wait for delivery to be created by saga
-      deliveryId = await pollForDelivery(courierToken, orderId!, trackingNumber);
-
-      const usedSagaDelivery = !!deliveryId;
-
-      if (!deliveryId) {
-        const listRes = await requestJson(
-          `/api/logistics/api/v1/deliveries?courierId=${SEEDED_USERS.courier.id}&limit=20`,
-          { headers: authHeader(courierToken) }
-        );
-        if (listRes.ok) {
-          const body2 = listRes.body as Record<string, unknown>;
-          const df = body2['data'];
-          const items2: unknown[] =
-            (Array.isArray(body2['deliveries']) ? body2['deliveries'] as unknown[] : null) ??
-            (df && typeof df === 'object' && !Array.isArray(df) && Array.isArray((df as any)['deliveries'])
-              ? (df as any)['deliveries'] as unknown[]
-              : null) ??
-            (Array.isArray(df) ? df as unknown[] : null) ?? [];
-          const seed = items2.find((i) => {
-            const d = i as Record<string, unknown>;
-            return String(d['status'] ?? '').toLowerCase() !== 'delivered';
-          }) as Record<string, unknown> | undefined;
-          if (seed) deliveryId = String(seed['id'] ?? seed['deliveryId'] ?? '');
-        }
-      }
-
-      if (!deliveryId) {
-        console.warn('[checkout-saga.e2e] No delivery found for COD lifecycle test — skipping OTP assertions');
-        return;
-      }
-
-      if (!usedSagaDelivery) {
-        await advanceDelivery(courierToken, deliveryId!, 'picked_up');
-        await advanceDelivery(courierToken, deliveryId!, 'in_transit');
-        await advanceDelivery(courierToken, deliveryId!, 'delivered');
-        return;
-      }
+      // 4. Obtain the COD delivery.
+      //
+      // Checkout produces a `logistics_Shipment`; a `logistics_Delivery` only
+      // appears once a courier is assigned, which the platform drives through
+      // `DeliverySaga` — constructed and registered but never started. So there
+      // is no public API that yields a delivery for this order, and the previous
+      // code polled, fell back to any unrelated seeded delivery, and then
+      // skipped its assertions while still reporting PASS.
+      //
+      // The fixture creates the delivery directly through Prisma, following the
+      // pattern already used by scripts/seed-e2e-users.ts. That makes the COD
+      // OTP flow genuinely executable. Starting DeliverySaga for real is still
+      // an open product decision and is NOT exercised here.
+      deliveryId = (
+        await createCodDeliveryFixture({
+          orderId: orderId!,
+          courierId: SEEDED_USERS.courier.id,
+          buyerId: SEEDED_USERS.buyer.id,
+          sellerId: SEEDED_USERS.seller.id,
+          codAmount: Number(deliveryCode || orderBody['totalAmount'] || 0),
+        })
+      ).deliveryId;
 
       // 5. Generate OTP
       const otpRes = await requestJson(
@@ -402,17 +420,42 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
       await advanceDelivery(courierToken, deliveryId!, 'picked_up');
       await advanceDelivery(courierToken, deliveryId!, 'in_transit');
 
-      // 7. Verify COD with delivery code
+      // 7. Verify COD with the OTP the saga actually issued.
+      //
+      // `POST /cod/:id/otp` returns { success: true } and no code — the OTP goes
+      // to the buyer out of band, as in production. So it is read from the
+      // delivery row. The previous code substituted the order's `deliveryCode`,
+      // which is a different value and would have made this assertion vacuous.
+      const issuedOtp = await waitForDeliveryOtp(deliveryId!);
+
       const verifyRes = await requestJson(
         `/api/logistics/api/v1/cod/${deliveryId}/verify`,
         {
           method: 'POST',
-          headers: { ...authHeader(courierToken), 'content-type': 'application/json' },
-          body: JSON.stringify({ otp: deliveryCode, location: DELIVERY_LOCATION }),
+          headers: { ...authHeader(courierToken), 'content-type': 'application/json', 'idempotency-key': createIdempotencyKey('e2e-api-logistics-api-v1-cod-deliveryId-veri') },
+          body: JSON.stringify({ otp: issuedOtp, location: DELIVERY_LOCATION }),
         }
       );
       expect(verifyRes.status).toBe(200);
       expect((verifyRes.body as Record<string, unknown>)['success']).toBe(true);
+
+      // A wrong code must be rejected — otherwise "200 on success" proves nothing.
+      // This MUST carry an idempotency key: without one, IdempotencyMiddleware
+      // answers 400 "Missing idempotency key" before the OTP is ever checked, and
+      // the assertion would pass for a reason that has nothing to do with
+      // verification (which is exactly how it passed while the happy path was broken).
+      const wrongRes = await requestJson(
+        `/api/logistics/api/v1/cod/${deliveryId}/verify`,
+        {
+          method: 'POST',
+          headers: { ...authHeader(courierToken), 'content-type': 'application/json', 'idempotency-key': createIdempotencyKey('e2e-cod-verify-wrong-otp') },
+          body: JSON.stringify({ otp: '000000', location: DELIVERY_LOCATION }),
+        }
+      );
+      expect(wrongRes.status).toBeGreaterThanOrEqual(400);
+      // Guard against the rejection coming from a missing idempotency key rather
+      // than from the OTP check, which would make the assertion above vacuous.
+      expect(String(wrongRes.text)).not.toContain('Missing idempotency key');
 
       // 8. Delivery must be 'delivered'
       const deliveryReadRes = await requestJson(
@@ -424,6 +467,9 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
       expect(String((deliveryBody as Record<string, unknown>)['status'])).toBe('delivered');
 
     } finally {
+      if (orderId) {
+        await deleteCodDeliveryFixture(orderId).catch(() => {});
+      }
       if (orderId) {
         await cancelOrder(buyerToken, orderId).catch(() => {});
       }
@@ -449,43 +495,40 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
       orderId = extractId(orderBody);
       const trackingNumber = String(orderBody['trackingNumber'] ?? '');
 
-      // Seller verifies + buyer confirms checkout
-      await requestJson(`/api/order/orders/${orderId}/verify`, {
-        method: 'POST', headers: { ...authHeader(sellerToken), 'content-type': 'application/json' },
+      // Seller verifies + buyer confirms checkout.
+      // BOTH calls must pass `method: 'POST'` explicitly. `requestJson` defaults to
+      // `RequestInit = {}`, and `fetch` then sends a GET, which these POST-only
+      // routes reject with 405. That is not cosmetic: the 405 left no delivery, the
+      // poll below found nothing, and the test returned early while still
+      // reporting PASS — so the whole tracking/OTP path was silently unexercised.
+      const verifyRes = await requestJson(`/api/order/orders/${orderId}/verify`, {
+        method: 'POST',
+        headers: { ...authHeader(sellerToken), 'content-type': 'application/json', 'idempotency-key': createIdempotencyKey('e2e-api-order-orders-orderId-verify') },
       });
-      await requestJson(`/api/order/orders/${orderId}/buyer/confirm-checkout`, {
-        method: 'POST', headers: { ...authHeader(buyerToken), 'content-type': 'application/json' },
+      expect(verifyRes.status).toBe(200);
+
+      const checkoutRes = await requestJson(`/api/order/orders/${orderId}/buyer/confirm-checkout`, {
+        method: 'POST',
+        headers: { ...authHeader(buyerToken), 'content-type': 'application/json', 'idempotency-key': createIdempotencyKey('e2e-api-order-orders-orderId-buyer-confirm-checkout') },
       });
+      expect(checkoutRes.status).toBe(200);
 
-      deliveryId = await pollForDelivery(courierToken, orderId!, trackingNumber);
-
-      if (!deliveryId) {
-        const listRes2 = await requestJson(
-          `/api/logistics/api/v1/deliveries?courierId=${SEEDED_USERS.courier.id}&limit=20`,
-          { headers: authHeader(courierToken) }
-        );
-        if (listRes2.ok) {
-          const body3 = listRes2.body as Record<string, unknown>;
-          const df2 = body3['data'];
-          const items3: unknown[] =
-            (Array.isArray(body3['deliveries']) ? body3['deliveries'] as unknown[] : null) ??
-            (df2 && typeof df2 === 'object' && !Array.isArray(df2) && Array.isArray((df2 as any)['deliveries'])
-              ? (df2 as any)['deliveries'] as unknown[]
-              : null) ??
-            (Array.isArray(df2) ? df2 as unknown[] : null) ?? [];
-          const seed2 = items3.find((i) => {
-            const d = i as Record<string, unknown>;
-            const st = String(d['status'] ?? '').toLowerCase();
-            return st === 'assigned' || st === 'picked_up';
-          }) as Record<string, unknown> | undefined;
-          if (seed2) deliveryId = String(seed2['id'] ?? seed2['deliveryId'] ?? '');
-        }
-      }
-
-      if (!deliveryId) {
-        console.warn('[checkout-saga.e2e] No delivery found for tracking test — skipping assertions');
-        return;
-      }
+      // Obtain the delivery. This is a WALLET order, so the delivery is not COD and
+      // no OTP is issued — tracking must work for every order, not just COD ones.
+      // As in the COD test, no public API produces a delivery for a confirmed
+      // order (checkout makes a Shipment; DeliverySaga is never started), so the
+      // fixture creates it. The previous code polled, fell back to an unrelated
+      // seeded delivery, and then skipped its assertions while reporting PASS.
+      deliveryId = (
+        await createCodDeliveryFixture({
+          orderId: orderId!,
+          courierId: SEEDED_USERS.courier.id,
+          buyerId: SEEDED_USERS.buyer.id,
+          sellerId: SEEDED_USERS.seller.id,
+          codAmount: 0,
+          isCOD: false,
+        })
+      ).deliveryId;
       const initial = await readDeliveryStatus(courierToken, deliveryId!);
       expect(['assigned', 'picked_up']).toContain(initial);
 
@@ -497,6 +540,14 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
       const afterTransit = await readDeliveryStatus(courierToken, deliveryId!);
       expect(afterTransit).toBe('in_transit');
     } finally {
+      // Tear down the fixture delivery this test created. Without this, rows
+      // accumulate per run and `deliveries?courierId=` results drift over time —
+      // exactly what made the old `items[0]` fallback ambiguous. Best-effort: a
+      // leaked row is deterministic per order id and is reset by the fixture on
+      // the next run, so a cleanup failure must not mask the real result.
+      if (orderId) {
+        await deleteCodDeliveryFixture(orderId).catch(() => {});
+      }
       if (orderId && !deliveryId) {
         await cancelOrder(buyerToken, orderId);
       }
@@ -507,7 +558,7 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
   // P2 — Tracking number lookup resolves delivery ID
   // =========================================================================
 
-  it('[P2] [BUY-04] tracking number from order response resolves to delivery record via tracking API', async () => {
+  it('[P2] [BUY-04] order number resolves to shipment tracking numbers via the tracking API', async () => {
     let orderId: string | null = null;
 
     try {
@@ -515,12 +566,29 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
       expect(orderRes.status).toBe(201);
       const orderBody = orderRes.body as Record<string, unknown>;
       orderId = extractId(orderBody);
-      const trackingNumber = String(orderBody['trackingNumber'] ?? '');
-      expect(trackingNumber).toBeTruthy();
 
-      const trackingRes = await pollForTracking(courierToken, trackingNumber);
+      // Since DEF-008 an order has an ORDER NUMBER (ORD-...); the tracking
+      // identity lives on the shipment (TRK-...). If a convenience field ever
+      // appears on the order response it must be a shipment tracking number,
+      // never an order number.
+      const orderTracking = String(orderBody['trackingNumber'] ?? '');
+      if (orderTracking) { expect(orderTracking).toMatch(/^TRK-[2-9A-HJ-NP-Z]{6}$/); }
+
+      const trackingRes = await pollForTracking(courierToken, orderId!);
       expect(trackingRes).not.toBeNull();
+
+      // The logistics tracking endpoint nests its payload:
+      //   { success, data: { lookupType, identifier, order, shipments } }
+      // Reading `shipments` from the top level silently yields [], which is why
+      // this spec previously failed even with shipments present.
+      const data = (trackingRes?.['data'] as Record<string, unknown> | undefined) ?? trackingRes ?? {};
+      const shipments = (data['shipments'] as Array<Record<string, unknown>> | undefined) ?? [];
+      expect(shipments.length).toBeGreaterThan(0);
+      for (const shipment of shipments) {
+        expect(String(shipment['trackingNumber'] ?? '')).toMatch(/^TRK-[2-9A-HJ-NP-Z]{6}$/);
+      }
     } finally {
+      if (orderId) await deleteCodDeliveryFixture(orderId).catch(() => {});
       if (orderId) await cancelOrder(buyerToken, orderId);
     }
   }, 60_000);

@@ -86,7 +86,7 @@ describe('disputeRouter', () => {
     app.use('/disputes', disputeRouter);
 
     const createRes = await request(app).post('/disputes').send({
-      orderId: 'ord_01ARZ3NDEKTSV4RRFFQ69G5FAV',
+      orderId: 'ORD-20260927-3C8B',
       reason: 'Wrong item delivered',
       description: 'The seller shipped a different item than the one ordered.'
     });

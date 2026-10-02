@@ -203,7 +203,11 @@ export class PrismaTrainingModuleRepository implements ITrainingModuleRepository
         if (!delegate) {
             const existing = this.fallbackModules.get(id);
             if (!existing) return null;
-            const updated = TrainingModule.create({ ...existing.toJSON?.() ?? {}, ...data, id } as any);
+            // Spread the existing props so this stays a partial update. Previously
+            // this was `existing.toJSON?.()`, but TrainingModule had no toJSON, so
+            // the optional call yielded undefined, the spread collapsed to `{}`, and
+            // every field absent from `data` was silently reset.
+            const updated = TrainingModule.create({ ...existing.toJSON(), ...data, id } as any);
             this.fallbackModules.set(id, updated);
             return updated;
         }

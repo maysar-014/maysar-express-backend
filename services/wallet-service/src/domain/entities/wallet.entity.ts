@@ -198,7 +198,7 @@ export class Wallet {
     /**
      * Place a hold on funds
      */
-    placeHold(amount: Money, expiresAt: Date, reason: string): Hold {
+    placeHold(amount: Money, expiresAt: Date, reason: string, metadata?: Record<string, unknown>): Hold {
         this.freeze(amount.amount);
 
         return new Hold({
@@ -207,6 +207,10 @@ export class Wallet {
             userId: this.userId,
             amount: amount,
             reason: reason,
+            // Structured business reference (e.g. {referenceId: 'ORD-...',
+            // referenceType: 'ORDER'}) so the hold can be reconciled against the
+            // order it secures without parsing the reason prose.
+            ...(metadata ? { metadata } : {}),
             status: HoldStatus.ACTIVE,
             expiresAt: expiresAt,
             isCaptured: false,

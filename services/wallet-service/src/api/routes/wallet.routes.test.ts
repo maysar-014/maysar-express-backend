@@ -122,7 +122,8 @@ describe('wallet.routes', () => {
     freezeFunds: jest.fn(),
     unfreezeFunds: jest.fn(),
     topUp: jest.fn(),
-    initiatePayout: jest.fn()
+    initiatePayout: jest.fn(),
+    getPayoutHistory: jest.fn()
   };
 
   it('configures redis, rate-limit store, and idempotency middleware', () => {
@@ -162,7 +163,8 @@ describe('wallet.routes', () => {
         'POST /:userId/freeze',
         'POST /:userId/unfreeze',
         'POST /:userId/topup',
-        'POST /:userId/payout'
+        'POST /:userId/payout',
+        'GET /:userId/payout'
       ])
     );
   });
@@ -210,5 +212,21 @@ describe('wallet.routes', () => {
     await finalHandler?.({}, {}, () => undefined);
 
     expect(controller.getBalance).toHaveBeenCalledTimes(1);
+  });
+
+  it('binds the payout history read handler to GET /:userId/payout', async () => {
+    controller.getPayoutHistory.mockResolvedValue(undefined);
+    const router = createWalletRoutes(controller as never);
+    const finalHandler = getRouteFinalHandler(router, '/:userId/payout', 'get');
+
+    await finalHandler?.({ params: { userId: 'usr_1' } }, {}, () => undefined);
+
+    expect(controller.getPayoutHistory).toHaveBeenCalledTimes(1);
+  });
+
+  it('applies the shared wallet-user validator to the payout history route', () => {
+    createWalletRoutes(controller as never);
+
+    expect(validateRequest).toHaveBeenCalledWith({ params: 'wallet-user-params-validator' });
   });
 });

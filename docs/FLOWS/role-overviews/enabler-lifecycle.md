@@ -2,7 +2,7 @@
 
 > **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` (September 2026 sweep) + `docs/enabler/ENABLER_SERVICE_SYSTEM.md` + `docs/training/TRAINING_SERVICE_SYSTEM.md`
 > **Canonical source:** `docs/FLOWS/role-overviews/enabler-lifecycle.md`
-> **Legacy reference:** `docs/Flow Docs/06-enabler-journeys.md` (archived; partially verified — commission-service referenced as live is incorrect; see Known Gaps below)
+> **Legacy reference:** `docs/Flow Docs/06-enabler-journeys.md` (archived; partially verified — commission reads are now live at `/api/commission/*`, see Known Gaps below)
 
 ---
 
@@ -10,7 +10,7 @@
 
 **Definition:** An Enabler is an independent sales associate who generates referral links, assists buyers through the purchase journey, and earns commission on attributed orders. Commercial capabilities are not role-based — they are gated by lifecycle status, accepted terms, and training certification. The frontend must never assume an enabler is capable of any commercial action without confirming server-computed capability state.
 
-**Primary services:** auth-service, enabler-service, training-service, kyc-service (middleware), catalog-service (via referral attribution), wallet-service, payout-service, commission-service (write-only; no HTTP surface for reads — see Known Gaps)
+**Primary services:** auth-service, enabler-service, training-service, kyc-service (middleware), catalog-service (via referral attribution), wallet-service, payout-service, commission-service (reads commission records and approvals at `/api/commission/*` — DEF-006 resolved)
 
 **Key prerequisites:**
 1. Account registered with `enabler` role via `POST /api/auth/register`
@@ -197,15 +197,17 @@ To withdraw earnings: `POST /api/payout/payouts` (requires KYC level 2). Support
 
 ---
 
-### ⚠️ `/api/commission/*` — Route-Level 404 (Missing)
+### ✅ `/api/commission/*` — Registered (DEF-006 resolved)
 
-**Sweep result:** All routes under `/api/commission/*` and `/api/commissions/*` return route-level 404. The route surface is entirely unregistered.
+**Sweep result (September 2026):** all `/api/commission/*` routes returned route-level 404 because `CommissionModule.name` had regressed to `commissions-service` and the bootstrap derives the mount path from the module name, so the surface was mounted at `/api/commissions`.
 
-**Impact:** Commission details cannot be retrieved via API. There is no live HTTP surface for commission data.
+**Current state:** the module is named `commission-service` again; `/api/commission/*` is live and every documented operation is reachable (locked by `commission-module.contract.test.ts`).
 
-**Context:** Commission is calculated internally by order fulfillment sagas. The computed values are credited directly to the enabler's wallet. The enabler can view credited amounts via wallet transaction history (`GET /api/wallet/statement`) and earnings endpoints (`GET /api/enabler/enablers/:enablerId/earnings`), but cannot retrieve a detailed commission breakdown via a commission-specific API.
+**Context:** Commission is still calculated internally by order fulfillment sagas and credited directly to the enabler's wallet. The enabler can now also read the composition of those credits:
+- `GET /api/commission/sellers/:sellerId` (use the enabler's `userId`) and `.../summary`
+- `GET /api/commission/:id` for a single commission record
 
-**Recommended UI behavior:** Do not surface a "Commission Details" section that calls `/api/commission/*`. Show earnings from the wallet/enabler earnings endpoints instead.
+**Recommended UI behavior:** show the commission summary/history from `/api/commission/*`, and keep the wallet statement (`GET /api/wallet/statement`, `GET /api/enabler/enablers/:enablerId/earnings`) as the canonical record of credited money.
 
 ---
 

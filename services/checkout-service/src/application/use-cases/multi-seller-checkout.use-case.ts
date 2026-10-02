@@ -16,7 +16,7 @@
  * lives here, above the existing single-seller order logic.
  */
 
-import { makeMasterOrderId } from '@shared/ids/id';
+import { makeOrderNumber } from '@shared/ids/human-readable-ids';
 import { QuoteValidationService } from '../../infrastructure/services/quote-validation.service';
 
 export interface SellerQuoteMap {
@@ -201,7 +201,9 @@ export class MultiSellerCheckoutUseCase {
         }
 
         // Create master order
-        masterOrderId = makeMasterOrderId();
+        // The master order IS the buyer's transaction, so it carries an ORDER NUMBER
+        // (ORD-YYYYMMDD-NLNL) from the same generator as every other order.
+        masterOrderId = makeOrderNumber();
         await tx.order_MasterOrder?.create?.({
           data: {
             id: masterOrderId,

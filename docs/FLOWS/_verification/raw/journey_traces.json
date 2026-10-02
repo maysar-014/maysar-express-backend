@@ -1,0 +1,206 @@
+[
+  {
+    "flowId": "AUTH-BUYER-01",
+    "step": 1,
+    "role": "buyer",
+    "endpoint": "POST /api/auth/login",
+    "status": 200,
+    "pass": true,
+    "notes": "Login authentication",
+    "payload": "usr_01KRFXQZC36NK3CDEWJJS21RP8"
+  },
+  {
+    "flowId": "AUTH-SELLER-01",
+    "step": 1,
+    "role": "seller",
+    "endpoint": "POST /api/auth/login",
+    "status": 200,
+    "pass": true,
+    "notes": "Login authentication",
+    "payload": "usr_01KRFZ1E5G6CWAQ4BXKVNPYG3Z"
+  },
+  {
+    "flowId": "AUTH-SUPPLIER-01",
+    "step": 1,
+    "role": "supplier",
+    "endpoint": "POST /api/auth/login",
+    "status": 200,
+    "pass": true,
+    "notes": "Login authentication",
+    "payload": "usr_01KRFZ1E73P67T886TR2QDY0VT"
+  },
+  {
+    "flowId": "AUTH-COURIER-01",
+    "step": 1,
+    "role": "courier",
+    "endpoint": "POST /api/auth/login",
+    "status": 200,
+    "pass": true,
+    "notes": "Login authentication",
+    "payload": "usr_01KRFZ1E7W4JDR9N9PMGYDD77S"
+  },
+  {
+    "flowId": "AUTH-ENABLER-01",
+    "step": 1,
+    "role": "enabler",
+    "endpoint": "POST /api/auth/login",
+    "status": 200,
+    "pass": true,
+    "notes": "Login authentication",
+    "payload": "usr_01KRFZ1E8HMAE7MMH175PJ9337"
+  },
+  {
+    "flowId": "AUTH-ADMIN-01",
+    "step": 1,
+    "role": "admin",
+    "endpoint": "POST /api/auth/login",
+    "status": 200,
+    "pass": true,
+    "notes": "Login authentication",
+    "payload": "usr_01M0K33BM4CZFKWZK5AK71GTEV"
+  },
+  {
+    "flowId": "CAT-BYR-01",
+    "step": 1,
+    "role": "buyer",
+    "endpoint": "GET /api/catalog/v1/categories",
+    "status": 200,
+    "pass": true,
+    "notes": "Browse category tree"
+  },
+  {
+    "flowId": "CAT-BYR-02",
+    "step": 1,
+    "role": "buyer",
+    "endpoint": "GET /api/catalog/v1/products/search",
+    "status": 200,
+    "pass": true,
+    "notes": "Search products in catalog"
+  },
+  {
+    "flowId": "ORD-BYR-01",
+    "step": 1,
+    "role": "buyer",
+    "endpoint": "GET /api/order/orders",
+    "status": 200,
+    "pass": true,
+    "notes": "List buyer orders"
+  },
+  {
+    "flowId": "NTF-BYR-01",
+    "step": 1,
+    "role": "buyer",
+    "endpoint": "GET /api/notification/notifications",
+    "status": 200,
+    "pass": true,
+    "notes": "Fetch buyer notifications"
+  },
+  {
+    "flowId": "ANL-SLR-01",
+    "step": 1,
+    "role": "seller",
+    "endpoint": "GET /api/analytics/seller-profitability/dashboard",
+    "status": 200,
+    "pass": true,
+    "notes": "Seller profitability dashboard"
+  },
+  {
+    "flowId": "BIZ-SLR-01",
+    "step": 1,
+    "role": "seller",
+    "endpoint": "GET /api/business-registry/businesses/search",
+    "status": 200,
+    "pass": true,
+    "notes": "Search businesses in registry"
+  },
+  {
+    "flowId": "PAY-SLR-01",
+    "step": 1,
+    "role": "seller",
+    "endpoint": "GET /api/payout/payouts",
+    "status": 200,
+    "pass": true,
+    "notes": "List seller payout requests"
+  },
+  {
+    "flowId": "LOG-CUR-01",
+    "step": 1,
+    "role": "courier",
+    "endpoint": "GET /api/logistics/api/v1/earnings/summary",
+    "status": 200,
+    "pass": true,
+    "notes": "Courier earnings summary"
+  },
+  {
+    "flowId": "LOG-CUR-02",
+    "step": 1,
+    "role": "courier",
+    "endpoint": "GET /api/logistics/api/v1/deliveries",
+    "status": 200,
+    "pass": true,
+    "notes": "Fetch courier deliveries"
+  },
+  {
+    "flowId": "TRN-CUR-01",
+    "step": 1,
+    "role": "courier",
+    "endpoint": "GET /api/training/api/v1/modules",
+    "status": 200,
+    "pass": true,
+    "notes": "List training modules via /api/v1"
+  },
+  {
+    "flowId": "PRD-SUP-01",
+    "step": 1,
+    "role": "supplier",
+    "endpoint": "GET /api/production/dashboard",
+    "status": 200,
+    "pass": true,
+    "notes": "Supplier production dashboard"
+  },
+  {
+    "flowId": "PRD-SUP-02",
+    "step": 1,
+    "role": "supplier",
+    "endpoint": "GET /api/production/bulk-orders",
+    "status": 200,
+    "pass": true,
+    "notes": "List supplier bulk orders"
+  },
+  {
+    "flowId": "ENB-ENB-01",
+    "step": 1,
+    "role": "enabler",
+    "endpoint": "/api/enabler/enablers/:id/earnings",
+    "status": 500,
+    "pass": false,
+    "notes": "Fetch enabler earnings"
+  },
+  {
+    "flowId": "SUP-ADM-01",
+    "step": 1,
+    "role": "admin",
+    "endpoint": "GET /api/support/tickets",
+    "status": 200,
+    "pass": true,
+    "notes": "Admin support ticket queue"
+  },
+  {
+    "flowId": "ANL-ADM-01",
+    "step": 1,
+    "role": "admin",
+    "endpoint": "GET /api/analytics/admin/dashboard/red-flags",
+    "status": 200,
+    "pass": true,
+    "notes": "Admin red flags dashboard"
+  },
+  {
+    "flowId": "ANL-ADM-02",
+    "step": 1,
+    "role": "admin",
+    "endpoint": "GET /api/analytics/admin/dashboard/founder-operating-system",
+    "status": 200,
+    "pass": true,
+    "notes": "Admin founder OS view"
+  }
+]

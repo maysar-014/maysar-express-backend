@@ -47,6 +47,7 @@ const OVER_LIMIT_COD_AMOUNT = NEW_BUYER_EXPOSURE_LIMIT + 1_000;
 
 liveTestSuite('COD Eligibility & Trust System — Flow Doc 02 (COD paths)', () => {
   let buyerToken: string;
+  let sellerToken: string;
   let adminToken: string;
   let seededProductId: string = 'seeded-product-placeholder';
 
@@ -61,6 +62,7 @@ liveTestSuite('COD Eligibility & Trust System — Flow Doc 02 (COD paths)', () =
     // 3. Obtain tokens
     adminToken = await getAdminToken();
     buyerToken = await loginAs(SEEDED_USERS.buyer);
+    sellerToken = await loginAs(SEEDED_USERS.seller);
 
     // 4. Resolve a real seeded product
     try {
@@ -84,11 +86,11 @@ liveTestSuite('COD Eligibility & Trust System — Flow Doc 02 (COD paths)', () =
           const status = String(o['status'] ?? '').toLowerCase();
           const method = String(o['paymentMethod'] ?? '').toLowerCase();
           // Cancel any active COD or wallet orders that would interfere
-          const isCancellable = ['pending', 'confirmed', 'assigned', 'in_transit'].includes(status);
+          const isCancellable = ['pending','pending_seller_verification','seller_verified','seller_declined','verification_overdue','confirmed','assigned','in_transit'].includes(status);
           if (isCancellable) {
             const oid = String(o['id'] ?? o['orderId'] ?? '');
             if (oid) {
-              await cancelOrder(buyerToken, oid, 'cod-trust-beforeAll-cleanup').catch(() => {});
+              await cancelOrder(adminToken, oid, 'cod-trust-beforeAll-cleanup').catch(() => {});
             }
           }
         }
@@ -129,6 +131,8 @@ liveTestSuite('COD Eligibility & Trust System — Flow Doc 02 (COD paths)', () =
   // -------------------------------------------------------------------------
 
   it('[P1] [OPS-05] COD order within limits creates order and freezes wallet commitment', async () => {
+    // The COD commitment (delivery-fee hold) is taken at buyer confirm-checkout,
+    // not at placement — placement never moves funds.
     const balanceBefore = await getWalletBalance(buyerToken, SEEDED_USERS.buyer.id);
     let orderId: string | null = null;
 
@@ -148,12 +152,18 @@ liveTestSuite('COD Eligibility & Trust System — Flow Doc 02 (COD paths)', () =
       orderId = String(body['orderId'] ?? body['id'] ?? '');
       expect(orderId).toBeTruthy();
 
+      const verifyRes = await verifyCodStock(orderId, sellerToken);
+      expect(verifyRes.status).toBe(200);
+
+      const checkoutRes = await confirmCodCheckout(orderId, buyerToken);
+      expect(checkoutRes.status).toBe(200);
+
       // Wallet should reflect a frozen commitment (available balance lower or frozenAmount set)
       const walletResponse = await requestJson(
         `/api/wallet/wallets/${SEEDED_USERS.buyer.id}/balance`,
         { headers: authHeader(buyerToken) }
       );
-      assertOk(walletResponse, 'wallet balance after COD order');
+      assertOk(walletResponse, 'wallet balance after COD checkout');
       const walletBody = walletResponse.body as Record<string, unknown>;
       const data = walletBody['data'] as Record<string, unknown> | undefined;
       const frozenAmount = Number(
@@ -166,32 +176,43 @@ liveTestSuite('COD Eligibility & Trust System — Flow Doc 02 (COD paths)', () =
       expect(commitmentReflected).toBe(true);
     } finally {
       if (orderId) {
-        await cancelOrder(buyerToken, orderId);
+        await cancelOrder(adminToken, orderId, 'cod-trust-valid-cleanup');
+        await pollUntilBalanceRestored(SEEDED_USERS.buyer.id, balanceBefore, adminToken, 30_000);
       }
     }
   });
 
+
   it('[P1] [OPS-05] cancelling a COD order releases the frozen wallet commitment', async () => {
+    // The commitment only exists after the buyer confirms checkout, so this spec
+    // must reach checkout before cancelling — cancelling a pending order would
+    // trivially "release" a hold that was never taken.
     const balanceBefore = await getWalletBalance(buyerToken, SEEDED_USERS.buyer.id);
     let orderId: string | null = null;
 
-    // Place COD order
     const orderResponse = await requestJson('/api/order/orders', {
-      method: 'POST',
-      headers: {
-        ...authHeader(buyerToken),
-        'content-type': 'application/json',
-        'idempotency-key': createIdempotencyKey('cod-trust-cancel-1'),
-      },
-      body: JSON.stringify(buildCodOrderPayload(VALID_COD_AMOUNT, 'DAR_CENTRAL', undefined, seededProductId)),
-    });
-    expect(orderResponse.status).toBe(201);
-    const orderBody = orderResponse.body as Record<string, unknown>;
-    orderId = String(orderBody['orderId'] ?? orderBody['id'] ?? '');
-    expect(orderId).toBeTruthy();
+    method: 'POST',
+    headers: {
+      ...authHeader(buyerToken),
+      'content-type': 'application/json',
+      'idempotency-key': createIdempotencyKey('cod-trust-cancel-1'),
+    },
+    body: JSON.stringify(buildCodOrderPayload(VALID_COD_AMOUNT, 'DAR_CENTRAL', undefined, seededProductId)),
+  });
+  expect(orderResponse.status).toBe(201);
+  const orderBody = orderResponse.body as Record<string, unknown>;
+  orderId = String(orderBody['orderId'] ?? orderBody['id'] ?? '');
+  expect(orderId).toBeTruthy();
 
-    // Cancel it
-    const cancelResponse = await cancelOrder(buyerToken, orderId, 'e2e-test-cod-commitment-release');
+  try {
+    const verifyRes = await verifyCodStock(orderId, sellerToken);
+    expect(verifyRes.status).toBe(200);
+
+    const checkoutRes = await confirmCodCheckout(orderId, buyerToken);
+    expect(checkoutRes.status).toBe(200);
+
+    // Cancel it — a CONFIRMED order requires seller consent, so the seller cancels.
+    const cancelResponse = await cancelOrder(sellerToken, orderId, 'e2e-test-cod-commitment-release');
     expect(cancelResponse.status).toBe(200);
 
     // Balance should be restored (commitment released — poll for async restore)
@@ -199,6 +220,11 @@ liveTestSuite('COD Eligibility & Trust System — Flow Doc 02 (COD paths)', () =
       SEEDED_USERS.buyer.id, balanceBefore, adminToken
     );
     expect(balanceAfterCancel).toBe(balanceBefore);
+  } finally {
+    if (orderId) {
+      await cancelOrder(adminToken, orderId, 'cod-trust-release-cleanup').catch(() => {});
+    }
+  }
   });
 
   // -------------------------------------------------------------------------
@@ -294,6 +320,30 @@ liveTestSuite('COD Eligibility & Trust System — Flow Doc 02 (COD paths)', () =
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
+
+/** Seller confirms stock so the buyer can pay and the COD commitment is secured. */
+async function verifyCodStock(orderId: string, token: string) {
+  return requestJson(`/api/order/orders/${orderId}/verify`, {
+    method: 'POST',
+    headers: {
+      ...authHeader(token),
+      'content-type': 'application/json',
+      'idempotency-key': createIdempotencyKey(`cod-verify-${orderId.slice(-8)}`),
+    },
+  });
+}
+
+/** Buyer confirms checkout — this is where the COD commitment hold is taken. */
+async function confirmCodCheckout(orderId: string, token: string) {
+  return requestJson(`/api/order/orders/${orderId}/buyer/confirm-checkout`, {
+    method: 'POST',
+    headers: {
+      ...authHeader(token),
+      'content-type': 'application/json',
+      'idempotency-key': createIdempotencyKey(`cod-checkout-${orderId.slice(-8)}`),
+    },
+  });
+}
 
 function buildCodOrderPayload(
   totalValue: number,

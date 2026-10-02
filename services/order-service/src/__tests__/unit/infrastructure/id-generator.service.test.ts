@@ -1,231 +1,218 @@
 import { IdGeneratorService } from '../../../infrastructure/services/id-generator.service';
 
+/**
+ * The platform identifier contract (see shared/ids/human-readable-ids.ts):
+ *
+ *   Order number               ORD-YYYYMMDD-NLNL
+ *   Shipment tracking number   TRK-NLNLNL      (independent per shipment)
+ *   Transaction id             TXN-YYYYMMDD-NLNL
+ *
+ * N = digit 2-9, L = letter A-Z without I, L, O (0/1/O/I/L never appear in the
+ * random parts). An order number is never a shipment tracking identifier.
+ */
+const ORDER_NUMBER_PATTERN = /^ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$/;
+const SHIPMENT_TRACKING_PATTERN = /^TRK-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$/;
+const TRANSACTION_ID_PATTERN = /^TXN-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$/;
+
 describe('IdGeneratorService', () => {
   describe('generateOrderId', () => {
-    it('should generate a valid Maysar Order ID format', () => {
-      const orderId = IdGeneratorService.generateOrderId();
+    it('generates ORD-YYYYMMDD-NLNL', () => {
+      const orderId = IdGeneratorService.generateOrderId(new Date(2026, 8, 27));
 
-      expect(orderId).toMatch(/^MSR-ORD-\d{8}-\d{6}-[A-F0-9]{4}$/);
-      expect(orderId).toContain('MSR-ORD-');
-      expect(orderId.split('-')).toHaveLength(5);
+      expect(orderId.startsWith('ORD-20260927-')).toBe(true);
+      expect(orderId).toHaveLength(17);
+      expect(orderId).toMatch(ORDER_NUMBER_PATTERN);
+      expect(orderId.split('-')[0]).toBe(IdGeneratorService.ORDER_PREFIX);
     });
 
-    it('should generate unique IDs on multiple calls', () => {
-      const id1 = IdGeneratorService.generateOrderId();
-      const id2 = IdGeneratorService.generateOrderId();
-
-      expect(id1).not.toBe(id2);
+    it('is accepted by the order-number validator for every generated value', () => {
+      for (let i = 0; i < 500; i += 1) {
+        const orderId = IdGeneratorService.generateOrderId();
+        expect(IdGeneratorService.isValidOrderId(orderId)).toBe(true);
+      }
     });
 
-    it('should include timestamp in the correct format', () => {
-      const before = new Date();
+    it('uses only the human-readable alphabet in the random suffix', () => {
+      for (let i = 0; i < 200; i += 1) {
+        const suffix = IdGeneratorService.generateOrderId().split('-')[2];
+        expect(suffix).toHaveLength(4);
+        expect(suffix[0]).toMatch(/[2-9]/);
+        expect(suffix[1]).toMatch(/[A-HJKMNP-Z]/);
+        expect(suffix[2]).toMatch(/[2-9]/);
+        expect(suffix[3]).toMatch(/[A-HJKMNP-Z]/);
+      }
+    });
+
+    it('does not collide within a small batch', () => {
+      const ids = new Set(IdGeneratorService.generateOrderIds(25));
+      expect(ids.size).toBe(25);
+    });
+  });
+
+  describe('generateShipmentTrackingNumber', () => {
+    it('generates TRK-NLNLNL — short, date-free and independent of any order', () => {
+      const trackingNumber = IdGeneratorService.generateShipmentTrackingNumber();
+
+      expect(trackingNumber).toHaveLength(10);
+      expect(trackingNumber.split('-')).toHaveLength(2);
+      expect(trackingNumber).toMatch(SHIPMENT_TRACKING_PATTERN);
+      expect(trackingNumber.startsWith(`${IdGeneratorService.SHIPMENT_TRACKING_PREFIX}-`)).toBe(true);
+    });
+
+    it('is accepted by its own validator for every generated value', () => {
+      for (let i = 0; i < 500; i += 1) {
+        expect(
+          IdGeneratorService.isValidShipmentTrackingNumber(
+            IdGeneratorService.generateShipmentTrackingNumber(),
+          ),
+        ).toBe(true);
+      }
+    });
+
+    it('is never the order number of the order that produced it', () => {
       const orderId = IdGeneratorService.generateOrderId();
-      const after = new Date();
+      const trackingNumber = IdGeneratorService.generateShipmentTrackingNumber();
 
-      const parts = orderId.split('-');
-      const dateStr = parts[2];
-      const timeStr = parts[3];
+      expect(trackingNumber).not.toBe(orderId);
+      expect(IdGeneratorService.isValidOrderId(trackingNumber)).toBe(false);
+      expect(IdGeneratorService.isValidShipmentTrackingNumber(orderId)).toBe(false);
+    });
 
-      expect(dateStr).toMatch(/^\d{8}$/); // YYYYMMDD
-      expect(timeStr).toMatch(/^\d{6}$/); // HHMMSS
+    it('gives every shipment of one order its own tracking number', () => {
+      const orderId = IdGeneratorService.generateOrderId();
+      const trackingNumbers = [
+        IdGeneratorService.generateShipmentTrackingNumber(),
+        IdGeneratorService.generateShipmentTrackingNumber(),
+        IdGeneratorService.generateShipmentTrackingNumber(),
+      ];
 
-      // Extract date and time
-      const year = parseInt(dateStr.substring(0, 4));
-      const month = parseInt(dateStr.substring(4, 6)) - 1; // JS months are 0-based
-      const day = parseInt(dateStr.substring(6, 8));
-      const hour = parseInt(timeStr.substring(0, 2));
-      const minute = parseInt(timeStr.substring(2, 4));
-      const second = parseInt(timeStr.substring(4, 6));
-
-      const generatedDate = new Date(year, month, day, hour, minute, second);
-
-      // Allow for small time differences
-      const timeDiff = Math.abs(generatedDate.getTime() - before.getTime());
-      expect(timeDiff).toBeLessThan(1000); // Within 1 second
+      expect(new Set(trackingNumbers).size).toBe(3);
+      // The order number stays with the order; it is never reused as a shipment id.
+      expect(trackingNumbers).not.toContain(orderId);
     });
   });
 
   describe('generateTransactionId', () => {
-    it('should generate a valid Maysar Transaction ID format', () => {
-      const transactionId = IdGeneratorService.generateTransactionId();
+    it('follows the same timestamp contract as the order number', () => {
+      const transactionId = IdGeneratorService.generateTransactionId(new Date(2026, 8, 27));
 
-      expect(transactionId).toMatch(/^MSR-TXN-\d{8}-\d{6}-[A-F0-9]{4}$/);
-      expect(transactionId).toContain('MSR-TXN-');
-    });
-
-    it('should generate unique transaction IDs', () => {
-      const id1 = IdGeneratorService.generateTransactionId();
-      const id2 = IdGeneratorService.generateTransactionId();
-
-      expect(id1).not.toBe(id2);
+      expect(transactionId.startsWith('TXN-20260927-')).toBe(true);
+      expect(transactionId).toMatch(TRANSACTION_ID_PATTERN);
+      expect(IdGeneratorService.isValidTransactionId(transactionId)).toBe(true);
     });
   });
 
-  describe('generateTrackingId', () => {
-    it('should generate a valid Maysar Tracking ID format', () => {
-      const trackingId = IdGeneratorService.generateTrackingId();
-
-      expect(trackingId).toMatch(/^MSR-TRK-\d{8}-\d{6}-[A-F0-9]{4}$/);
-      expect(trackingId).toContain('MSR-TRK-');
-    });
-  });
-
-  describe('generateOrderTrackingNumber', () => {
-    it('should generate a valid public order tracking number format', () => {
-      const trackingNumber = IdGeneratorService.generateOrderTrackingNumber(new Date('2026-03-16T10:15:30Z'));
-
-      expect(trackingNumber).toMatch(/^MYS-TZ-ORD-\d{8}-\d[A-Z]\d[A-Z]$/);
-      expect(trackingNumber).toContain('MYS-TZ-ORD-20260316-');
-    });
-
-    it('should generate unique tracking numbers', () => {
-      const first = IdGeneratorService.generateOrderTrackingNumber();
-      const second = IdGeneratorService.generateOrderTrackingNumber();
-
-      expect(first).not.toBe(second);
-    });
-  });
-
-  describe('generateShortOrderId', () => {
-    it('should generate a shorter order ID format', () => {
-      const shortId = IdGeneratorService.generateShortOrderId();
-
-      expect(shortId).toMatch(/^MSR-ORD-[A-Z0-9]+$/);
-      expect(shortId.length).toBeLessThan(30); // Should be shorter than full format
-    });
-  });
-
-  describe('Validation methods', () => {
-    it('should validate correct order IDs', () => {
-      const validId = 'MSR-ORD-20260113-173418-4A7B';
-      expect(IdGeneratorService.isValidOrderId(validId)).toBe(true);
-    });
-
-    it('should reject invalid order IDs', () => {
-      const invalidIds = [
-        'INVALID-ORD-20260113-173418-4A7B', // Wrong prefix
-        'MSR-ORD-20260113-173418', // Missing random part
-        'MSR-ORD-20260113-173418-4A7B-extra', // Too many parts
-        'MSR-ORD-202613-173418-4A7B', // Wrong date format
-        'msr-ord-20260113-173418-4a7b', // Lowercase
-        'MSR-ORD-20260113-173418-gggg', // Invalid characters
+  describe('validators', () => {
+    it('rejects order ids that are not exactly ORD-YYYYMMDD-NLNL', () => {
+      const invalid = [
+        'MSR-ORD-20260113-173418-4A7B', // retired branded format
+        'ORD-20260113-1A2B', // 1 excluded from the digit alphabet
+        'ORD-20260113-3A2B-EXT', // extra suffix
+        'ORD-20260113-3A', // truncated suffix
+        'MYS-TZ-ORD-20260316-3A7B', // tracking number is not an order number
+        'TRK-3C8B2D', // tracking number
+        '',
       ];
 
-      invalidIds.forEach(id => {
-        expect(IdGeneratorService.isValidOrderId(id)).toBe(false);
+      invalid.forEach(value => {
+        expect(IdGeneratorService.isValidOrderId(value)).toBe(false);
       });
+
+      expect(IdGeneratorService.isValidOrderId('ORD-20260113-3A2B')).toBe(true);
     });
 
-    it('should validate transaction IDs', () => {
-      const validId = 'MSR-TXN-20260113-173418-9C2D';
-      expect(IdGeneratorService.isValidTransactionId(validId)).toBe(true);
+    it('rejects tracking numbers that are not exactly TRK-NLNLNL', () => {
+      const invalid = [
+        'TRK-3C8B2', // too short
+        'TRK-3C8B2D8E', // too long
+        'TRK-3I8B2D', // I excluded
+        'TRK-3O8B2D', // O excluded
+        'ORD-20260113-3A2B', // order number
+        '',
+      ];
 
-      const invalidId = 'MSR-ORD-20260113-173418-9C2D'; // Wrong type
-      expect(IdGeneratorService.isValidTransactionId(invalidId)).toBe(false);
+      invalid.forEach(value => {
+        expect(IdGeneratorService.isValidShipmentTrackingNumber(value)).toBe(false);
+      });
+
+      expect(IdGeneratorService.isValidShipmentTrackingNumber('TRK-3C8B2D')).toBe(true);
     });
 
-    it('should validate tracking IDs', () => {
-      const validId = 'MSR-TRK-20260113-173418-7F1E';
-      expect(IdGeneratorService.isValidTrackingId(validId)).toBe(true);
-
-      const invalidId = 'MSR-ORD-20260113-173418-7F1E'; // Wrong type
-      expect(IdGeneratorService.isValidTrackingId(invalidId)).toBe(false);
-    });
-
-    it('should validate public order tracking numbers', () => {
-      const validId = 'MYS-TZ-ORD-20260316-3A7B';
-      expect(IdGeneratorService.isValidOrderTrackingNumber(validId)).toBe(true);
-
-      const invalidId = 'MSR-ORD-20260316-3A7B';
-      expect(IdGeneratorService.isValidOrderTrackingNumber(invalidId)).toBe(false);
+    it('keeps the transaction namespace separate', () => {
+      expect(IdGeneratorService.isValidTransactionId('TXN-20260113-3A2B')).toBe(true);
+      expect(IdGeneratorService.isValidTransactionId('ORD-20260113-3A2B')).toBe(false);
     });
   });
 
   describe('extractTimestamp', () => {
-    it('should extract timestamp from valid IDs', () => {
-      const orderId = 'MSR-ORD-20260113-063056-4A7B';
-      const timestamp = IdGeneratorService.extractTimestamp(orderId);
+    it('returns the calendar date encoded in an order number', () => {
+      const timestamp = IdGeneratorService.extractTimestamp('ORD-20260113-3A2B');
 
       expect(timestamp).toBeInstanceOf(Date);
-      expect(timestamp?.getFullYear()).toBe(2026);
-      expect(timestamp?.getMonth()).toBe(0); // January (0-based)
-      expect(timestamp?.getDate()).toBe(13);
-      expect(timestamp?.getHours()).toBeGreaterThanOrEqual(0);
-      expect(timestamp?.getHours()).toBeLessThanOrEqual(23);
-      expect(timestamp?.getMinutes()).toBeGreaterThanOrEqual(0);
-      expect(timestamp?.getMinutes()).toBeLessThanOrEqual(59);
-      expect(timestamp?.getSeconds()).toBeGreaterThanOrEqual(0);
-      expect(timestamp?.getSeconds()).toBeLessThanOrEqual(59);
+      expect([
+        timestamp?.getFullYear(),
+        (timestamp?.getMonth() ?? 0) + 1,
+        timestamp?.getDate(),
+      ]).toEqual([2026, 1, 13]);
     });
 
-    it('should return null for invalid IDs', () => {
-      const invalidIds = [
-        'INVALID-ORD-20260113-173418-4A7B',
-        'MSR-ORD-invalid-date-173418-4A7B',
+    it('returns null for invalid or non-order identifiers', () => {
+      const invalid = [
+        'MSR-ORD-20260113-173418-4A7B',
+        'TRK-3C8B2D',
+        'ORD-20261313-3A2B',
         'not-an-id-at-all',
         '',
       ];
 
-      invalidIds.forEach(id => {
+      invalid.forEach(id => {
         expect(IdGeneratorService.extractTimestamp(id)).toBeNull();
       });
     });
   });
 
   describe('generateOrderIds', () => {
-    it('should generate multiple unique order IDs', () => {
-      const count = 5;
-      const ids = IdGeneratorService.generateOrderIds(count);
+    it('generates multiple valid order numbers', () => {
+      const ids = IdGeneratorService.generateOrderIds(10);
 
-      expect(ids).toHaveLength(count);
-      expect(new Set(ids).size).toBe(count); // All unique
-
+      expect(ids).toHaveLength(10);
       ids.forEach(id => {
-        expect(IdGeneratorService.isValidOrderId(id)).toBe(true);
+        expect(id).toMatch(ORDER_NUMBER_PATTERN);
       });
     });
 
-    it('should handle zero count', () => {
-      const ids = IdGeneratorService.generateOrderIds(0);
-      expect(ids).toHaveLength(0);
-    });
-
-    it('should handle large batch generation', () => {
-      const count = 100;
-      const ids = IdGeneratorService.generateOrderIds(count);
-
-      expect(ids).toHaveLength(count);
-      expect(new Set(ids).size).toBeGreaterThanOrEqual(count - 1); // Allow a rare collision
+    it('handles zero count', () => {
+      expect(IdGeneratorService.generateOrderIds(0)).toHaveLength(0);
     });
   });
 
-  describe('Enterprise features', () => {
-    it('should generate IDs with proper branding', () => {
-      const orderId = IdGeneratorService.generateOrderId();
-      const transactionId = IdGeneratorService.generateTransactionId();
-      const trackingId = IdGeneratorService.generateTrackingId();
+  describe('single-format guarantee', () => {
+    it('exposes no order-level tracking number or variant generators', () => {
+      const removed = [
+        'generateOrderTrackingNumber',
+        'generateShortOrderId',
+        'generateTrackingId',
+        'isValidOrderTrackingNumber',
+        'isValidTrackingId',
+      ];
 
-      expect(orderId).toContain('MSR-ORD');
-      expect(transactionId).toContain('MSR-TXN');
-      expect(trackingId).toContain('MSR-TRK');
-    });
-
-    it('should be suitable for enterprise use', () => {
-      // Generate a batch and verify all are enterprise-quality
-      const ids = IdGeneratorService.generateOrderIds(10);
-
-      ids.forEach(id => {
-        expect(id.length).toBeGreaterThan(20); // Reasonable length
-        expect(id.length).toBeLessThan(50); // Not too long
-        expect(id).toMatch(/^[A-Z0-9-]+$/); // Only uppercase, numbers, dashes
+      removed.forEach(method => {
+        expect((IdGeneratorService as unknown as Record<string, unknown>)[method]).toBeUndefined();
       });
     });
 
-    it('should be URL-safe', () => {
-      const orderId = IdGeneratorService.generateOrderId();
+    it('emits URL-safe, uppercase identifiers in a sane length range', () => {
+      const values = [
+        IdGeneratorService.generateOrderId(),
+        IdGeneratorService.generateTransactionId(),
+        IdGeneratorService.generateShipmentTrackingNumber(),
+      ];
 
-      // Should not contain characters that need URL encoding
-      expect(orderId).not.toMatch(/[<>:"\/\\|?*\x00-\x1F]/);
+      values.forEach(value => {
+        expect(value).toMatch(/^[A-Z0-9-]+$/);
+        expect(value.length).toBeGreaterThanOrEqual(10);
+        expect(value.length).toBeLessThanOrEqual(24);
+      });
     });
   });
 });

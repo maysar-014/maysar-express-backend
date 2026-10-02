@@ -172,13 +172,15 @@ Retention defaults: `SENT`/`PROCESSED` → 7 days, `FAILED` → 30 days. Batch s
 
 ---
 
-### ⚠️ `/api/governance/*` — Route-Level 404 (Missing)
+### ℹ️ `/api/governance/*` — Removed From The Platform (DEF-007)
 
-**Sweep result:** All routes under `/api/governance/*` return route-level 404 — the governance feature is not live.
+The governance route surface does not exist in this platform. The governance-service module was deleted
+(commit `cfcfd08b`), and its retainer artifacts were removed with it: all `/api/governance/*` paths and
+`Governance*` schemas are gone from `openapi.yaml` and `api-contract.yaml`, the CI `governance-audit`
+job and the `governance:*` npm scripts are deleted, and `reports/governance/` is gone.
 
-**Impact:** Any admin workflow referencing governance endpoints cannot be implemented. Do not surface governance features in the admin UI until this route surface is active.
-
-**Legacy docs conflict:** `docs/Flow Docs/07-admin-support-compliance.md` references governance routes as live. This is incorrect — they are missing.
+**Impact:** no admin or compliance workflow may reference governance endpoints. Platform administration
+runs through the service endpoints listed above.
 
 ---
 

@@ -1,0 +1,26 @@
+-- COD delivery OTP storage.
+--
+-- `CODDeliveryConfirmationSaga` generates the OTP in its `initiate_secure_delivery`
+-- step and passes it to `updateStatus(..., { otp, otpExpiresAt })`, but the
+-- logistics delivery table had no columns for either value and the repository
+-- mapper hard-coded `otp: undefined`. The saga context is never persisted, so
+-- the OTP existed only in memory for the duration of that one request.
+--
+-- `verifyDelivery` is a SEPARATE request and reads `delivery.otp`, which was
+-- therefore always undefined, so:
+--     validateOTP(providedOtp, undefined, undefined)
+--       - `new Date() > undefined` is false (NaN comparison), so the EXPIRY
+--         check silently never fired
+--       - `providedOtp === undefined` is false for any real code
+-- and COD delivery verification could NEVER succeed: a courier could not
+-- complete a COD delivery or collect the cash.
+--
+-- Storing the generated code lets verification (a different HTTP request, and
+-- potentially a different process) read back what was issued.
+--
+-- Note: the value is a short-lived, single-delivery secret stored in
+-- plaintext. A hash (compared with a constant-time check) is the stronger
+-- design and is recorded as a hardening item in the backlog; this migration
+-- restores correctness first.
+ALTER TABLE "logistics_deliveries" ADD COLUMN IF NOT EXISTS "otp" VARCHAR(8);
+ALTER TABLE "logistics_deliveries" ADD COLUMN IF NOT EXISTS "otpExpiresAt" TIMESTAMP(6);

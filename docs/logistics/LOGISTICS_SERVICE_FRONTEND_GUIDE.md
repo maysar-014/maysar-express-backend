@@ -213,7 +213,7 @@ A courier must meet **all** of:
 ## Tracking
 
 ```
-GET  /api/logistics/v1/tracking/:trackingNumber
+GET  /api/logistics/v1/tracking/:identifier
 POST /api/logistics/v1/tracking/location
 GET  /api/logistics/v1/tracking/courier/:courierId/history
 ```

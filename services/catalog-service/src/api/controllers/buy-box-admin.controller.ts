@@ -125,6 +125,16 @@ export class BuyBoxAdminController {
         return;
       }
 
+      // Prisma P2025 = "record to update not found" → no anomaly flag with that id
+      if ((error as { code?: string })?.code === 'P2025'
+        || String((error as Error)?.message || '').includes('Record to update not found')) {
+        res.status(404).json({
+          success: false,
+          error: { code: 'ANOMALY_FLAG_NOT_FOUND', message: 'Anomaly flag not found.' }
+        });
+        return;
+      }
+
       console.error('BuyBoxAdminController.clearAnomalyFlag error:', error);
       res.status(500).json({
         success: false,

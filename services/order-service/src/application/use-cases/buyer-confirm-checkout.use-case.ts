@@ -32,7 +32,7 @@ export class BuyerConfirmCheckoutUseCase {
     private readonly eventPublisher: { publish(event: any): Promise<void> },
     private readonly codEligibilityEngine?: CODEligibilityEngine,
     private readonly codCommitmentService?: CODCommitmentService,
-    private readonly walletClient?: { debitWallet(userId: string, amount: number, currency: string, description: string): Promise<string> },
+    private readonly walletClient?: { debitWallet(userId: string, amount: number, currency: string, description: string, referenceId?: string): Promise<string> },
   ) {}
 
   async execute(input: BuyerConfirmCheckoutInput): Promise<BuyerConfirmCheckoutOutput> {
@@ -102,7 +102,17 @@ export class BuyerConfirmCheckoutUseCase {
       for (let attempt = 0; attempt < 2; attempt++) {
         if (attempt > 0) await new Promise(r => setTimeout(r, 300));
         try {
-          await this.walletClient.debitWallet(input.buyerId, totalAmount, currency, `Payment for order ${input.orderId}`);
+          // The order id must be stored as the transaction's referenceId. Order
+          // cancellation looks the debit up by referenceId to decide whether a
+          // refund is owed; without it the refund was silently skipped and a paid
+          // order that was later cancelled kept the customer's money debited.
+          await this.walletClient.debitWallet(
+            input.buyerId,
+            totalAmount,
+            currency,
+            `Payment for order ${input.orderId}`,
+            input.orderId,
+          );
           lastErr = undefined;
           break;
         } catch (err: any) {

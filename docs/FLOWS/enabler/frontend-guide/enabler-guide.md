@@ -1,7 +1,7 @@
 ﻿# Enabler Guide — Enabler Service
 
 > Mirrors: `docs/FLOWS/enabler/user-flow/enabler-flows.md`
-> Verification status: Mixed (lifecycle flows Partially Verified; GET profile 500 FAILING)
+> Verification status: Mixed (lifecycle flows Partially Verified; GET profile resolved — accurate 404, DEF-002)
 > Last updated: September 2026
 
 ## Overview
@@ -98,10 +98,13 @@ For `RESTRICTED` status: show which capabilities are blocked with a note: "Your 
 
 ---
 
-## ⚠️ Known Gap — GET Profile (500 FAILING)
+## ✅ Resolved — GET Profile (DEF-002)
 
-> `GET /api/enabler/enablers/{id}` → **500 FAILING** in the September 2026 sweep.
+> `GET /api/enabler/enablers/{id}` now returns the real profile: `200` with `enablerCode`, `businessName`, `tier`, `totalSales`, `commissionRate` and all profile fields, or `404 {success:false, error:"Enabler not found"}` when the enabler has no profile row.
 >
-> **UI fallback:** Use `GET /api/enabler/enablers/:enablerId/capabilities` as the primary data source for enabler state. Show a loading skeleton that times out after 5 seconds, then display: "Profile currently unavailable — try again later." Do not surface the raw error.
+> **UI handling:**
+> - Render the profile from the `200` payload as normal.
+> - On `404`, show an onboarding/registration empty state ("Complete your enabler registration to start selling") rather than an error — a `404` here means "no profile yet", not a server failure.
+> - `GET /api/enabler/enablers/:enablerId/capabilities` remains the lightest source for activation/status gating (`status`, `isOperational`, `capabilities`, `activation`, `lifecycle`).
 >
-> **Expected data when fixed:** enablerCode, businessName, tier, totalSales, commissionRate, full profile fields.
+> **Tracked in:** `docs/FLOWS/_verification/defect-register.md` (DEF-002)

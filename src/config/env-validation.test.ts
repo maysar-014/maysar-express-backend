@@ -36,11 +36,13 @@ describe('validateEnv (Joi)', () => {
       .spyOn(process, 'exit')
       .mockImplementation((() => undefined) as never);
 
-    const result = validateEnv();
+    // process.exit is mocked, so execution continues past the guard and the
+    // partial Joi value is returned; the observable contract of this branch is
+    // the error log + exit code, which is what is asserted below.
+    validateEnv();
 
-    expect(result).toBeUndefined();
     expect(errorSpy).toHaveBeenCalledWith(
-      'âŒ Environment validation failed. Missing or invalid variables:'
+      '❌ Environment validation failed. Missing or invalid variables:'
     );
     expect(exitSpy).toHaveBeenCalledWith(1);
   });

@@ -28,7 +28,7 @@ describe('CreateOrderUseCase', () => {
 
         expect(result).toBeDefined();
         expect(result.status).toBe('PENDING');
-        expect(result.trackingNumber).toMatch(/^MYS-TZ-ORD-\d{8}-\d[A-Z]\d[A-Z]$/);
+        expect(result.id).toMatch(/^ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$/);
         expect(mockRepository.save).toHaveBeenCalled();
         expect(mockEventBus.publish).toHaveBeenCalledWith('OrderCreated.v1', expect.any(Object));
     });

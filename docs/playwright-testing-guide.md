@@ -333,10 +333,10 @@ test('[P0] wallet order: balance decreases on order, restores on cancel', async 
   await buyerPage.goto('/checkout');
   await buyerPage.click('[data-testid="payment-method-wallet"]');
   await buyerPage.click('[data-testid="place-order-btn"]');
-  await buyerPage.waitForURL(/\/orders\/MSR-ORD-/);
+  await buyerPage.waitForURL(/\/orders\/ORD-/);
 
   const orderId = await buyerPage.locator('[data-testid="order-id"]').textContent();
-  expect(orderId).toMatch(/^MSR-ORD-/);
+  expect(orderId).toMatch(/^ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$/);
 
   await buyerPage.goto('/wallet');
   const balanceAfterOrder = parseTZS(
@@ -364,7 +364,7 @@ test('[P1] order status is readable immediately after creation', async ({ buyerP
   await buyerPage.goto('/checkout');
   await buyerPage.click('[data-testid="payment-method-wallet"]');
   await buyerPage.click('[data-testid="place-order-btn"]');
-  await buyerPage.waitForURL(/\/orders\/MSR-ORD-/);
+  await buyerPage.waitForURL(/\/orders\/ORD-/);
   await expect(buyerPage.locator('[data-testid="order-status-badge"]')).toBeVisible();
   const orderId = await buyerPage.locator('[data-testid="order-id"]').textContent();
   await buyerPage.goto('/orders');
@@ -399,7 +399,7 @@ test('[P1] valid COD order (under TZS 30,000) shows 6-digit delivery code', asyn
   await buyerPage.click('[data-testid="payment-method-cod"]');
   await buyerPage.fill('[data-testid="delivery-city-input"]', 'Dar es Salaam');
   await buyerPage.click('[data-testid="place-order-btn"]');
-  await buyerPage.waitForURL(/\/orders\/MSR-ORD-/);
+  await buyerPage.waitForURL(/\/orders\/ORD-/);
   const deliveryCode = await buyerPage.locator('[data-testid="delivery-code-display"]').textContent();
   expect(deliveryCode).toMatch(/^\d{6}$/);
 });
@@ -634,7 +634,7 @@ export class CheckoutPage {
   }
 
   async expectOrderConfirmation() {
-    await this.page.waitForURL(/\/orders\/MSR-ORD-/);
+    await this.page.waitForURL(/\/orders\/ORD-/);
     return this.page.locator('[data-testid="order-id"]').textContent();
   }
 }
@@ -649,7 +649,7 @@ export class CheckoutPage {
 await page.waitForTimeout(3000);
 
 // Right — wait for URL change
-await page.waitForURL(/\/orders\/MSR-ORD-/);
+await page.waitForURL(/\/orders\/ORD-/);
 
 // Right — wait for element to be visible
 await expect(page.locator('[data-testid="order-status-badge"]')).toBeVisible({ timeout: 15_000 });

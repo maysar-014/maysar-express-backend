@@ -29,7 +29,6 @@ export class PrismaOrderRepository implements OrderRepository {
     try {
       const orderData = {
         id: order.id,
-        trackingNumber: order.trackingNumber,
         buyerId: order.buyerId,
         sellerId: order.sellerId,
         status: this.toDbStatus(order.status),
@@ -54,6 +53,16 @@ export class PrismaOrderRepository implements OrderRepository {
         chatConversationId: (order as any).chatConversationId || null,
         declineReason: (order as any).declineReason || null,
         fulfillmentLocationId: (order as any).fulfillmentLocationId || null,
+        // Seller-verification deadline. PlaceOrderUseCase computes this for every
+        // order, but it was never written here, so the column stayed NULL: the
+        // buyer never received `verificationDeadlineRemainingSeconds`, and the
+        // VERIFICATION_OVERDUE transition could never be derived from stored data.
+        verificationDeadlineAt: order.verificationDeadlineAt ?? null,
+        verificationTimeoutMinutes: order.verificationTimeoutMinutes ?? 30,
+        // Delivery economics — without these the COD commitment hold at
+        // confirm-checkout is always 0 (DEF-030).
+        deliveryFee: order.deliveryFee ?? null,
+        logisticsEstimate: order.logisticsEstimate ?? null,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
         items: {
@@ -141,30 +150,11 @@ export class PrismaOrderRepository implements OrderRepository {
       throw new Error(`Failed to find orders by seller: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
-  async findByTrackingNumber(trackingNumber: string): Promise<Order | null> {
-    try {
-      const prismaOrder = await this.orderDelegate.findUnique({
-        where: { trackingNumber },
-        include: { items: true }
-      });
-
-      if (!prismaOrder) {
-        return null;
-      }
-
-      return this.mapPrismaOrderToDomain(prismaOrder);
-    } catch (error) {
-      console.error('Error finding order by tracking number:', error);
-      throw new Error(`Failed to find order by tracking number: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
   async update(order: Order): Promise<void> {
     try {
       const orderData = {
         buyerId: order.buyerId,
         sellerId: order.sellerId,
-        trackingNumber: order.trackingNumber,
         status: this.toDbStatus(order.status),
         paymentMethod: this.toDbPaymentMethod(order.paymentMethod),
         totalAmount: order.totalAmount.amount,
@@ -212,7 +202,6 @@ export class PrismaOrderRepository implements OrderRepository {
 
     const orderData = {
       id: prismaOrder.id,
-      trackingNumber: prismaOrder.trackingNumber,
       buyerId: prismaOrder.buyerId,
       sellerId: prismaOrder.sellerId,
       items: prismaOrder.items.map((item: any) => ({
@@ -230,6 +219,15 @@ export class PrismaOrderRepository implements OrderRepository {
       deliveryCodeUsedAt: prismaOrder.deliveryCodeUsedAt ?? undefined,
       verificationDeadlineAt: prismaOrder.verificationDeadlineAt ?? undefined,
       verificationTimeoutMinutes: prismaOrder.verificationTimeoutMinutes ?? 30,
+      deliveryFee: prismaOrder.deliveryFee ?? undefined,
+      logisticsEstimate: prismaOrder.logisticsEstimate ?? undefined,
+      // COD commitment state. Without these on the read path the order came back
+      // with `codCommitmentHoldId === undefined`, so OrderController's cancel
+      // compensation skipped the release entirely and a cancelled COD order left
+      // the buyer's funds frozen permanently.
+      codCommitmentFee: prismaOrder.codCommitmentFee != null ? Number(prismaOrder.codCommitmentFee) : undefined,
+      codCommitmentPaid: prismaOrder.codCommitmentPaid ?? false,
+      codCommitmentHoldId: prismaOrder.codCommitmentHoldId ?? undefined,
       orderSource: prismaOrder.orderSource ?? 'CART',
       orderCompletionMethod: prismaOrder.orderCompletionMethod ?? undefined,
       chatConversationId: prismaOrder.chatConversationId ?? undefined,

@@ -43,6 +43,10 @@ export class WalletValidator {
         amount: Joi.number().positive().required(),
         currency: Joi.string().valid('TZS').required(),
         reason: safeVisibleString.required(),
+        // Structured business reference, so a hold can be reconciled against the
+        // order it secures without parsing the human-readable reason.
+        referenceId: Joi.string().optional(),
+        referenceType: Joi.string().optional(),
         expiresInSeconds: Joi.number().integer().positive().required(),
         idempotencyKey: safeVisibleString.required(),
         correlationId: Joi.string().uuid().required(),

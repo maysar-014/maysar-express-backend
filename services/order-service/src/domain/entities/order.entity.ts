@@ -28,7 +28,6 @@ export enum OrderStatus {
 
 export class Order {
   public id: string;
-  public trackingNumber?: string;
   public buyerId: string;
   public sellerId: string;
   public enablerId?: string;
@@ -73,6 +72,12 @@ export class Order {
   public verificationDeadlineAt?: Date;
   public verificationTimeoutMinutes?: number;
 
+  // Delivery economics. `deliveryFee` is what the COD commitment hold is sized
+  // from at buyer confirm-checkout; without it the hold was always 0 and COD
+  // orders were confirmed with no funds secured.
+  public deliveryFee?: number;
+  public logisticsEstimate?: number;
+
   // Fulfillment location — resolved at checkout, used by courier for pickup coords
   public fulfillmentLocationId?: string;
 
@@ -83,7 +88,6 @@ export class Order {
     }
 
     this.id = data.id;
-    this.trackingNumber = data.trackingNumber;
     this.buyerId = data.buyerId;
     this.sellerId = data.sellerId;
     this.enablerId = data.enablerId;
@@ -137,6 +141,8 @@ export class Order {
     if (data.verificationDeadlineAt) this.verificationDeadlineAt = new Date(data.verificationDeadlineAt);
     this.verificationTimeoutMinutes = data.verificationTimeoutMinutes ?? 30;
     this.fulfillmentLocationId = data.fulfillmentLocationId;
+    this.deliveryFee = data.deliveryFee;
+    this.logisticsEstimate = data.logisticsEstimate;
   }
 
   updateStatus(newStatus: OrderStatus): void {

@@ -74,4 +74,110 @@ describe('VerifyCODDeliveryUseCase', () => {
       'Delivery del-1 is missing attribution data'
     );
   });
+
+  it('starts the settlement saga, never the initiation saga', async () => {
+    const deliveryRepository = {
+      findById: jest.fn().mockResolvedValue({
+        id: 'del-1',
+        orderId: 'ord-1',
+        buyerId: 'buyer-1',
+        sellerId: 'seller-1',
+        isCOD: true,
+        codAmount: 25000,
+        codCurrency: 'TZS',
+        deliveryLocation: location,
+        status: 'in_transit'
+      })
+    };
+    const settlementSaga = { start: jest.fn().mockResolvedValue(undefined) };
+    const initiationSaga = { start: jest.fn() };
+    const useCase = new VerifyCODDeliveryUseCase(
+      deliveryRepository as never,
+      {} as never,
+      settlementSaga as never
+    );
+
+    await useCase.execute({ deliveryId: 'del-1', otp: '123456', location });
+
+    expect(settlementSaga.start).toHaveBeenCalledTimes(1);
+    // Restarting the initiation saga would re-mint the OTP the courier is
+    // holding, which is exactly what kept deliveries stuck at in_transit (BLG-024).
+    expect(initiationSaga.start).not.toHaveBeenCalled();
+  });
+
+  it('ignores a repeated verification so the order cannot settle twice', async () => {
+    const deliveryRepository = {
+      findById: jest.fn().mockResolvedValue({
+        id: 'del-1',
+        orderId: 'ord-1',
+        buyerId: 'buyer-1',
+        sellerId: 'seller-1',
+        isCOD: true,
+        codOtpVerified: true,
+        deliveryLocation: location,
+        status: 'delivered'
+      })
+    };
+    const saga = { start: jest.fn() };
+    const useCase = new VerifyCODDeliveryUseCase(deliveryRepository as never, {} as never, saga as never);
+
+    await expect(useCase.execute({ deliveryId: 'del-1', otp: '123456', location })).resolves.toBeUndefined();
+    expect(saga.start).not.toHaveBeenCalled();
+  });
+
+  // NOTE: this mocks `start` to REJECT. The real orchestrator never rejects on a
+    // failed step - it catches, compensates and records a terminal saga status.
+    // So this test alone does NOT prove the endpoint reports failure; it only
+    // proves a rejection is propagated. The behaviour that actually matters is
+    // pinned by the `awaitCompletion` assertion below.
+    it('propagates a settlement failure instead of reporting success', async () => {
+    const deliveryRepository = {
+      findById: jest.fn().mockResolvedValue({
+        id: 'del-1',
+        orderId: 'ord-1',
+        buyerId: 'buyer-1',
+        sellerId: 'seller-1',
+        isCOD: true,
+        deliveryLocation: location,
+        status: 'in_transit'
+      })
+    };
+    const saga = {
+      start: jest.fn().mockRejectedValue(new Error('Verification Failed: Invalid or expired OTP'))
+    };
+    const useCase = new VerifyCODDeliveryUseCase(deliveryRepository as never, {} as never, saga as never);
+
+    // A rejected verification must not be reported as a 200 to the courier.
+    await expect(useCase.execute({ deliveryId: 'del-1', otp: '000000', location })).rejects.toThrow(
+      'Verification Failed: Invalid or expired OTP'
+    );
+  });
+
+  it('awaits settlement completion so a failed saga cannot be reported as success', async () => {
+    const deliveryRepository = {
+      findById: jest.fn().mockResolvedValue({
+        id: 'del-1',
+        orderId: 'ord-1',
+        buyerId: 'buyer-1',
+        sellerId: 'seller-1',
+        isCOD: true,
+        deliveryLocation: location,
+        status: 'in_transit'
+      })
+    };
+    const saga = { start: jest.fn().mockResolvedValue('saga-1') };
+    const useCase = new VerifyCODDeliveryUseCase(deliveryRepository as never, {} as never, saga as never);
+
+    await useCase.execute({ deliveryId: 'del-1', otp: '123456', location });
+
+    // Without this flag `start()` is fire-and-forget: it resolves as soon as the
+    // saga is persisted, so this use case resolved successfully even when the
+    // saga had already failed and compensated - the courier got 200 while the
+    // delivery stayed in_transit and nothing settled.
+    expect(saga.start).toHaveBeenCalledWith(
+      expect.anything(),
+      undefined,
+      { awaitCompletion: true }
+    );
+  });
 });

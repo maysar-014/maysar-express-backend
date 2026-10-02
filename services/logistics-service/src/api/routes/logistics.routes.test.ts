@@ -193,7 +193,7 @@ describe('logistics.routes', () => {
   });
 
   it('delegates API calls to lazily constructed controllers', async () => {
-    const createRes = await request(app).post('/api/v1/deliveries').send({ orderId: 'o1' });
+    const createRes = await request(app).post('/api/v1/deliveries').send({ orderId: 'ORD-20260927-3C8B' });
     expect(createRes.status).toBe(200);
     expect(createRes.body).toEqual(expect.objectContaining({ handler: 'createDelivery' }));
     expect(mockDeliveryController.createDelivery).toHaveBeenCalled();

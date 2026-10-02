@@ -48,8 +48,10 @@ describe('Seller Storefront E2E Tests', () => {
       });
 
       const { shareUrl, shortUrl } = shareUrlResponse.body.data;
-      expect(shareUrl).toMatch(/^https:\/\/maysar\.co\.tz\/seller\//);
-      expect(shortUrl).toMatch(/^https:\/\/maysar\.co\.tz\/s\//);
+      // SellerStorefrontController builds links from BASE_URL (fallback: production host).
+      const storefrontBaseUrl = process.env.BASE_URL || 'https://maysar.co.tz';
+      expect(shareUrl).toBe(`${storefrontBaseUrl}/seller/${customSlug}`);
+      expect(shortUrl).toBe(`${storefrontBaseUrl}/s/${customSlug}`);
     });
 
     it('should generate unique QR codes for different sellers', async () => {

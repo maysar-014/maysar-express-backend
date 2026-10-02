@@ -415,10 +415,10 @@
 
 ### 10. Commission Service
 **Endpoints**:
-- `POST /api/commissions/calculate` - Calculate commission
-- `GET /api/commissions/:id` - Get commission
-- `GET /api/commissions/seller/:sellerId` - Get seller commissions
-- `POST /api/commissions/:id/payout` - Process payout
+- `POST /api/commission/calculate` - Calculate commission
+- `PUT /api/commission/:id/approve` - Approve commission
+- `GET /api/commission/:id` - Get commission
+- `GET /api/commission/sellers/:sellerId` - Get seller commissions
 
 **Events Published**:
 - `CommissionCalculated.v1`

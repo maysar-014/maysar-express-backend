@@ -1,7 +1,14 @@
 export interface IWalletServiceClient {
-    placeHold(userId: string, amount: number, currency: string, reason: string): Promise<string>;
-    releaseHold(holdId: string): Promise<void>;
-    captureHold(holdId: string): Promise<void>;
+    // placeHold now carries the business reference so the reconciliation job can
+    // resolve the order a hold secures without parsing the reason string.
+    placeHold(userId: string, amount: number, currency: string, reason: string, referenceId?: string): Promise<string>;
+    /**
+     * `userId` is the hold owner. The wallet routes are scoped by owner
+     * (`/:userId/hold/:holdId/...`) and its authorization middleware rejects a
+     * shared "system" identity, so release/capture cannot be performed without it.
+     */
+    releaseHold(holdId: string, userId: string, reason?: string): Promise<void>;
+    captureHold(holdId: string, userId: string, reason?: string): Promise<void>;
 }
 
 /**
@@ -72,21 +79,21 @@ export class CODCommitmentService {
         const reason = isFreeDelivery
             ? `COD Commitment Fee for Order ${orderId} — free delivery secured`
             : `COD Delivery Fee for Order ${orderId} — secured before packaging`;
-        return await this.walletService.placeHold(userId, amount, currency, reason);
+        return await this.walletService.placeHold(userId, amount, currency, reason, orderId);
     }
 
     /** Release hold back to buyer (cancellation before dispatch). */
-    async releaseCommitment(holdId: string): Promise<void> {
-        await this.walletService.releaseHold(holdId);
+    async releaseCommitment(holdId: string, userId: string, reason?: string): Promise<void> {
+        await this.walletService.releaseHold(holdId, userId, reason);
     }
 
     /** Capture hold on confirmed delivery (settles delivery cost). */
-    async captureCommitment(holdId: string): Promise<void> {
-        await this.walletService.captureHold(holdId);
+    async captureCommitment(holdId: string, userId: string, reason?: string): Promise<void> {
+        await this.walletService.captureHold(holdId, userId, reason);
     }
 
     /** Forfeit hold as penalty (delivery refused / no-show). */
-    async forfeitCommitment(holdId: string): Promise<void> {
-        await this.walletService.captureHold(holdId);
+    async forfeitCommitment(holdId: string, userId: string, reason?: string): Promise<void> {
+        await this.walletService.captureHold(holdId, userId, reason);
     }
 }

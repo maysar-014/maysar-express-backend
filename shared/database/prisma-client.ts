@@ -21,13 +21,29 @@ const normalizeDatabaseUrl = (url?: string): { url?: string; disableSsl?: boolea
     // Pool sizing — these are Prisma Data Proxy / query-engine parameters.
     // connection_limit: max connections per engine process (default is unconstrained).
     // pool_timeout: seconds to wait for a free connection before throwing.
-    if (!parsed.searchParams.has('connection_limit')) {
-      const limit = process.env.DB_CONNECTION_LIMIT || '50';
-      parsed.searchParams.set('connection_limit', limit);
+    // Pool sizing — these are Prisma Data Proxy / query-engine parameters.
+    // connection_limit: max connections per engine process (default is unconstrained).
+    // pool_timeout: seconds to wait for a free connection before throwing.
+    //
+    // DB_CONNECTION_LIMIT / DB_POOL_TIMEOUT are authoritative when set. They were
+    // previously only consulted when the URL had no such parameter, so a URL
+    // carrying `connection_limit=50` (as .env does) silently made both knobs dead.
+    // That matters because the monolith opens more than one engine pool: 3 pools x
+    // 50 = 150 requested against Postgres max_connections=100, so the excess was
+    // refused and every affected request failed with P1001/P2024 after a 30s wait.
+    // Setting the variable therefore *is* how you size the pool; it must not be
+    // silently ignored just because the URL also carries a value.
+    const envLimit = process.env.DB_CONNECTION_LIMIT?.trim();
+    if (envLimit) {
+      parsed.searchParams.set('connection_limit', envLimit);
+    } else if (!parsed.searchParams.has('connection_limit')) {
+      parsed.searchParams.set('connection_limit', '50');
     }
-    if (!parsed.searchParams.has('pool_timeout')) {
-      const timeout = process.env.DB_POOL_TIMEOUT || '30';
-      parsed.searchParams.set('pool_timeout', timeout);
+    const envTimeout = process.env.DB_POOL_TIMEOUT?.trim();
+    if (envTimeout) {
+      parsed.searchParams.set('pool_timeout', envTimeout);
+    } else if (!parsed.searchParams.has('pool_timeout')) {
+      parsed.searchParams.set('pool_timeout', '30');
     }
     return { url: parsed.toString(), disableSsl: isLocalHost(parsed.hostname) };
   } catch {

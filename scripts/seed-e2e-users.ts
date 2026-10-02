@@ -459,6 +459,10 @@ async function seedSellerProduct(sellerId: string): Promise<Record<string, unkno
           businessType: 'SOLE_PROPRIETORSHIP' as any,
           registrationNumber: `SEED-${Date.now()}`,
           ownerId: sellerId,
+          // `industry` is a required String[] on Business; omitting it fails
+          // with a null constraint violation. The seed business is generic, so
+          // an explicit empty list is the honest value (not a fabricated one).
+          industry: [],
         }
       });
       businessId = newBusiness.id;

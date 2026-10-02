@@ -254,9 +254,9 @@ field agents go unpaid or overpaid. These tests ensure the arithmetic layer is p
 
 ---
 
-### 12. Admin and governance — `admin.e2e.test.ts`
+### 12. Admin and platform operations — `admin.e2e.test.ts`
 
-**Business role:** Platform operator. The governance and observability layer.
+**Business role:** Platform operator. The administration and observability layer.
 
 **What the tests prove:**
 - A specific seeded user is retrievable by admin token and the ID matches (ADM-01) `[P1]`
@@ -398,7 +398,7 @@ Supplier alignment   ← supplier-production.e2e
 Courier execution    ← delivery.e2e + checkout-saga.e2e (COD OTP)
 Enabler attribution  ← enabler.e2e + commission.e2e
 Platform integrity   ← wallet.e2e + platform-ops.e2e + admin.e2e
-Governance           ← admin.e2e + support.e2e
+Admin operations     ← admin.e2e + support.e2e
 Communication        ← chat.e2e
 ```
 

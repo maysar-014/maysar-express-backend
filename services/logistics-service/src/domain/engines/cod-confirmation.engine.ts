@@ -27,6 +27,14 @@ export class CODConfirmationEngine {
      * Validates the provided OTP against the actual one and checks for expiration.
      */
     validateOTP(providedOtp: string, actualOtp: string, expiryAt: Date): boolean {
+        // Fail closed when the expected code or its expiry is missing. Without
+        // this, `new Date() > undefined` evaluates to false (NaN comparison) and
+        // the expiry check silently never fires - so a delivery whose OTP was
+        // never persisted would skip expiry enforcement entirely.
+        if (!actualOtp || !expiryAt) {
+            return false;
+        }
+
         if (new Date() > expiryAt) {
             return false;
         }

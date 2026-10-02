@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { zodOrderNumber } from '@shared/ids/human-readable-ids';
 import { TicketPriority, TicketStatus } from '../../domain/types';
 
 const optionalNumber = (min?: number, max?: number) =>
@@ -16,7 +17,8 @@ const attachmentSchema = z.object({
 }).strict();
 
 export const createDisputeSchema = z.object({
-    orderId: z.string().trim().min(1).max(64).optional(),
+    // An order reference is exactly an order number (ORD-YYYYMMDD-NLNL).
+    orderId: zodOrderNumber().optional(),
     ticketId: z.string().trim().min(1).max(64).optional(),
     raisedBy: z.string().trim().min(1).max(64).optional(),
     reason: z.string().trim().min(3).max(500),

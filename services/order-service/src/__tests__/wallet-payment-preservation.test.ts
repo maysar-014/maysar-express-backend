@@ -8,9 +8,11 @@
  */
 
 import * as fc from 'fast-check';
+import { GLOBAL_MINIMUM_BASKET_VALUE_TZS } from '@shared/business/minimum-basket-value';
 import { Payment, PaymentMethod, PaymentStatus } from '../domain/entities/payment.entity';
 import { PaymentSaga } from '../application/sagas/payment.saga';
-import { PlaceOrderUseCase, PlaceOrderRequest } from '../application/use-cases/place-order.use-case';
+import { BuyerConfirmCheckoutUseCase } from '../application/use-cases/buyer-confirm-checkout.use-case';
+import { OrderStatus } from '../domain/entities/order.entity';
 import { OrderFulfillmentSaga } from '../application/sagas/order-fulfillment.saga';
 
 // Mock the saga log repository to avoid DB dependency in unit tests
@@ -30,17 +32,15 @@ jest.mock('../infrastructure/repositories/saga.repository', () => ({
 
 const buyerIdArb = fc.stringMatching(/^[a-z0-9]{4,16}$/).map((s: string) => 'buyer-' + s);
 const sellerIdArb = fc.stringMatching(/^[a-z0-9]{4,16}$/).map((s: string) => 'seller-' + s);
-const amountArb = fc.integer({ min: 1000, max: 500000 });
+// These properties assert payment-outcome semantics (a failed authorisation must
+// surface an error and must NOT persist the order). They are not basket-validation
+// properties. The generator therefore starts at the production minimum basket value:
+// starting it lower made fast-check generate a sub-threshold amount on its first
+// run, so the minimum-basket rule rejected the order before the payment path was
+// ever reached and the property failed for the wrong reason. Bound to the shared
+// constant so it cannot drift out of step with production again.
+const amountArb = fc.integer({ min: GLOBAL_MINIMUM_BASKET_VALUE_TZS, max: 500000 });
 const currencyArb = fc.constantFrom('TZS', 'USD', 'KES', 'EUR');
-const itemsArb = fc.array(
-  fc.record({
-    productId: fc.stringMatching(/^[a-z0-9]{4,12}$/).map((s: string) => 'prod-' + s),
-    quantity: fc.integer({ min: 1, max: 10 }),
-    price: fc.integer({ min: 100, max: 50000 }),
-    weight: fc.float({ min: Math.fround(0.1), max: Math.fround(10), noNaN: true })
-  }),
-  { minLength: 1, maxLength: 5 }
-);
 
 // ─── Minimal stubs ─────────────────────────────────────────────────────────────
 
@@ -57,23 +57,9 @@ function makeMockPaymentRepository() {
   } as any;
 }
 
-function makeMockOrderRepository() {
-  return {
-    save: jest.fn().mockResolvedValue(undefined),
-    findById: jest.fn().mockResolvedValue(null),
-    findByTrackingNumber: jest.fn().mockResolvedValue(null)
-  } as any;
-}
-
 function makeMockEventPublisher() {
   return {
     publish: jest.fn().mockResolvedValue(undefined)
-  } as any;
-}
-
-function makeMockSagaOrchestrator() {
-  return {
-    start: jest.fn().mockResolvedValue(undefined)
   } as any;
 }
 
@@ -110,17 +96,80 @@ function makeFailingWalletClient(errorMessage = 'Insufficient funds') {
   };
 }
 
-function makeBaseRequest(overrides: Partial<PlaceOrderRequest> = {}): PlaceOrderRequest {
+// ─── Checkout-path stubs (BuyerConfirmCheckoutUseCase) ─────────────────────────
+//
+// Payment is no longer performed by PlaceOrderUseCase. Under the seller
+// verification workflow every order is persisted as PENDING_SELLER_VERIFICATION
+// with no payment step, and the wallet is debited later by
+// BuyerConfirmCheckoutUseCase, which is wired at index.ts:137 and reached from
+// verification.controller.ts. It charges the wallet only on the
+// SELLER_VERIFIED → CONFIRMED (actor: buyer) transition, so the fixtures below
+// place the order in exactly that state.
+
+/** An order in the only state from which a buyer may confirm checkout. */
+function makeVerifiedOrder(overrides: Record<string, any> = {}) {
   return {
+    id: 'order-test-001',
     buyerId: 'buyer-test-001',
     sellerId: 'seller-test-001',
-    items: [{ productId: 'prod-001', quantity: 1, price: 5000, weight: 1 }],
-    currency: 'TZS',
-    paymentMethod: 'COD',
+    status: OrderStatus.SELLER_VERIFIED,
+    paymentMethod: 'WALLET',
+    totalAmount: { amount: 100000, currency: 'TZS' },
     deliveryFee: 2000,
-    deliveryAddress: { street: '1 Main St', city: 'Dar es Salaam', postalCode: '11101', country: 'TZ' },
-    ...overrides
-  };
+    logisticsEstimate: 5000,
+    ...overrides,
+  } as any;
+}
+
+function makeMockAuditLogRepository() {
+  return { append: jest.fn().mockResolvedValue(undefined) } as any;
+}
+
+/**
+ * Builds the checkout use case over in-memory doubles.
+ *
+ * `BuyerConfirmCheckoutUseCase` persists through `globalThis.prisma` when it is
+ * present and falls back to the injected repositories when it is not. The prisma
+ * global is cleared here so these tests exercise the repository branch and stay
+ * hermetic — without this the suite reaches for a real PrismaClient and fails
+ * with "Database not initialized. Call initialize() first."
+ */
+function makeCheckoutUseCase(overrides: {
+  order?: any;
+  walletClient?: any;
+  codEligibilityEngine?: any;
+  codCommitmentService?: any;
+} = {}) {
+  const order = overrides.order ?? makeVerifiedOrder();
+  const orderRepository = {
+    findById: jest.fn().mockResolvedValue(order),
+    update: jest.fn().mockResolvedValue(undefined),
+  } as any;
+  const auditLogRepository = makeMockAuditLogRepository();
+  const eventPublisher = makeMockEventPublisher();
+  const codEligibilityEngine = overrides.codEligibilityEngine ?? makeMockCODEligibilityEngine();
+  const codCommitmentService = overrides.codCommitmentService ?? makeMockCODCommitmentService();
+  const walletClient = overrides.walletClient ?? makeSuccessWalletClient();
+
+  const useCase = new BuyerConfirmCheckoutUseCase(
+    orderRepository,
+    auditLogRepository,
+    eventPublisher,
+    codEligibilityEngine,
+    codCommitmentService,
+    walletClient as any,
+  );
+
+  return { useCase, order, orderRepository, auditLogRepository, eventPublisher, codEligibilityEngine, codCommitmentService, walletClient };
+}
+
+/** Confirms checkout for the order held by `bundle`, as its buyer. */
+async function confirmCheckout(bundle: ReturnType<typeof makeCheckoutUseCase>, input: Record<string, any> = {}) {
+  return bundle.useCase.execute({
+    orderId: bundle.order.id,
+    buyerId: bundle.order.buyerId,
+    ...input,
+  } as any);
 }
 
 async function drainAsync(ms = 50): Promise<void> {
@@ -139,81 +188,67 @@ describe('Preservation A — COD orders: walletClient.debitWallet is NEVER calle
   /**
    * **Validates: Requirements 3.1**
    *
-   * Property: For any buyerId/sellerId/items combination with paymentMethod: 'COD',
-   * walletClient.debitWallet MUST NOT be called, COD eligibility checks MUST run,
-   * and commitment fee MUST be secured.
+   * Property: For any COD order confirmed at checkout, walletClient.debitWallet
+   * MUST NOT be called, COD eligibility checks MUST run, and the commitment fee
+   * MUST be secured.
+   *
+   * Retargeted from PlaceOrderUseCase to BuyerConfirmCheckoutUseCase. Under the
+   * seller verification workflow PlaceOrderUseCase performs no payment step at
+   * all, so asserting "debitWallet not called" against it was vacuously true and
+   * the eligibility/commitment assertions could not hold there. Both now hold for
+   * real on the use case that actually charges.
    */
   it('PBT: debitWallet is never called for any COD order', async () => {
     await fc.assert(
-      fc.asyncProperty(buyerIdArb, sellerIdArb, itemsArb, async (buyerId, sellerId, items) => {
-        const orderRepository = makeMockOrderRepository();
-        const eventPublisher = makeMockEventPublisher();
-        const sagaOrchestrator = makeMockSagaOrchestrator();
-        const codEligibilityEngine = makeMockCODEligibilityEngine();
-        const codCommitmentService = makeMockCODCommitmentService();
-        const walletClient = makeSuccessWalletClient();
+      fc.asyncProperty(
+        buyerIdArb,
+        sellerIdArb,
+        fc.integer({ min: 0, max: 20_000 }),
+        fc.integer({ min: 0, max: 20_000 }),
+        async (buyerId, sellerId, deliveryFee, logisticsEstimate) => {
+          const bundle = makeCheckoutUseCase({
+            order: makeVerifiedOrder({
+              buyerId,
+              sellerId,
+              paymentMethod: 'COD',
+              deliveryFee,
+              logisticsEstimate,
+            }),
+          });
 
-        const useCase = new PlaceOrderUseCase(
-          orderRepository,
-          eventPublisher,
-          sagaOrchestrator,
-          codEligibilityEngine,
-          codCommitmentService,
-          walletClient as any
-        );
+          await confirmCheckout(bundle);
 
-        const request = makeBaseRequest({
-          buyerId,
-          sellerId,
-          items,
-          paymentMethod: 'COD',
-          deliveryFee: 2000
-        });
+          // ASSERTION: debitWallet must NEVER be called for COD orders
+          expect(bundle.walletClient.debitWallet).not.toHaveBeenCalled();
 
-        await useCase.execute(request);
+          // ASSERTION: COD eligibility checks must run
+          expect(bundle.codEligibilityEngine.checkBuyerEligibility).toHaveBeenCalledWith(buyerId);
+          expect(bundle.codEligibilityEngine.checkSellerEligibility).toHaveBeenCalledWith(sellerId);
 
-        // ASSERTION: debitWallet must NEVER be called for COD orders
-        expect(walletClient.debitWallet).not.toHaveBeenCalled();
+          // ASSERTION: commitment fee must be secured
+          expect(bundle.codCommitmentService.secureCommitment).toHaveBeenCalled();
 
-        // ASSERTION: COD eligibility checks must run
-        expect(codEligibilityEngine.checkBuyerEligibility).toHaveBeenCalledWith(buyerId);
-        expect(codEligibilityEngine.checkSellerEligibility).toHaveBeenCalledWith(sellerId);
-
-        // ASSERTION: commitment fee must be secured
-        expect(codCommitmentService.secureCommitment).toHaveBeenCalled();
-
-        // ASSERTION: order must be saved
-        expect(orderRepository.save).toHaveBeenCalled();
-      }),
+          // ASSERTION: order must be confirmed and persisted
+          expect(bundle.orderRepository.update).toHaveBeenCalledTimes(1);
+          expect(bundle.order.status).toBe(OrderStatus.CONFIRMED);
+        },
+      ),
       { numRuns: 10 }
     );
   });
 
   it('Unit: COD order does not call debitWallet and runs eligibility checks', async () => {
-    const orderRepository = makeMockOrderRepository();
-    const eventPublisher = makeMockEventPublisher();
-    const sagaOrchestrator = makeMockSagaOrchestrator();
-    const codEligibilityEngine = makeMockCODEligibilityEngine();
-    const codCommitmentService = makeMockCODCommitmentService();
-    const walletClient = makeSuccessWalletClient();
+    const bundle = makeCheckoutUseCase({
+      order: makeVerifiedOrder({ paymentMethod: 'COD', deliveryFee: 2000 }),
+    });
 
-    const useCase = new PlaceOrderUseCase(
-      orderRepository,
-      eventPublisher,
-      sagaOrchestrator,
-      codEligibilityEngine,
-      codCommitmentService,
-      walletClient as any
-    );
+    await confirmCheckout(bundle);
 
-    const request = makeBaseRequest({ paymentMethod: 'COD', deliveryFee: 2000 });
-    await useCase.execute(request);
-
-    expect(walletClient.debitWallet).not.toHaveBeenCalled();
-    expect(codEligibilityEngine.checkBuyerEligibility).toHaveBeenCalledWith('buyer-test-001');
-    expect(codEligibilityEngine.checkSellerEligibility).toHaveBeenCalledWith('seller-test-001');
-    expect(codCommitmentService.secureCommitment).toHaveBeenCalled();
-    expect(orderRepository.save).toHaveBeenCalled();
+    expect(bundle.walletClient.debitWallet).not.toHaveBeenCalled();
+    expect(bundle.codEligibilityEngine.checkBuyerEligibility).toHaveBeenCalledWith('buyer-test-001');
+    expect(bundle.codEligibilityEngine.checkSellerEligibility).toHaveBeenCalledWith('seller-test-001');
+    expect(bundle.codCommitmentService.secureCommitment).toHaveBeenCalled();
+    expect(bundle.orderRepository.update).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -278,7 +313,7 @@ describe('Preservation B — CARD and MOBILE_PAYMENT orders: routes to PaymentGa
       id: 'pay-card-001',
       orderId: 'ord-card-001',
       buyerId: 'buyer-card-001',
-      amount: 10000,
+      amount: 100000, // must clear the 50,000 TZS global minimum basket (MIN_BASKET_VALUE_TZS)
       currency: 'TZS',
       method: PaymentMethod.CARD,
       status: PaymentStatus.PENDING
@@ -302,7 +337,7 @@ describe('Preservation B — CARD and MOBILE_PAYMENT orders: routes to PaymentGa
       id: 'pay-mobile-001',
       orderId: 'ord-mobile-001',
       buyerId: 'buyer-mobile-001',
-      amount: 10000,
+      amount: 100000, // must clear the 50,000 TZS global minimum basket (MIN_BASKET_VALUE_TZS)
       currency: 'TZS',
       method: PaymentMethod.MOBILE_MONEY,
       status: PaymentStatus.PENDING
@@ -335,84 +370,54 @@ describe('Preservation C — Successful WALLET order: debitWallet called once, o
   it('PBT: debitWallet called exactly once and order persisted for any successful WALLET order', async () => {
     await fc.assert(
       fc.asyncProperty(buyerIdArb, amountArb, currencyArb, async (buyerId, amount, currency) => {
-        const orderRepository = makeMockOrderRepository();
-        const eventPublisher = makeMockEventPublisher();
-        const sagaOrchestrator = makeMockSagaOrchestrator();
-        const codEligibilityEngine = makeMockCODEligibilityEngine();
-        const codCommitmentService = makeMockCODCommitmentService();
-        const walletClient = makeSuccessWalletClient();
-
-        const useCase = new PlaceOrderUseCase(
-          orderRepository,
-          eventPublisher,
-          sagaOrchestrator,
-          codEligibilityEngine,
-          codCommitmentService,
-          walletClient as any
-        );
-
-        const request = makeBaseRequest({
-          buyerId,
-          items: [{ productId: 'prod-001', quantity: 1, price: amount, weight: 1 }],
-          currency,
-          paymentMethod: 'WALLET'
+        const bundle = makeCheckoutUseCase({
+          order: makeVerifiedOrder({ buyerId, totalAmount: { amount, currency } }),
         });
 
-        const result = await useCase.execute(request);
+        const result = await confirmCheckout(bundle);
 
         // ASSERTION: debitWallet must be called exactly once
-        expect(walletClient.debitWallet).toHaveBeenCalledTimes(1);
+        expect(bundle.walletClient.debitWallet).toHaveBeenCalledTimes(1);
 
-        // ASSERTION: debitWallet must be called with the correct buyerId and currency
-        expect(walletClient.debitWallet).toHaveBeenCalledWith(
+        // ASSERTION: debitWallet must be called with the correct buyer, amount and
+        // currency. The fifth argument is the order id, stored as the transaction's
+        // referenceId so a later cancellation can find the debit and refund it.
+        expect(bundle.walletClient.debitWallet).toHaveBeenCalledWith(
           buyerId,
-          expect.any(Number),
+          amount,
           currency,
-          expect.any(String)
+          expect.stringContaining('Payment for order'),
+          'order-test-001'
         );
 
-        // ASSERTION: order must be persisted
-        expect(orderRepository.save).toHaveBeenCalledTimes(1);
+        // ASSERTION: order must be persisted and confirmed
+        expect(bundle.orderRepository.update).toHaveBeenCalledTimes(1);
+        expect(bundle.order.status).toBe(OrderStatus.CONFIRMED);
 
-        // ASSERTION: result must contain orderId and deliveryCode (HTTP 201 equivalent)
-        expect(result.orderId).toBeDefined();
-        expect(result.deliveryCode).toBeDefined();
-        expect(result.status).toBeDefined();
+        // ASSERTION: result must identify the confirmed order
+        expect(result.orderId).toBe('order-test-001');
+        expect(result.newStatus).toBe(OrderStatus.CONFIRMED);
       }),
       { numRuns: 10 }
     );
   });
 
   it('Unit: Successful WALLET order returns orderId, debitWallet called once, order saved', async () => {
-    const orderRepository = makeMockOrderRepository();
-    const eventPublisher = makeMockEventPublisher();
-    const sagaOrchestrator = makeMockSagaOrchestrator();
-    const codEligibilityEngine = makeMockCODEligibilityEngine();
-    const codCommitmentService = makeMockCODCommitmentService();
-    const walletClient = makeSuccessWalletClient();
+    const bundle = makeCheckoutUseCase();
 
-    const useCase = new PlaceOrderUseCase(
-      orderRepository,
-      eventPublisher,
-      sagaOrchestrator,
-      codEligibilityEngine,
-      codCommitmentService,
-      walletClient as any
-    );
+    const result = await confirmCheckout(bundle);
 
-    const request = makeBaseRequest({ paymentMethod: 'WALLET' });
-    const result = await useCase.execute(request);
-
-    expect(walletClient.debitWallet).toHaveBeenCalledTimes(1);
-    expect(walletClient.debitWallet).toHaveBeenCalledWith(
+    expect(bundle.walletClient.debitWallet).toHaveBeenCalledTimes(1);
+    expect(bundle.walletClient.debitWallet).toHaveBeenCalledWith(
       'buyer-test-001',
-      5000,
+      100000,
       'TZS',
-      expect.stringContaining('Payment for order')
+      expect.stringContaining('Payment for order'),
+      'order-test-001'
     );
-    expect(orderRepository.save).toHaveBeenCalledTimes(1);
-    expect(result.orderId).toBeDefined();
-    expect(result.deliveryCode).toBeDefined();
+    expect(bundle.orderRepository.update).toHaveBeenCalledTimes(1);
+    expect(result.orderId).toBe('order-test-001');
+    expect(result.newStatus).toBe(OrderStatus.CONFIRMED);
   });
 });
 
@@ -435,83 +440,78 @@ describe('Preservation D — Failed WALLET order: error returned, order NOT pers
   it('PBT: execute throws and order is not saved when walletClient throws for any input', async () => {
     await fc.assert(
       fc.asyncProperty(buyerIdArb, amountArb, currencyArb, async (buyerId, amount, currency) => {
-        const orderRepository = makeMockOrderRepository();
-        const eventPublisher = makeMockEventPublisher();
-        const sagaOrchestrator = makeMockSagaOrchestrator();
-        const codEligibilityEngine = makeMockCODEligibilityEngine();
-        const codCommitmentService = makeMockCODCommitmentService();
-        const walletClient = makeFailingWalletClient('Insufficient funds');
-
-        const useCase = new PlaceOrderUseCase(
-          orderRepository,
-          eventPublisher,
-          sagaOrchestrator,
-          codEligibilityEngine,
-          codCommitmentService,
-          walletClient as any
-        );
-
-        const request = makeBaseRequest({
-          buyerId,
-          items: [{ productId: 'prod-001', quantity: 1, price: amount, weight: 1 }],
-          currency,
-          paymentMethod: 'WALLET'
+        const bundle = makeCheckoutUseCase({
+          order: makeVerifiedOrder({ buyerId, totalAmount: { amount, currency } }),
+          // Neither 'Insufficient funds' nor a generic outage is a lock/contention/
+          // timeout error, so the use case must not retry — one failed debit is one
+          // failed attempt. A message containing any of those words would legitimately
+          // be retried once and would change the expected call count.
+          walletClient: makeFailingWalletClient('Insufficient funds'),
         });
 
         // ASSERTION: must throw when walletClient fails
-        await expect(useCase.execute(request)).rejects.toThrow();
+        await expect(confirmCheckout(bundle)).rejects.toThrow(/Wallet payment failed/i);
 
         // ASSERTION: order must NOT be persisted
-        expect(orderRepository.save).not.toHaveBeenCalled();
+        expect(bundle.orderRepository.update).not.toHaveBeenCalled();
       }),
       { numRuns: 10 }
     );
   });
 
   it('Unit: Failed WALLET order (insufficient funds) throws and does not save order', async () => {
-    const orderRepository = makeMockOrderRepository();
-    const eventPublisher = makeMockEventPublisher();
-    const sagaOrchestrator = makeMockSagaOrchestrator();
-    const codEligibilityEngine = makeMockCODEligibilityEngine();
-    const codCommitmentService = makeMockCODCommitmentService();
-    const walletClient = makeFailingWalletClient('Insufficient funds');
+    const bundle = makeCheckoutUseCase({
+      walletClient: makeFailingWalletClient('Insufficient funds'),
+    });
 
-    const useCase = new PlaceOrderUseCase(
-      orderRepository,
-      eventPublisher,
-      sagaOrchestrator,
-      codEligibilityEngine,
-      codCommitmentService,
-      walletClient as any
-    );
-
-    const request = makeBaseRequest({ paymentMethod: 'WALLET' });
-
-    await expect(useCase.execute(request)).rejects.toThrow(/Wallet payment failed|Insufficient funds/i);
-    expect(orderRepository.save).not.toHaveBeenCalled();
+    await expect(confirmCheckout(bundle)).rejects.toThrow(/Wallet payment failed|Insufficient funds/i);
+    expect(bundle.orderRepository.update).not.toHaveBeenCalled();
   });
 
   it('Unit: Failed WALLET order (service unavailable) throws and does not save order', async () => {
-    const orderRepository = makeMockOrderRepository();
-    const eventPublisher = makeMockEventPublisher();
-    const sagaOrchestrator = makeMockSagaOrchestrator();
-    const codEligibilityEngine = makeMockCODEligibilityEngine();
-    const codCommitmentService = makeMockCODCommitmentService();
-    const walletClient = makeFailingWalletClient('Wallet service unavailable');
+    const bundle = makeCheckoutUseCase({
+      walletClient: makeFailingWalletClient('Wallet service unavailable'),
+    });
 
-    const useCase = new PlaceOrderUseCase(
-      orderRepository,
-      eventPublisher,
-      sagaOrchestrator,
-      codEligibilityEngine,
-      codCommitmentService,
-      walletClient as any
+    await expect(confirmCheckout(bundle)).rejects.toThrow(/Wallet payment failed|Wallet service unavailable/i);
+    expect(bundle.orderRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('Unit: WALLET order with no wallet client fails closed with PAYMENT_UNAVAILABLE', async () => {
+    // Mirrors the production guard at buyer-confirm-checkout.use-case.ts:98-100. A
+    // missing client must fail closed rather than silently confirming an unpaid
+    // order, which is the silent-failure class this suite exists to prevent.
+    const bundle = makeCheckoutUseCase();
+    const useCase = new BuyerConfirmCheckoutUseCase(
+      bundle.orderRepository,
+      bundle.auditLogRepository,
+      bundle.eventPublisher,
+      undefined,
+      undefined,
+      undefined,
     );
 
-    const request = makeBaseRequest({ paymentMethod: 'WALLET' });
+    await expect(
+      useCase.execute({ orderId: 'order-test-001', buyerId: 'buyer-test-001' } as any),
+    ).rejects.toMatchObject({ code: 'PAYMENT_UNAVAILABLE', statusCode: 503 });
+    expect(bundle.orderRepository.update).not.toHaveBeenCalled();
+  });
 
-    await expect(useCase.execute(request)).rejects.toThrow();
-    expect(orderRepository.save).not.toHaveBeenCalled();
+  it('Unit: a transient lock error is retried once before the order is rejected', async () => {
+    // The retry is deliberate and narrow: only lock/contention/timeout messages are
+    // retried, and only once. This pins both halves — a contention error succeeds
+    // on the second attempt, and the caller is charged exactly once overall.
+    const walletClient = makeFailingWalletClient('Wallet lock contention');
+    walletClient.debitWallet
+      .mockRejectedValueOnce(new Error('Wallet lock contention'))
+      .mockResolvedValueOnce('TX_RETRY_001');
+
+    const bundle = makeCheckoutUseCase({ walletClient });
+
+    await confirmCheckout(bundle);
+
+    expect(walletClient.debitWallet).toHaveBeenCalledTimes(2);
+    expect(bundle.orderRepository.update).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -628,7 +628,7 @@ describe('Preservation E — Saga step progression: StockReservation → Payment
       id: 'pay-cod-001',
       orderId: 'ord-cod-001',
       buyerId: 'buyer-cod-001',
-      amount: 10000,
+      amount: 100000, // must clear the 50,000 TZS global minimum basket (MIN_BASKET_VALUE_TZS)
       currency: 'TZS',
       method: PaymentMethod.COD,
       status: PaymentStatus.PENDING

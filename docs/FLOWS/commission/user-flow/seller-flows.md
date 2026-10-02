@@ -1,41 +1,48 @@
 ﻿# Seller Flows — Commission Service
 
-> **Verification status:** Missing (all routes return route-level 404)
-> **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` (September 2026)
+> **Verification status:** Verified — the `/api/commission/*` surface is registered and reachable
+> **Verification basis:** `docs/FLOWS/_verification/defect-register.md` (DEF-006, resolved)
 > **Last updated:** September 2026
 
 ## Overview
 
-commission-service has **no active HTTP surface**. All `/api/commission/*` and `/api/commissions/*` routes return route-level 404 in the September 2026 sweep — the route surface is entirely unregistered. Commission is calculated internally by order fulfillment sagas and credited directly to the seller's or enabler's wallet. This document exists only to document the Known Gap and provide UI fallback guidance.
+commission-service exposes a live HTTP surface at `/api/commission/*`. Commission records are written
+automatically when an order is fulfilled (the order saga computes the breakdown and credits the
+recipient's wallet); the HTTP surface reads those records back and lets an admin/ops caller approve a
+PENDING commission.
+
+> **Resolved defect (DEF-006):** `CommissionModule.name` had regressed to `commissions-service`
+> (commit `0eddebb0`). Because the bootstrap derives the mount path from the module name (strip
+> `-service`, under `/api`), the whole surface moved to `/api/commissions` and every documented
+> `/api/commission/*` call answered route-level 404. The module is named `commission-service` again
+> and the derivation is locked by `resolveModuleMountPath` plus
+> `services/commission-service/src/__tests__/commission-module.contract.test.ts`.
 
 ---
 
-## Known Gap — Commission Service Routes (ALL MISSING)
+## Seller Flows (live)
 
-> ⚠️ **ALL `/api/commission/*` routes return route-level 404 in the September 2026 sweep.**
-> The commission service HTTP surface is entirely unregistered.
->
-> Commission is calculated internally by order fulfillment sagas (`CalculateEnablerCommissionUseCase`) and credited directly to the seller's or enabler's wallet. No HTTP endpoint exists to retrieve commission details separately.
->
-> **UI fallback:**
-> - Wallet transaction history: `GET /api/wallet/statement` — shows commission credits as wallet transactions
-> - Enabler earnings: `GET /api/enabler/enablers/:enablerId/earnings` and `/earnings/summary`
-> - Do not build commission detail screens that call `/api/commission/*` until the routes are registered
->
-> **Tracked in:** `docs/FLOWS/_verification/analysis-report.md` (September 2026 sweep — commission-service section)
+| Flow | Endpoint | Auth | Description |
+|---|---|---|---|
+| Calculate commission | `POST /api/commission/calculate` | JWT (admin/system) | Compute the commission breakdown for an order → **201** |
+| Approve commission | `PUT /api/commission/:id/approve` | JWT (admin/ops) | Approve a PENDING commission → **200** `{ approved: true, eventsGenerated: N }` |
+| List seller commissions | `GET /api/commission/sellers/:sellerId` | JWT | Paginated commission history (`?status=&limit=&cursor=`) |
+| Commission summary | `GET /api/commission/sellers/:sellerId/summary` | JWT | Aggregate commission stats for the seller |
+| Single commission detail | `GET /api/commission/:id` | JWT | Detail for one commission record |
+| Health / liveness / readiness | `GET /api/commission/health`, `/health/live`, `/health/ready` | none | Probes used by the orchestration layer |
+
+**UI guidance**
+
+- The seller dashboard earnings section reads `GET /api/commission/sellers/:sellerId/summary`.
+- Approval is an admin/ops action. The approve response does **not** return the updated record — re-fetch
+  `GET /api/commission/:id` afterwards for `status`, `approvedAt` and `approvedBy`.
+- `GET /api/wallet/statement` remains the canonical view of credited amounts; the commission reads
+  explain how those credits are composed.
 
 ---
 
-## Intended Behavior (Background Context Only — Not Currently Available)
+## Enabler Reads
 
-When the commission HTTP surface is active, the intended flows are:
-
-| Flow | Endpoint | Description |
-|---|---|---|
-| Calculate commission | `POST /api/commissions/calculate` | Compute commission for an order |
-| Approve commission | `POST /api/commissions/:id/approve` | Admin approves commission payout |
-| List seller commissions | `GET /api/commissions/seller/:sellerId` | Seller views commission history |
-| Commission summary | `GET /api/commissions/seller/:sellerId/summary` | Aggregate commission stats |
-| Single commission detail | `GET /api/commissions/:id` | Detail for one commission record |
-
-None of these endpoints are currently accessible. Do not document them as working flows.
+Enabler commission data uses the same endpoints with the enabler's `userId` as `sellerId`
+(`GET /api/commission/sellers/:sellerId` and `.../summary`). See
+`docs/commission/COMMISSION_SERVICE_FRONTEND_GUIDE.md` for the response shapes.

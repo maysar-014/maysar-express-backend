@@ -3,6 +3,8 @@
     "internalServerError": "Hitilafu ya seva ya ndani",
     "notFound": "{{resource}} haikupatikana",
     "validationError": "Kosa la uthibitishaji",
+    "unauthorized": "Uthibitishaji unahitajika",
+    "forbidden": "Hauna ruhusa ya kufikia rasilimali hii",
     "rateLimitExceeded": "Maombi mengi sana, tafadhali jaribu tena baadaye"
   }
 }

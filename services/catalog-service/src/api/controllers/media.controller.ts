@@ -1,6 +1,23 @@
 import { Request, Response } from 'express';
 import { ProductMediaStore } from '../../infrastructure/media/product-media.store';
 
+/**
+ * A single multipart file as attached by multer.
+ *
+ * `@types/multer` is not a dependency of this repository and `multer@2` ships
+ * no bundled declarations, so the shape consumed here is declared explicitly
+ * instead of relying on an ambient Express augmentation that only some
+ * compilation setups load.
+ */
+interface UploadedFile {
+  buffer: Buffer;
+  mimetype: string;
+  originalname?: string;
+  size?: number;
+}
+
+type MultipartRequest = Request & { file?: UploadedFile };
+
 const mediaStore = new ProductMediaStore();
 
 /**
@@ -17,7 +34,9 @@ const mediaStore = new ProductMediaStore();
  */
 export async function uploadProductMedia(req: Request, res: Response): Promise<void> {
   try {
-    if (!req.file) {
+    const file = (req as MultipartRequest).file;
+
+    if (!file) {
       res.status(400).json({
         success: false,
         error: { code: 'NO_FILE', message: 'No file uploaded. Send a single file in the "file" field.' },
@@ -32,8 +51,8 @@ export async function uploadProductMedia(req: Request, res: Response): Promise<v
       'unknown';
 
     const result = await mediaStore.uploadProductImage(
-      req.file.buffer,
-      req.file.mimetype,
+      file.buffer,
+      file.mimetype,
       sellerId,
     );
 

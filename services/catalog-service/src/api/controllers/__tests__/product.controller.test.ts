@@ -309,10 +309,10 @@ describe('ProductController', () => {
       expect(res.status).toHaveBeenCalledWith(500);
     });
 
-    it('should accept legacy `name` field as alias for `productName` (B3 backward-compat)', async () => {
+    it('should accept the canonical `productName` field', async () => {
       mockCreateProductUseCase.execute.mockResolvedValue({
         status: 'success',
-        productId: 'prod-legacy-1',
+        productId: 'prod-canonical-1',
       });
 
       const req = {
@@ -320,7 +320,32 @@ describe('ProductController', () => {
           sellerId: 'seller-1',
           categoryId: 'cat-1',
           brand: 'Azam',
-          // NOTE: using `name` instead of `productName` — should be aliased before validation
+          productName: 'Oil (canonical)',
+          minimumOrderQuantity: 10,
+          supplierLocationId: 'addr-1',
+          supplierLocation: 'Dar es Salaam',
+          structuredAttributes: { volume: '5L' },
+          mediaUrls: ['url'],
+          price: 15000,
+        },
+        query: {},
+      };
+      const res = makeRes();
+
+      await controller.createProduct(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(mockCreateProductUseCase.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ productName: 'Oil (canonical)' })
+      );
+    });
+
+    it('should reject a payload that only carries the non-contract `name` field', async () => {
+      const req = {
+        body: {
+          sellerId: 'seller-1',
+          categoryId: 'cat-1',
+          brand: 'Azam',
           name: 'Oil (legacy)',
           minimumOrderQuantity: 10,
           supplierLocationId: 'addr-1',
@@ -335,51 +360,17 @@ describe('ProductController', () => {
 
       await controller.createProduct(req as any, res as any);
 
-      expect(res.status).toHaveBeenCalledWith(201);
-      expect(mockCreateProductUseCase.execute).toHaveBeenCalledWith(
-        expect.objectContaining({ productName: 'Oil (legacy)' })
-      );
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(mockCreateProductUseCase.execute).not.toHaveBeenCalled();
     });
 
-    it('should not overwrite explicit `productName` when both `name` and `productName` are provided', async () => {
-      mockCreateProductUseCase.execute.mockResolvedValue({
-        status: 'success',
-        productId: 'prod-explicit-1',
-      });
-
+    it('should reject a payload that carries no productName', async () => {
       const req = {
         body: {
           sellerId: 'seller-1',
           categoryId: 'cat-1',
           brand: 'Azam',
-          productName: 'Explicit Name',
-          name: 'Legacy Name',
-          minimumOrderQuantity: 10,
-          supplierLocationId: 'addr-1',
-          supplierLocation: 'Dar es Salaam',
-          structuredAttributes: { volume: '5L' },
-          mediaUrls: ['url'],
-          price: 15000,
-        },
-        query: {},
-      };
-      const res = makeRes();
-
-      await controller.createProduct(req as any, res as any);
-
-      expect(res.status).toHaveBeenCalledWith(201);
-      expect(mockCreateProductUseCase.execute).toHaveBeenCalledWith(
-        expect.objectContaining({ productName: 'Explicit Name' })
-      );
-    });
-
-    it('should still reject when both `name` and `productName` are missing', async () => {
-      const req = {
-        body: {
-          sellerId: 'seller-1',
-          categoryId: 'cat-1',
-          brand: 'Azam',
-          // no name or productName
+          // productName is the only accepted name field
           minimumOrderQuantity: 10,
           supplierLocationId: 'addr-1',
           structuredAttributes: { volume: '5L' },

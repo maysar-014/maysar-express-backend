@@ -36,6 +36,12 @@ function makePrismaMock() {
       delete: jest.fn().mockResolvedValue({}),
       findMany: jest.fn().mockResolvedValue([userData]),
       count: jest.fn().mockResolvedValue(1),
+      // updateMany backs the bulk paths (updatePassword / updateStatus /
+      // updateEmailVerification / updatePhoneVerification). It was missing from
+      // this mock, so those calls rejected with
+      // 'this.prisma.user_User.updateMany is not a function' - the suite was
+      // exercising a client shape the repository never actually uses.
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       groupBy: jest.fn().mockResolvedValue([{ status: 'active', _count: { status: 1 } }])
     },
     user_UserAddress: {

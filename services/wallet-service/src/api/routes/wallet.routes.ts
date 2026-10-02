@@ -159,20 +159,13 @@ export function createWalletRoutes(controller: WalletController): Router {
         asyncHandler(controller.initiatePayout.bind(controller))
     );
 
-    // GET payout history/status — returns pending and completed payouts for the wallet
+    // GET payout history/status — returns the persisted payouts for the wallet owner
     router.get('/:userId/payout',
         AuthorizationMiddleware.authorizeWalletAccess(),
-        asyncHandler(async (req, res) => {
-            res.json({
-                success: true,
-                data: {
-                    userId: req.params.userId,
-                    payouts: [],
-                    total: 0,
-                    message: 'No payout history available'
-                }
-            });
-        })
+        validateRequest({
+            params: WalletValidator.walletUserParams
+        }),
+        asyncHandler(controller.getPayoutHistory.bind(controller))
     );
 
     return router;

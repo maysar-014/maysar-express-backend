@@ -155,7 +155,7 @@ Mounted at `/api/logistics` (module name `logistics-service` → strip `-service
 | GET | `/api/logistics/api/v1/routes/:routeId` | JWT | Route detail |
 | POST | `/api/logistics/api/v1/routes/optimize` | JWT | Optimize route |
 | PUT | `/api/logistics/api/v1/routes/:routeId/progress` | JWT | Update route progress |
-| GET | `/api/logistics/api/v1/tracking/:trackingNumber` | JWT | Track by number |
+| GET | `/api/logistics/api/v1/tracking/:identifier` | JWT | Track by order number or shipment tracking number |
 | POST | `/api/logistics/api/v1/tracking/location` | JWT | Push location update |
 | GET | `/api/logistics/api/v1/earnings` | JWT | Earnings list |
 | GET | `/api/logistics/api/v1/earnings/summary` | JWT | Earnings summary |

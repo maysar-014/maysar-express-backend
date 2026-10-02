@@ -96,6 +96,97 @@ export class PaymentController {
   }
 
   /**
+   * Caller roles used by the payment read guards.
+   *
+   * The payment read routes do not run the shared auth middleware, so roles are
+   * read from the resolved auth context when present and otherwise from the
+   * gateway-forwarded `x-user-roles` header — the same source the shared
+   * middleware uses (`resolveFromHeaders`).
+   */
+  private getCallerRoles(req: Request): string[] {
+    const user = (req as any).user;
+    const fromContext = Array.isArray(user?.roles)
+      ? user.roles
+      : user?.role
+        ? [user.role]
+        : [];
+
+    const rolesHeader = req.headers["x-user-roles"];
+    const headerValue = Array.isArray(rolesHeader) ? rolesHeader[0] : rolesHeader;
+    const fromHeader =
+      typeof headerValue === "string" ? headerValue.split(",") : [];
+
+    return [...fromContext, ...fromHeader]
+      .filter(Boolean)
+      .map((role: unknown) => String(role).trim().toLowerCase())
+      .filter((role: string) => role.length > 0);
+  }
+
+  /**
+   * A privileged read caller is an internal service (service-to-service reads,
+   * resolved by the shared auth middleware) or an admin/system operator.
+   */
+  private isPrivilegedReadCaller(req: Request): boolean {
+    if ((req as any).service) {
+      return true;
+    }
+
+    return this.getCallerRoles(req).some(
+      (role) => role === "admin" || role === "system",
+    );
+  }
+
+  /**
+   * Identity gate for payment reads (DEF-012) — anonymous callers are rejected
+   * before any record lookup so payment/order ids cannot be probed for
+   * existence, and the record itself is never returned.
+   */
+  private requirePaymentReadCaller(req: Request, res: Response): boolean {
+    if (this.isPrivilegedReadCaller(req) || this.getAuthenticatedUserId(req)) {
+      return true;
+    }
+
+    res.status(401).json({
+      success: false,
+      error: {
+        code: "UNAUTHORIZED",
+        message: t("common:errors.unauthorized", { lng: (req as any).language }),
+      },
+    });
+    return false;
+  }
+
+  /**
+   * Ownership gate for payment reads (DEF-012): a payment record may only be
+   * read by the payer who owns it, an admin/system caller, or an internal
+   * service. Everyone else receives 403 and never the record — mirrors the
+   * payout-service `requireSelfOrAdmin` rule.
+   */
+  private authorizePaymentRead(
+    req: Request,
+    res: Response,
+    ownerUserId?: string,
+  ): boolean {
+    if (this.isPrivilegedReadCaller(req)) {
+      return true;
+    }
+
+    const callerId = this.getAuthenticatedUserId(req);
+    if (callerId && ownerUserId && callerId === ownerUserId) {
+      return true;
+    }
+
+    res.status(403).json({
+      success: false,
+      error: {
+        code: "FORBIDDEN",
+        message: t("common:errors.forbidden", { lng: (req as any).language }),
+      },
+    });
+    return false;
+  }
+
+  /**
    * POST /payments
    * Create a new payment
    */
@@ -207,11 +298,19 @@ export class PaymentController {
    */
   async getPayment(req: Request, res: Response): Promise<void> {
     try {
+      if (!this.requirePaymentReadCaller(req, res)) {
+        return;
+      }
+
       const result = await this.checkPaymentStatusUseCase.execute({
         paymentId: req.params.id,
       });
 
       if (result) {
+        if (!this.authorizePaymentRead(req, res, result.userId)) {
+          return;
+        }
+
         res.status(200).json({
           success: true,
           data: result,
@@ -239,27 +338,34 @@ export class PaymentController {
    */
   async getPaymentByOrderId(req: Request, res: Response): Promise<void> {
     try {
+      if (!this.requirePaymentReadCaller(req, res)) {
+        return;
+      }
+
       const result = await this.checkPaymentStatusUseCase.execute({
         orderId: req.params.orderId,
       });
 
       if (result) {
+        if (!this.authorizePaymentRead(req, res, result.userId)) {
+          return;
+        }
+
         res.status(200).json({
           success: true,
           data: result,
         });
       } else {
-        // For checkout-originated orders using deferred/wallet payment,
-        // no payment record exists in the payment service — return a clean 200
-        // with a status that passes standard payment status checks
-        res.status(200).json({
-          success: true,
+        // No payment record exists for this Order ID — report it accurately
+        // instead of fabricating a synthetic payment status.
+        res.status(404).json({
+          success: false,
+          error: t("payment:errors.orderNotFound", {
+            lng: (req as any).language,
+            defaultValue: "No payment found for the specified order",
+          }),
           data: {
             orderId: req.params.orderId,
-            status: "cancelled",
-            paymentMethod: "WALLET",
-            message:
-              "Order was paid via wallet debit — no payment service record exists",
           },
         });
       }
@@ -337,11 +443,19 @@ export class PaymentController {
    */
   async checkStatus(req: Request, res: Response): Promise<void> {
     try {
+      if (!this.requirePaymentReadCaller(req, res)) {
+        return;
+      }
+
       const result = await this.checkPaymentStatusUseCase.execute({
         paymentId: req.params.id,
       });
 
       if (result) {
+        if (!this.authorizePaymentRead(req, res, result.userId)) {
+          return;
+        }
+
         res.status(200).json({
           success: true,
           data: {

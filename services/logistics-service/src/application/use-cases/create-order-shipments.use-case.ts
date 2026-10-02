@@ -100,9 +100,39 @@ export class CreateOrderShipmentsUseCase {
   private readonly shipmentRepo = new PrismaShipmentRepository();
   private readonly pool = new ShipmentPoolService();
 
+  /**
+   * Guarantees the shipment's TRK-NLNLNL number is not already taken. The format
+   * holds ~6.2M values, so collisions become possible in a large marketplace;
+   * the unique DB index is the final backstop, this retry keeps normal traffic
+   * collision-free.
+   */
+  private async ensureUniqueTrackingNumber(shipment: Shipment): Promise<void> {
+    const maxAttempts = 5;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const existing = await this.shipmentRepo.findByTrackingNumber(shipment.trackingNumber);
+      if (!existing || existing.id === shipment.id) {
+        return;
+      }
+      shipment.reassignTrackingNumber();
+    }
+    throw new Error('Unable to generate a unique shipment tracking number');
+  }
+
   async execute(request: CreateOrderShipmentsRequest): Promise<CreateOrderShipmentsResult> {
     const prisma = (globalThis as any).prisma;
     if (!prisma || !request?.sellers?.length) {
+      // Previously returned { created: 0 } with no log. Callers treat a normal
+      // return as success, so an order could be accepted with no shipment and
+      // nothing anywhere would record it — the failure was invisible (BLG-022).
+      // The contract stays non-fatal by design; only the observability is added.
+      console.warn(
+        '[CreateOrderShipmentsUseCase] No shipments created',
+        JSON.stringify({
+          reason: !prisma ? 'prisma global unavailable' : 'request.sellers empty',
+          masterOrderId: request?.masterOrderId ?? null,
+          sellerCount: Array.isArray(request?.sellers) ? request.sellers.length : 0,
+        })
+      );
       return { created: 0, shipmentIds: [], eventsEmitted: 0 };
     }
 
@@ -131,6 +161,8 @@ export class CreateOrderShipmentsUseCase {
           requiredVehicleClass: seller.requiredVehicleClass ?? null,
           requestedDeliveryWindow: requestedWindow,
         });
+        // Each shipment owns an independent TRK-NLNLNL number (never the order number).
+        await this.ensureUniqueTrackingNumber(shipment);
         await this.shipmentRepo.save(shipment);
         shipmentIds.push(shipment.id);
 
@@ -167,6 +199,7 @@ export class CreateOrderShipmentsUseCase {
               eventType: 'shipment.created',
               eventData: {
                 shipmentId: shipment.id,
+                trackingNumber: shipment.trackingNumber,
                 orderId: shipment.orderId,
                 masterOrderId: request.masterOrderId,
                 sellerId: shipment.sellerId,

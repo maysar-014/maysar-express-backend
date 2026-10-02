@@ -10,6 +10,7 @@ import { assertMinimumBasketValue } from '@shared/business/minimum-basket-value'
 import { verificationConfig } from '../../config/verification.config';
 import { PrismaVerificationAuditLogRepository } from '../../infrastructure/database/prisma-verification-audit-log.repository';
 import { CatalogProductRepository } from '../../infrastructure/repositories/catalog-product.repository';
+import type { VerificationAuditLogEntry } from '../../domain/entities/verification-audit-log.entity';
 import { makeId } from '@shared/ids/id';
 
 /**
@@ -63,7 +64,6 @@ export interface PlaceOrderRequest {
 export interface PlaceOrderResponse {
   orderId: string;
   status: string;
-  trackingNumber?: string;
   deliveryCode: string;
   chatConversationId?: string;
   /** UTC ISO-8601 deadline by which the seller must confirm stock. */
@@ -74,6 +74,33 @@ export interface PlaceOrderResponse {
   commitmentFee: number;
   commitmentPaymentMethod?: undefined;
   cashOnDeliveryAmount: number;
+}
+
+/**
+ * Narrow ports for collaborators that were previously constructed inside the
+ * method bodies. Declared structurally so the use case depends on the one method
+ * it calls from each, not on a whole infrastructure class.
+ *
+ * Both were constructed inline, which is why the PlaceOrderUseCase suite could
+ * never run: the real repositories were built mid-execution, reached for the
+ * database, and failed ("Database not initialized. Call initialize() first."),
+ * so every test threw before reaching its first assertion. Seven tests were
+ * failing not because the use case was wrong but because it could not be
+ * exercised. Injecting the collaborators is what makes the suite meaningful.
+ */
+export interface SupplierLocationRef {
+    city: string;
+    region: string | null;
+    country: string | null;
+}
+
+export interface ProductCatalogLookup {
+    findNonCodProductIds(productIds: string[]): Promise<string[]>;
+    findSupplierLocations(productIds: string[]): Promise<Map<string, SupplierLocationRef>>;
+}
+
+export interface VerificationAuditSink {
+    append(entry: VerificationAuditLogEntry, tx?: unknown): Promise<void>;
 }
 
 export class PlaceOrderUseCase {
@@ -97,16 +124,108 @@ export class PlaceOrderUseCase {
         orderId: string; amount: number; currency: string;
         buyerId: string; buyerEmail: string; buyerPhone: string; description: string;
       }): Promise<{ success: boolean; paymentUrl?: string; transactionId?: string; error?: string; status: string }>;
-    }
+    },
+    // Defaults preserve the existing construction sites; tests inject stubs.
+    private readonly catalogLookup: ProductCatalogLookup = new CatalogProductRepository(),
+    private readonly verificationAudit: VerificationAuditSink = new PrismaVerificationAuditLogRepository(),
   ) {
     this.paymentGatewayAdapter = paymentGatewayAdapter;
+  }
+
+  /**
+   * Creates the logistics shipment for a newly placed order.
+   *
+   * Delegates to the logistics module's globally registered
+   * `__createOrderShipments` — the same entry point the checkout flow uses — so
+   * both order entry points produce the same logistics state. Pickup coordinates
+   * resolve from the seller's active primary location, then the product's
+   * supplier location, then the Dar es Salaam city-centre fallback used
+   * throughout logistics.
+   */
+  private async createShipmentForOrder(request: PlaceOrderRequest, order: Order): Promise<void> {
+    const createOrderShipments = (globalThis as any).__createOrderShipments;
+    if (typeof createOrderShipments !== 'function') {
+      // Logistics module not mounted (e.g. order-service standalone). Not an
+      // error: tracking simply has nothing to show for this order.
+      //
+      // Still logged (BLG-022): the monolith shares one globalThis, so this
+      // branch should never fire in the composed app. If it does, the order is
+      // accepted with no shipment and no trace, which is exactly the invisible
+      // failure that let a missing-delivery blind spot read as coverage.
+      console.warn(
+        `[PlaceOrderUseCase] Shipment creation skipped: __createOrderShipments is not a function (order ${order.id})`
+      );
+      return;
+    }
+
+    const g = globalThis as unknown as { prisma?: any };
+    const sellerId = request.sellerId;
+
+    let pickupLat: number | undefined;
+    let pickupLng: number | undefined;
+    let pickupAddress: string | undefined;
+
+    try {
+      const loc = await g.prisma?.catalog_SellerLocation?.findFirst?.({
+        where: { sellerId, isActive: true, status: 'ACTIVE' },
+        orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+      });
+      if (loc) {
+        pickupLat = Number(loc.latitude);
+        pickupLng = Number(loc.longitude);
+        pickupAddress = [loc.address ?? loc.street, loc.city, loc.region, loc.country]
+          .filter(Boolean)
+          .join(', ');
+      }
+    } catch {
+      // Fall through to the product supplier location.
+    }
+
+    if (pickupAddress === undefined) {
+      const supplierLocations = await this.catalogLookup.findSupplierLocations(
+        request.items.map((item) => item.productId)
+      );
+      const first = supplierLocations.values().next().value;
+      if (first) pickupAddress = [first.city, first.region, first.country].filter(Boolean).join(', ');
+    }
+
+    const address: any = request.deliveryAddress ?? {};
+    const destinationAddress =
+      [address.street, address.ward, address.district, address.city, address.region, address.country]
+        .filter(Boolean)
+        .join(', ') || 'Dar es Salaam, Tanzania';
+
+    const totalWeight = order.items.reduce(
+      (sum, item) => sum + (Number((item as any).weight) || 0),
+      0
+    );
+
+    await createOrderShipments({
+      // `shipment.orderId` is taken from `sellerOrderId` (falling back to
+      // `masterOrderId`) — the ORDER NUMBER, which is what tracking resolves on.
+      masterOrderId: order.id,
+      buyer: {
+        lat: Number(address.latitude) || undefined,
+        lng: Number(address.longitude) || undefined,
+        address: destinationAddress,
+      },
+      sellers: [
+        {
+          sellerId,
+          sellerOrderId: order.id,
+          pickupLat: pickupLat ?? (Number(address.latitude) || -6.7924),
+          pickupLng: pickupLng ?? (Number(address.longitude) || 39.2083),
+          pickupAddress: pickupAddress || 'Dar es Salaam, Tanzania',
+          packageWeightKg: totalWeight,
+        },
+      ],
+    });
   }
 
   async execute(request: PlaceOrderRequest): Promise<PlaceOrderResponse> {
     console.log(`[PlaceOrderUseCase] execute called, paymentMethod: ${request.paymentMethod}`);
 
     const orderId = IdGeneratorService.generateOrderId();
-    const trackingNumber = await this.generateTrackingNumber();
     const currency = request.currency || 'TZS';
     const totalAmount = request.items.reduce((sum, item) => {
       const price = typeof item.price === 'number' ? item.price : item.price.amount;
@@ -120,11 +239,33 @@ export class PlaceOrderUseCase {
     // client input for a risk-bearing payment method. Missing catalog records are
     // treated as non-COD (fail closed).
     if (request.paymentMethod === 'COD') {
-      const nonCodProductIds = await new CatalogProductRepository().findNonCodProductIds(
+      const nonCodProductIds = await this.catalogLookup.findNonCodProductIds(
         request.items.map((item) => item.productId)
       );
       if (nonCodProductIds.length > 0) {
         throw new Error('COD ineligible: one or more items do not accept Cash on Delivery');
+      }
+
+      // ── Layer-2 defense: buyer and seller COD eligibility ────────────────────
+      // `POST /orders/cod/validate` is an advisory endpoint a client can simply
+      // not call, so it cannot be the enforcement point. Before this check the
+      // engine was injected into this use case but never invoked, which meant a
+      // NEW_BUYER could bypass the COD exposure limit and geographic/other
+      // restrictions by posting straight to /orders. Fail closed.
+      const [buyerEligibility, sellerEligibility] = await Promise.all([
+        this.codEligibilityEngine.checkBuyerEligibility(request.buyerId),
+        this.codEligibilityEngine.checkSellerEligibility(request.sellerId),
+      ]);
+
+      if (!buyerEligibility.eligible) {
+        throw new Error(
+          `COD Ineligible (buyer): ${buyerEligibility.reason ?? 'buyer is not eligible for Cash on Delivery'}`
+        );
+      }
+      if (!sellerEligibility.eligible) {
+        throw new Error(
+          `COD Ineligible (seller): ${sellerEligibility.reason ?? 'seller is not eligible for Cash on Delivery'}`
+        );
       }
     }
 
@@ -140,7 +281,6 @@ export class PlaceOrderUseCase {
     const deliveryCode = generateDeliveryCode();
     const orderData = {
       id: orderId,
-      trackingNumber,
       buyerId: request.buyerId,
       sellerId: request.sellerId,
       paymentMethod: request.paymentMethod,
@@ -157,6 +297,12 @@ export class PlaceOrderUseCase {
       orderCompletionMethod: request.orderCompletionMethod,
       chatConversationId: request.chatConversationId,
       fulfillmentLocationId: request.fulfillmentLocationId,
+      // Delivery economics. These are accepted by the placement API and consumed
+      // by BuyerConfirmCheckoutUseCase to size the COD commitment hold, but they
+      // were never carried onto the order, so the hold was always 0 and COD
+      // orders were confirmed with nothing secured.
+      deliveryFee: request.deliveryFee,
+      logisticsEstimate: request.logisticsEstimate,
       totalWeight: request.items.reduce((sum, item) => sum + (item.weight * item.quantity), 0),
       items: request.items.map(item => ({
         productId: item.productId,
@@ -171,11 +317,55 @@ export class PlaceOrderUseCase {
     };
 
     const order = new Order(orderData);
+
+    // ── Layer-2 defense: order-level COD limits ────────────────────────────────
+    // Exposure cap, COD service area and high-risk SKU rules. This runs BEFORE
+    // the order is persisted, so a rejected COD order leaves no partial record.
+    if (request.paymentMethod === 'COD') {
+      // The seller side of the geographic rule is resolved from the catalog's
+      // own supplier location. It must never come from the request: a client that
+      // could name its own "seller city" would defeat the same-city restriction
+      // for NEW_BUYERs. When no supplier location is on record the address is
+      // `null`, and the engine then skips only the cross-city comparison — the
+      // value, area, high-risk and concurrency rules all still apply.
+      const supplierLocations = await this.catalogLookup.findSupplierLocations(
+        request.items.map((item) => item.productId)
+      );
+      const firstLocation = supplierLocations.values().next().value;
+
+      const orderEligibility = await this.codEligibilityEngine.checkOrderEligibility(
+        order,
+        firstLocation ?? null
+      );
+      if (!orderEligibility.eligible) {
+        throw new Error(
+          `COD Ineligible (order): ${orderEligibility.reason ?? 'order is not eligible for Cash on Delivery'}`
+        );
+      }
+    }
+
     await this.orderRepository.save(order);
+
+    // ── Logistics: create the shipment for this order ────────────────────────
+    // The checkout flow creates shipments (via the logistics module's globally
+    // registered `__createOrderShipments`), but `POST /api/order/orders` did
+    // not — so an order placed directly had no shipment and could not be tracked
+    // at all: `GET /tracking/:orderNumber` returned an empty `shipments` array.
+    // Two entry points into fulfilment behaving differently is the real defect.
+    //
+    // Deliberately non-fatal: an order that has been accepted must not fail
+    // because logistics is unavailable, and a missing shipment is recoverable
+    // where a lost order is not.
+    await this.createShipmentForOrder(request, order).catch((error: any) => {
+      console.warn(
+        `[PlaceOrderUseCase] Shipment creation failed for order ${order.id}: ${error?.message ?? error}`
+      );
+    });
+
 
     // Append initial audit log entry — non-fatal if table not yet migrated
     try {
-      const auditRepo = new PrismaVerificationAuditLogRepository();
+      const auditRepo = this.verificationAudit;
       await auditRepo.append({
         id: makeId('vau'),
         orderId: order.id,
@@ -199,7 +389,6 @@ export class PlaceOrderUseCase {
         buyerId: order.buyerId,
         items: order.items,
         verificationDeadlineAt: verificationDeadlineAt.toISOString(),
-        trackingNumber: order.trackingNumber,
       });
     } catch (eventErr: any) {
       console.warn('[PlaceOrderUseCase] Seller notification event failed (non-fatal):', eventErr.message);
@@ -213,7 +402,6 @@ export class PlaceOrderUseCase {
     return {
       orderId: order.id,
       status: OrderStatus.PENDING_SELLER_VERIFICATION,
-      trackingNumber: order.trackingNumber,
       deliveryCode,
       verificationDeadlineAt: verificationDeadlineAt.toISOString(),
       nextAction: 'AWAIT_VERIFICATION',
@@ -223,20 +411,6 @@ export class PlaceOrderUseCase {
     };
   }
 
-  private async generateTrackingNumber(): Promise<string> {
-    const maxAttempts = 5;
-    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      const candidate = IdGeneratorService.generateOrderTrackingNumber();
-      if (!this.orderRepository.findByTrackingNumber) {
-        return candidate;
-      }
-      const existing = await this.orderRepository.findByTrackingNumber(candidate);
-      if (!existing) {
-        return candidate;
-      }
-    }
-    throw new Error('Unable to generate unique tracking number');
-  }
 }
 
 // Simple event publisher interface (would be implemented in infrastructure)

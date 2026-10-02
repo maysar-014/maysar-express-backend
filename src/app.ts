@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { setupExpressErrorHandler } from '@sentry/node';
-import { moduleRegistry } from './core/module-registry';
+import { moduleRegistry, resolveModuleMountPath } from './core/module-registry';
 import { prisma } from './config/prisma';
 import { correlationMiddleware } from '../shared/tracing/openTelemetry';
 import { appLogger } from '../shared/logger/logger';
@@ -95,8 +95,7 @@ export const createApp = () => {
     const modules = moduleRegistry.getModules();
     modules.forEach(module => {
         // Mount routes: /api/{service-name} (stripping '-service')
-        const routeName = module.name.replace('-service', '');
-        const routePath = `/api/${routeName}`;
+        const routePath = resolveModuleMountPath(module.name);
 
         if (module.routes) {
             app.use(routePath, module.routes);

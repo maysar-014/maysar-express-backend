@@ -204,7 +204,8 @@ liveTestSuite('Enabler Journeys — Flow Doc 06', () => {
   it('[P1] [ENA-02] enabler-assisted order attribution — endpoint responds without 5xx', async () => {
     // Full attribution chain (referral → order → commission settlement) requires
     // the event bus to complete end-to-end. Assert the commission endpoint is reachable.
-    const res = await requestJson('/api/commissions/calculate', {
+    // Path is the registered module surface (`commission-service` → `/api/commission`).
+    const res = await requestJson('/api/commission/calculate', {
       method: 'POST',
       headers: { ...authHeader(enablerToken), 'content-type': 'application/json' },
       body: JSON.stringify({

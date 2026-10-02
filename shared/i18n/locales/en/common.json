@@ -3,6 +3,8 @@
     "internalServerError": "Internal server error",
     "notFound": "{{resource}} not found",
     "validationError": "Validation error",
+    "unauthorized": "Authentication required",
+    "forbidden": "You do not have permission to access this resource",
     "rateLimitExceeded": "Too many requests, please try again later"
   }
 }

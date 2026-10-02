@@ -41,4 +41,25 @@ describe('CODConfirmationEngine', () => {
     expect(engine.isWithinProximity(near, delivery)).toBe(true);
     expect(engine.isWithinProximity(far, delivery)).toBe(false);
   });
+
+    it('fails closed when the expected OTP is missing', () => {
+        // Regression: the COD delivery OTP is generated in one request and
+        // verified in another. When it was never persisted, `actualOtp` was
+        // undefined and `new Date() > undefined` is false, so the expiry check
+        // silently never fired. Verification must reject rather than
+        // silently skip the control.
+        
+        const validExpiry = new Date(Date.now() + 10 * 60_000);
+
+        expect(engine.validateOTP('123456', undefined as never, validExpiry)).toBe(false);
+        expect(engine.validateOTP('123456', '' as never, validExpiry)).toBe(false);
+    });
+
+    it('fails closed when the OTP expiry is missing', () => {
+        // Without an expiry the code could never be considered expired.
+        
+
+        expect(engine.validateOTP('123456', '123456', undefined as never)).toBe(false);
+    });
+
 });

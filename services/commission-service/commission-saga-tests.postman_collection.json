@@ -96,9 +96,9 @@
               "raw": "{\n  \"orderId\": \"saga_order_{{$timestamp}}\",\n  \"sellerId\": \"{{sellerId}}\",\n  \"orderAmount\": 150.00,\n  \"recipientType\": \"seller\",\n  \"commissionType\": \"sale\",\n  \"baseRate\": 0.08,\n  \"performanceBonus\": 0.05,\n  \"qualityMetrics\": {\n    \"rating\": 4.8,\n    \"onTimeDelivery\": true,\n    \"customerSatisfaction\": 4.5\n  },\n  \"specialConditions\": {\n    \"firstOrder\": false,\n    \"bulkOrder\": true,\n    \"promotionalPeriod\": false\n  }\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/commissions/calculate",
+              "raw": "{{baseUrl}}/commission/calculate",
               "host": ["{{baseUrl}}"],
-              "path": ["commissions", "calculate"]
+              "path": ["commission", "calculate"]
             }
           },
           "event": [
@@ -141,9 +141,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/commissions/{{commissionId}}",
+              "raw": "{{baseUrl}}/commission/{{commissionId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["commissions", "{{commissionId}}"]
+              "path": ["commission", "{{commissionId}}"]
             }
           },
           "event": [
@@ -195,9 +195,9 @@
               "raw": "{\n  \"autoSchedulePayout\": true\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/commissions/{{commissionId}}/approve",
+              "raw": "{{baseUrl}}/commission/{{commissionId}}/approve",
               "host": ["{{baseUrl}}"],
-              "path": ["commissions", "{{commissionId}}", "approve"]
+              "path": ["commission", "{{commissionId}}", "approve"]
             }
           },
           "event": [
@@ -230,9 +230,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/commissions/{{commissionId}}",
+              "raw": "{{baseUrl}}/commission/{{commissionId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["commissions", "{{commissionId}}"]
+              "path": ["commission", "{{commissionId}}"]
             }
           },
           "event": [
@@ -263,9 +263,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/commissions/sellers/{{sellerId}}/summary",
+              "raw": "{{baseUrl}}/commission/sellers/{{sellerId}}/summary",
               "host": ["{{baseUrl}}"],
-              "path": ["commissions", "sellers", "{{sellerId}}", "summary"]
+              "path": ["commission", "sellers", "{{sellerId}}", "summary"]
             }
           },
           "event": [
@@ -359,9 +359,9 @@
               "raw": "{\n  \"orderId\": \"parallel_order_1_{{$timestamp}}\",\n  \"sellerId\": \"{{sellerId}}\",\n  \"orderAmount\": 200.00,\n  \"recipientType\": \"seller\",\n  \"commissionType\": \"sale\",\n  \"baseRate\": 0.10,\n  \"performanceBonus\": 0.03,\n  \"qualityMetrics\": {\n    \"rating\": 5.0,\n    \"onTimeDelivery\": true,\n    \"customerSatisfaction\": 5.0\n  }\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/commissions/calculate",
+              "raw": "{{baseUrl}}/commission/calculate",
               "host": ["{{baseUrl}}"],
-              "path": ["commissions", "calculate"]
+              "path": ["commission", "calculate"]
             }
           },
           "event": [
@@ -398,9 +398,9 @@
               "raw": "{\n  \"orderId\": \"parallel_order_2_{{$timestamp}}\",\n  \"sellerId\": \"{{sellerId}}\",\n  \"orderAmount\": 75.00,\n  \"recipientType\": \"seller\",\n  \"commissionType\": \"referral\",\n  \"baseRate\": 0.05,\n  \"specialConditions\": {\n    \"firstOrder\": true\n  }\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/commissions/calculate",
+              "raw": "{{baseUrl}}/commission/calculate",
               "host": ["{{baseUrl}}"],
-              "path": ["commissions", "calculate"]
+              "path": ["commission", "calculate"]
             }
           },
           "event": [
@@ -428,9 +428,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/commissions/sellers/{{sellerId}}?limit=10",
+              "raw": "{{baseUrl}}/commission/sellers/{{sellerId}}?limit=10",
               "host": ["{{baseUrl}}"],
-              "path": ["commissions", "sellers", "{{sellerId}}"],
+              "path": ["commission", "sellers", "{{sellerId}}"],
               "query": [
                 {
                   "key": "limit",
@@ -496,9 +496,9 @@
               "raw": "{\n  \"orderId\": \"rate_test_seller_{{$timestamp}}\",\n  \"sellerId\": \"{{sellerId}}\",\n  \"orderAmount\": 100.00,\n  \"recipientType\": \"seller\",\n  \"commissionType\": \"sale\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/commissions/calculate",
+              "raw": "{{baseUrl}}/commission/calculate",
               "host": ["{{baseUrl}}"],
-              "path": ["commissions", "calculate"]
+              "path": ["commission", "calculate"]
             }
           },
           "event": [
@@ -541,9 +541,9 @@
               "raw": "{\n  \"orderId\": \"rate_test_enabler_{{$timestamp}}\",\n  \"sellerId\": \"{{enablerId}}\",\n  \"orderAmount\": 200.00,\n  \"recipientType\": \"enabler\",\n  \"commissionType\": \"task_assignment\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/commissions/calculate",
+              "raw": "{{baseUrl}}/commission/calculate",
               "host": ["{{baseUrl}}"],
-              "path": ["commissions", "calculate"]
+              "path": ["commission", "calculate"]
             }
           },
           "event": [
@@ -586,9 +586,9 @@
               "raw": "{\n  \"orderId\": \"rate_test_customer_{{$timestamp}}\",\n  \"sellerId\": \"customer_001\",\n  \"orderAmount\": 50.00,\n  \"recipientType\": \"customer\",\n  \"commissionType\": \"referral\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/commissions/calculate",
+              "raw": "{{baseUrl}}/commission/calculate",
               "host": ["{{baseUrl}}"],
-              "path": ["commissions", "calculate"]
+              "path": ["commission", "calculate"]
             }
           },
           "event": [
@@ -636,9 +636,9 @@
               "raw": "{\n  \"orderId\": \"bonus_test_performance_{{$timestamp}}\",\n  \"sellerId\": \"{{sellerId}}\",\n  \"orderAmount\": 100.00,\n  \"recipientType\": \"seller\",\n  \"commissionType\": \"sale\",\n  \"performanceBonus\": 0.10\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/commissions/calculate",
+              "raw": "{{baseUrl}}/commission/calculate",
               "host": ["{{baseUrl}}"],
-              "path": ["commissions", "calculate"]
+              "path": ["commission", "calculate"]
             }
           },
           "event": [
@@ -683,9 +683,9 @@
               "raw": "{\n  \"orderId\": \"bonus_test_quality_{{$timestamp}}\",\n  \"sellerId\": \"{{sellerId}}\",\n  \"orderAmount\": 100.00,\n  \"recipientType\": \"seller\",\n  \"commissionType\": \"sale\",\n  \"qualityMetrics\": {\n    \"rating\": 5.0,\n    \"onTimeDelivery\": true,\n    \"customerSatisfaction\": 5.0\n  }\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/commissions/calculate",
+              "raw": "{{baseUrl}}/commission/calculate",
               "host": ["{{baseUrl}}"],
-              "path": ["commissions", "calculate"]
+              "path": ["commission", "calculate"]
             }
           },
           "event": [
@@ -729,9 +729,9 @@
               "raw": "{\n  \"orderId\": \"bonus_test_special_{{$timestamp}}\",\n  \"sellerId\": \"{{sellerId}}\",\n  \"orderAmount\": 100.00,\n  \"recipientType\": \"seller\",\n  \"commissionType\": \"sale\",\n  \"specialConditions\": {\n    \"firstOrder\": true,\n    \"bulkOrder\": true,\n    \"promotionalPeriod\": true\n  }\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/commissions/calculate",
+              "raw": "{{baseUrl}}/commission/calculate",
               "host": ["{{baseUrl}}"],
-              "path": ["commissions", "calculate"]
+              "path": ["commission", "calculate"]
             }
           },
           "event": [
@@ -778,9 +778,9 @@
               "raw": "{\n  \"orderId\": \"validation_test_min_{{$timestamp}}\",\n  \"sellerId\": \"{{sellerId}}\",\n  \"orderAmount\": 0.50,\n  \"recipientType\": \"seller\",\n  \"commissionType\": \"sale\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/commissions/calculate",
+              "raw": "{{baseUrl}}/commission/calculate",
               "host": ["{{baseUrl}}"],
-              "path": ["commissions", "calculate"]
+              "path": ["commission", "calculate"]
             }
           },
           "event": [
@@ -807,9 +807,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/commissions/invalid-uuid",
+              "raw": "{{baseUrl}}/commission/invalid-uuid",
               "host": ["{{baseUrl}}"],
-              "path": ["commissions", "invalid-uuid"]
+              "path": ["commission", "invalid-uuid"]
             }
           },
           "event": [
@@ -845,9 +845,9 @@
               "raw": "{\n  \"autoSchedulePayout\": false\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/commissions/{{commissionId}}/approve",
+              "raw": "{{baseUrl}}/commission/{{commissionId}}/approve",
               "host": ["{{baseUrl}}"],
-              "path": ["commissions", "{{commissionId}}", "approve"]
+              "path": ["commission", "{{commissionId}}", "approve"]
             }
           },
           "event": [

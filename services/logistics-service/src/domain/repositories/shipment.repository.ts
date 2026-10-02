@@ -11,6 +11,8 @@ export interface ShipmentRepository {
   save(shipment: Shipment): Promise<void>;
   findById(id: string): Promise<Shipment | null>;
   findByOrderId(orderId: string): Promise<Shipment[]>;
+  /** Resolve a shipment by its own tracking number (TRK-NLNLNL). */
+  findByTrackingNumber(trackingNumber: string): Promise<Shipment | null>;
   findByDeliveryJobId(deliveryJobId: string): Promise<Shipment[]>;
   /** Shipments not yet assigned to a DeliveryJob (the opportunity pool). */
   findUnassigned(): Promise<Shipment[]>;

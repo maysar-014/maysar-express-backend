@@ -1,7 +1,7 @@
 ﻿# Buyer Guide — Payment Service
 
 > Mirrors: docs/FLOWS/payment/user-flow/buyer-flows.md
-> Verification status: Mixed — POST initiate endpoints Partially Verified; GET payment status endpoints FAILING (500 in September 2026 sweep)
+> Verification status: Mixed — POST initiate endpoints Partially Verified; GET payment status endpoints Verified (DEF-001 resolved)
 > Last updated: September 2026
 
 ## Overview
@@ -202,20 +202,21 @@ See the Known Gap section at the bottom of this guide before building any paymen
 
 ---
 
-## ⚠️ Known Gap — Payment Status Endpoints Not Yet Verified
+## ✅ Resolved — Payment Status Endpoints (DEF-001)
 
-> ⚠️ **Known Gap — Not Yet Verified:** The following three endpoints return **500 FAILING** in the September 2026 sweep. Do not build payment status screens that call these endpoints:
+> ✅ **Resolved:** The following three endpoints previously returned **500 FAILING** in the September 2026 sweep. They can now be used to build payment status screens:
 >
-> - `GET /api/payment/payments/{id}` → 500
-> - `GET /api/payment/payments/{id}/status` → 500
-> - `GET /api/payment/payments/order/{orderId}` → 500
+> - `GET /api/payment/payments/{id}` → 200 with the payment record · 404 when the id does not exist
+> - `GET /api/payment/payments/{id}/status` → 200 with the status payload · 404 when the id does not exist
+> - `GET /api/payment/payments/order/{orderId}` → 200 with the payment record · 404 when the order has no payment row
 >
-> **UI fallback:**
-> - **Payment confirmation:** Use order status from `GET /api/order/orders/:orderId`. A `CONFIRMED` or `PROCESSING` order status reliably indicates that payment was accepted.
+> **UI handling:**
+> - Treat `404` from `GET /api/payment/payments/order/{orderId}` as "no payment-service record for this order" (orders paid by direct wallet debit never create one). Show the order status instead of an error.
+> - **Ownership (DEF-012):** all three reads are owner-scoped. A request without a caller identity answers `401 UNAUTHORIZED` (checked before the lookup, so ids cannot be probed), and a payment that belongs to another user answers `403 FORBIDDEN` and never returns the record. Only read ids the buyer obtained from their own checkout; treat `401`/`403` as non-retryable.
+> - **Payment confirmation:** Keep order status from `GET /api/order/orders/:orderId` as the authoritative signal. A `CONFIRMED` or `PROCESSING` order status reliably indicates that payment was accepted.
 > - **Payment history:** Use wallet transaction history from `GET /api/wallet/statement`. Filter by transaction type `DEBIT` or `DEBIT_FROZEN` to show the buyer a record of payment activity.
-> - **Do not** show "View payment details" links or buttons that call these endpoints. If a payment detail screen is needed, show: "Payment details are temporarily unavailable. Your order status is the most reliable indicator." and link to the order detail screen instead.
 >
-> **Tracked in:** `docs/FLOWS/_verification/analysis-report.md` (September 2026 sweep — payment-service section).
+> **Tracked in:** `docs/FLOWS/_verification/defect-register.md` (DEF-001, DEF-012).
 
 **Error Code Table — full reference:**
 
@@ -224,6 +225,7 @@ See the Known Gap section at the bottom of this guide before building any paymen
 | 400 | METHOD_NOT_FOUND | "This payment method is not supported." | No |
 | 400 | VALIDATION_ERROR | "Please check your payment details and try again." | Yes — fix input |
 | 401 | UNAUTHORIZED | "Please log in again." | Yes — re-authenticate |
+| 403 | FORBIDDEN | "You can only view your own payment details." | No — wrong account or record |
 | 402 | PAYMENT_DECLINED | "Payment declined. Please try a different payment method." | No — try another method |
 | 402 | INSUFFICIENT_BALANCE | "Your wallet balance is insufficient. Please top up or choose a different payment method." | No — top up or switch |
 | 422 | METHOD_DISABLED | "This payment method is currently unavailable." | No — try another method |

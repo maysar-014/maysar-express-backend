@@ -1,13 +1,13 @@
 ﻿# Buyer Flows — Payment Service
 
-> **Verification status:** Failing (GET payment status endpoints return 500 in September 2026 sweep; POST initiate endpoints Partially Verified)
+> **Verification status:** Verified (GET payment status endpoints resolved — DEF-001; POST initiate endpoints Partially Verified)
 > **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` (September 2026); `docs/payment/PAYMENT_SERVICE_SYSTEM.md`
 > **Canonical source:** `docs/FLOWS/payment/user-flow/buyer-flows.md`
 > **Corresponding frontend guide:** `docs/FLOWS/payment/frontend-guide/buyer-guide.md`
 
 ## Overview
 
-This document covers payment-service flows from the buyer's perspective: initiating a mobile money or card payment, initiating a wallet payment, and initiating a COD commitment lock. Write flows (POST initiate) are Partially Verified. All three GET status endpoints are **500 FAILING** in the September 2026 sweep — see Known Gap below.
+This document covers payment-service flows from the buyer's perspective: initiating a mobile money or card payment, initiating a wallet payment, and initiating a COD commitment lock. Write flows (POST initiate) are Partially Verified. All three GET status endpoints previously returned **500 FAILING** in the September 2026 sweep and are now **resolved (DEF-001)** — they return `200` with the persisted payment record, `404` when no record exists, and `400` for malformed identifiers.
 
 The payment-service supports seven method codes (`MPESA`, `AIRTEL_MONEY`, `MIXX_BY_YAS`, `HALOPESA`, `CARD`, `BANK_TRANSFER`, `WALLET`), each independently configurable as `sandbox`, `live`, or `off` via environment variables. A method with `off` status is returned with `available: false` from `GET /api/payment/payment-methods` and is never accessible to buyers.
 
@@ -20,9 +20,9 @@ The payment-service supports seven method codes (`MPESA`, `AIRTEL_MONEY`, `MIXX_
 | 1 | Initiate Mobile Money / Card Payment | Partially Verified | `POST /api/payment/payments` |
 | 2 | Initiate Wallet Payment | Partially Verified | `POST /api/payment/payments` (method: `WALLET`) |
 | 3 | Initiate COD | Partially Verified | COD commitment via wallet-service (in-process during checkout confirm) |
-| 4 | Check Payment Status | ⚠️ FAILING | `GET /api/payment/payments/:paymentId` |
-| 5 | Check Payment Status (status sub-route) | ⚠️ FAILING | `GET /api/payment/payments/:paymentId/status` |
-| 6 | Check Payment Status by Order | ⚠️ FAILING | `GET /api/payment/payments/order/:orderId` |
+| 4 | Check Payment Status | ✅ Verified | `GET /api/payment/payments/:paymentId` |
+| 5 | Check Payment Status (status sub-route) | ✅ Verified | `GET /api/payment/payments/:paymentId/status` |
+| 6 | Check Payment Status by Order | ✅ Verified | `GET /api/payment/payments/order/:orderId` |
 
 ---
 
@@ -77,6 +77,7 @@ The payment-service supports seven method codes (`MPESA`, `AIRTEL_MONEY`, `MIXX_
 | Duplicate payment for same order | 409 | 409 | `DUPLICATE_PAYMENT` |
 | Mobile money timeout (async) | `payment.failed` event | — | `PAYMENT_EXPIRED` |
 | JWT missing or expired | 401 | 401 | `UNAUTHORIZED` |
+| Authenticated caller reads a payment they do not own (non-admin) | 403 | 403 | `FORBIDDEN` |
 
 ---
 
@@ -167,21 +168,23 @@ The COD commitment is tracked as part of the buyer's wallet (`codCommitmentUsed`
 
 ---
 
-## Known Gap — GET Payment Status Endpoints (FAILING)
+## Resolved — GET Payment Status Endpoints (DEF-001)
 
-> ⚠️ **Known Gap — Not Yet Verified:** The following endpoints return **500 FAILING** in the September 2026 sweep. All flows depending on them are blocked:
+> ✅ **Resolved:** The following endpoints previously returned **500 FAILING** in the September 2026 sweep. They are now live-verified:
 >
-> - `GET /api/payment/payments/:paymentId` → **500 Internal Server Error**
-> - `GET /api/payment/payments/:paymentId/status` → **500 Internal Server Error**
-> - `GET /api/payment/payments/order/:orderId` → **500 Internal Server Error**
+> - `GET /api/payment/payments/:paymentId` → **200** with the persisted payment record, **404** when the id does not exist
+> - `GET /api/payment/payments/:paymentId/status` → **200** with the status payload, **404** when the id does not exist
+> - `GET /api/payment/payments/order/:orderId` → **200** with the persisted payment record, **404** `{success:false, error:"No payment found for the specified order"}` when the order has no payment row, **400** for a malformed order id
 >
-> **Do not implement payment detail screens** that rely on these endpoints. They cannot be used as a source of truth for payment status at this time.
+> **Payment detail screens can now be built** against `GET /api/payment/payments/order/:orderId` (preferred, keyed by the order the buyer already knows) or `GET /api/payment/payments/:paymentId`. Treat a `404` as "no payment record exists for this order" and fall back to order status rather than showing a payment failure.
 >
-> **UI fallback — primary:** Use order status from `GET /api/order/orders/:orderId` as the primary payment confirmation indicator. A `CONFIRMED` or `PROCESSING` order status reliably indicates payment was accepted.
+> **Access rule — reads are owner-scoped (DEF-012):** the three read endpoints resolve the caller's identity before returning a record. A request with no identity at all (no JWT / no gateway `x-user-id`) is rejected with **401** `{success:false, error:{code:"UNAUTHORIZED"}}` *before* any lookup, so payment and order ids cannot be probed for existence. An authenticated caller whose id does not match the record's `userId` receives **403** `{success:false, error:{code:"FORBIDDEN"}}` and never the record. `admin`/`system` roles and trusted internal services (service-to-service calls resolved by the shared auth middleware, e.g. order-service saga reconciliation) may read any payment record. Unknown ids still return **404**.
 >
-> **UI fallback — payment history:** Use wallet transaction history `GET /api/wallet/statement` to show the buyer a record of what was debited from their wallet. This endpoint is Partially Verified and working.
+> **UI fallback — order status:** `GET /api/order/orders/:orderId` remains the authoritative payment confirmation indicator. A `CONFIRMED` or `PROCESSING` order status reliably indicates payment was accepted, and it also covers orders fulfilled through paths that never create a payment-service record (e.g. direct wallet debit).
 >
-> **Tracked in:** `docs/FLOWS/_verification/analysis-report.md` (September 2026 sweep — payment-service section).
+> **UI fallback — payment history:** Use wallet transaction history `GET /api/wallet/statement` to show the buyer a record of what was debited from their wallet.
+>
+> **Tracked in:** `docs/FLOWS/_verification/defect-register.md` (DEF-001).
 
 
 ---
@@ -220,4 +223,4 @@ flowchart TD
     style CODORDER fill:#4a4,color:#fff
 ```
 
-> ⚠️ **GET payment status endpoints (flows 4–5): 500 FAILING** — Do not build payment retrieval screens. Use order status (`GET /api/order/orders/:orderId`) and wallet statement (`GET /api/wallet/statement`) as fallbacks.
+> ✅ **GET payment status endpoints (flows 4–6): RESOLVED (DEF-001)** — payment retrieval screens can now be built. `GET /api/payment/payments/order/:orderId` returns the persisted record (200) or 404 when the order has no payment row. Keep order status (`GET /api/order/orders/:orderId`) as the authoritative confirmation signal and wallet statement (`GET /api/wallet/statement`) for payment history.

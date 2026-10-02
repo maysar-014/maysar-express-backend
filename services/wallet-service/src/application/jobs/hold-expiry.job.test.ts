@@ -19,7 +19,7 @@ describe('HoldExpiryJob', () => {
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     const job = new HoldExpiryJob(holdRepository as never, expireHoldUseCase as never);
 
-    await job.start();
+    await job.runSweep();
 
     expect(holdRepository.findExpired).toHaveBeenCalledWith(100);
     expect(expireHoldUseCase.execute).toHaveBeenNthCalledWith(1, 'hold-1');
@@ -41,8 +41,8 @@ describe('HoldExpiryJob', () => {
     const expireHoldUseCase = { execute: jest.fn() };
     const job = new HoldExpiryJob(holdRepository as never, expireHoldUseCase as never);
 
-    const firstRun = job.start();
-    const secondRun = job.start();
+    const firstRun = job.runSweep();
+    const secondRun = job.runSweep();
     releaseBatch();
     await Promise.all([firstRun, secondRun]);
 

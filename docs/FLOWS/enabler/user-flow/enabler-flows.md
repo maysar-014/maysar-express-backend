@@ -1,13 +1,13 @@
 ﻿# Enabler Flows — Enabler Service
 
-> **Verification status:** Mixed — Partially Verified (lifecycle flows) | Failing (`GET /api/enabler/enablers/{id}` → 500)
+> **Verification status:** Mixed — Partially Verified (lifecycle flows) | Fixed (`GET /api/enabler/enablers/{id}` → accurate 404, DEF-002)
 > **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` — enabler-service section; `docs/enabler/ENABLER_SERVICE_SYSTEM.md`
 > **Canonical source:** `docs/FLOWS/enabler/user-flow/enabler-flows.md`
 > **Corresponding frontend guide:** `docs/FLOWS/enabler/frontend-guide/enabler-guide.md`
 
 ---
 
-> ⚠️ **Known Gap — Failing:** `GET /api/enabler/enablers/{id}` → **500 FAILING** in the September 2026 sweep (Prisma invocation error). An enabler cannot retrieve their own profile via this endpoint. Use `GET /enablers/:enablerId/capabilities` as the workaround to read activation and status state.
+> ✅ **Resolved (DEF-002):** `GET /api/enabler/enablers/{id}` previously returned a fabricated `200` stub when no profile row existed. It now returns `200` with the real profile for registered enablers and `404 {success:false, error:"Enabler not found"}` when no profile exists. `GET /enablers/:enablerId/capabilities` remains a valid lighter-weight alternative for activation/status gating.
 
 ---
 
@@ -244,14 +244,15 @@ This endpoint is **always available regardless of enabler status** — it is exp
 
 ---
 
-## Known Gap — GET Profile (REQUIRED READING)
+## Resolved — GET Profile (DEF-002)
 
-> ⚠️ **Known Gap — Failing:** `GET /api/enabler/enablers/{id}` → **500 FAILING** in the September 2026 sweep.
+> ✅ **Resolved:** `GET /api/enabler/enablers/{id}` previously answered with a fabricated `200` stub (`status: "pending"`, `message: "Enabler profile not yet registered"`) whenever no profile row existed, which hid the missing record.
 >
-> **Root cause:** Prisma invocation error in the profile retrieval handler.
+> **Current behaviour:**
+> - Registered enabler → `200` with the full `EnablerEntity` DTO (`enablerCode`, `businessName`, `tier`, `totalSales`, `commissionRate`, …).
+> - No profile row → `404 {success:false, error:"Enabler not found"}` (also echoes `data.userId`).
+> - `POST /api/enabler/enablers/{id}/approve` for a missing profile also returns `404` instead of reporting a false `approved: true`.
 >
-> **Workaround:** Use `GET /api/enabler/enablers/:enablerId/capabilities` — this endpoint is working and returns `status`, `isOperational`, `capabilities`, `activation`, and `lifecycle` fields sufficient for most frontend gating decisions.
+> **Still recommended:** `GET /api/enabler/enablers/:enablerId/capabilities` is the lightest call for activation/status gating and returns `status`, `isOperational`, `capabilities`, `activation`, and `lifecycle`.
 >
-> **Expected behavior when fixed:** Returns the full `EnablerEntity` DTO including `enablerCode`, `businessName`, `tier`, `totalSales`, `commissionRate`, and all profile fields.
->
-> **Tracked in:** `docs/FLOWS/_verification/analysis-report.md`
+> **Tracked in:** `docs/FLOWS/_verification/defect-register.md` (DEF-002)

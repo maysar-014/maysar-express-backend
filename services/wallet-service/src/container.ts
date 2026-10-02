@@ -25,6 +25,8 @@ import { ReverseTransactionUseCase } from './application/use-cases/reverse-trans
 import { GetWalletStatementUseCase } from './application/use-cases/get-wallet-statement.use-case';
 import { ExpireHoldUseCase } from './application/use-cases/expire-hold.use-case';
 import { HoldExpiryJob } from './application/jobs/hold-expiry.job';
+import { HoldReconciliationJob } from './application/jobs/hold-reconciliation.job';
+import { OrderStateReader } from './infrastructure/repositories/order-state.reader';
 import { WalletEventPublisher } from './infrastructure/messaging/wallet-event-publisher';
 import { walletConfig } from './config/wallet.config';
 import { PaymentServiceClient } from './infrastructure/clients/payment-service.client';
@@ -112,6 +114,30 @@ export class Container {
     public readonly eventBus: IEventBus;
     public readonly outboxProcessor: OutboxProcessor;
     public readonly holdExpiryJob: HoldExpiryJob;
+    public readonly holdReconciliationJob: HoldReconciliationJob;
+
+    /**
+     * Starts the wallet background jobs.
+     *
+     * Both jobs were previously constructed and never started, so no hold was
+     * ever expired or reconciled: a COD hold whose release failed (or whose
+     * order was cancelled while the wallet was unreachable) kept the buyer's
+     * funds frozen indefinitely, with no automated recovery. Background jobs are
+     * opt-out via WALLET_DISABLE_BACKGROUND_JOBS=1 for tests and one-off runs.
+     */
+    public startBackgroundJobs(): void {
+        if (String(process.env.WALLET_DISABLE_BACKGROUND_JOBS ?? '').toLowerCase() === '1') {
+            console.log('[Wallet] background jobs disabled by WALLET_DISABLE_BACKGROUND_JOBS');
+            return;
+        }
+        this.holdExpiryJob.start(Number(process.env.HOLD_EXPIRY_INTERVAL_MS ?? 60_000));
+        this.holdReconciliationJob.start();
+    }
+
+    public stopBackgroundJobs(): void {
+        this.holdExpiryJob.stop();
+        this.holdReconciliationJob.stop();
+    }
     public readonly walletRepository: WalletRepository;
     public readonly transactionRepository: TransactionRepository;
     public readonly creditUseCase: CreditWalletUseCase;
@@ -243,6 +269,16 @@ export class Container {
 
         // Jobs
         this.holdExpiryJob = new HoldExpiryJob(holdRepository, expireHoldUseCase);
+        this.holdReconciliationJob = new HoldReconciliationJob(
+            holdRepository,
+            new OrderStateReader(this.prisma),
+            releaseHoldUseCase,
+            captureHoldUseCase,
+            {
+                batchSize: Number(process.env.HOLD_RECONCILIATION_BATCH_SIZE ?? 200),
+                intervalMs: Number(process.env.HOLD_RECONCILIATION_INTERVAL_MS ?? 5 * 60_000),
+            }
+        );
 
         const outboxRepository = new OutboxRepository(this.prisma);
         this.outboxProcessor = new OutboxProcessor(outboxRepository, this.eventBus);
@@ -350,7 +386,8 @@ export class Container {
             topUpUseCase,
             walletRepository,
             initiatePayoutFromWalletUseCase,
-            holdRepository
+            holdRepository,
+            payoutServiceClient
         );
 
         this.walletRepository = walletRepository;

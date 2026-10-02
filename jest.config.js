@@ -375,17 +375,6 @@ module.exports = {
       }
     },
     {
-      displayName: 'governance-service',
-      preset: 'ts-jest',
-      testEnvironment: 'node',
-      testMatch: ['<rootDir>/services/governance-service/**/*.test.ts'],
-      setupFilesAfterEnv: ['<rootDir>/tests/setup/governance-service/setup.ts'],
-      moduleNameMapper: {
-        '@shared/(.*)': '<rootDir>/shared/$1',
-        '^uuid$': require.resolve('uuid'),
-      }
-    },
-    {
       displayName: 'chat-service',
       preset: 'ts-jest',
       testEnvironment: 'node',
@@ -413,6 +402,16 @@ module.exports = {
       testEnvironment: 'node',
       testMatch: ['<rootDir>/shared/**/*.test.ts'],
       moduleNameMapper: {
+        '^uuid$': require.resolve('uuid'),
+      }
+    },
+    {
+      displayName: 'monolith',
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      testMatch: ['<rootDir>/src/**/*.test.ts'],
+      moduleNameMapper: {
+        '@shared/(.*)': '<rootDir>/shared/$1',
         '^uuid$': require.resolve('uuid'),
       }
     },

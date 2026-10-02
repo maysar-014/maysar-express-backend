@@ -8,11 +8,11 @@
  *   - Get seller commissions list — pagination shape
  *   - Commission calculate rejects invalid inputs (negative amount, missing fields)
  *
- * API paths (module: commission-service → /api/commissions):
- *   POST /api/commissions/calculate
- *   GET  /api/commissions/:id
- *   GET  /api/commissions/sellers/:sellerId
- *   GET  /api/commissions/sellers/:sellerId/summary
+ * API paths (module: commission-service → /api/commission):
+ *   POST /api/commission/calculate
+ *   GET  /api/commission/:id
+ *   GET  /api/commission/sellers/:sellerId
+ *   GET  /api/commission/sellers/:sellerId/summary
  *
  * RecipientType values: 'seller' | 'courier' | 'enabler' | 'customer'
  * CommissionType values: 'sale' | 'referral' | 'task_completion' | 'referral_bonus' | 'performance_bonus'
@@ -62,7 +62,7 @@ liveTestSuite('Enabler Attribution & Commission — Flow Doc 06', () => {
   // -------------------------------------------------------------------------
 
   it('[P1] [ENA-03] seller commission calculation returns breakdown with positive total', async () => {
-    const res = await requestJson('/api/commissions/calculate', {
+    const res = await requestJson('/api/commission/calculate', {
       method: 'POST',
       headers: { ...authHeader(adminToken), 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -99,7 +99,7 @@ liveTestSuite('Enabler Attribution & Commission — Flow Doc 06', () => {
   // -------------------------------------------------------------------------
 
   it('[P1] [ENA-03] enabler referral commission calculation returns commission record', async () => {
-    const res = await requestJson('/api/commissions/calculate', {
+    const res = await requestJson('/api/commission/calculate', {
       method: 'POST',
       headers: { ...authHeader(adminToken), 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -124,7 +124,7 @@ liveTestSuite('Enabler Attribution & Commission — Flow Doc 06', () => {
 
   it('[P1] [ENA-03] get commission by ID returns object with id, status, and amount', async () => {
     // First create a commission to get an ID
-    const createRes = await requestJson('/api/commissions/calculate', {
+    const createRes = await requestJson('/api/commission/calculate', {
       method: 'POST',
       headers: { ...authHeader(adminToken), 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -154,7 +154,7 @@ liveTestSuite('Enabler Attribution & Commission — Flow Doc 06', () => {
       return;
     }
 
-    const getRes = await requestJson(`/api/commissions/${commissionId}`, {
+    const getRes = await requestJson(`/api/commission/${commissionId}`, {
       headers: authHeader(adminToken),
     });
 
@@ -171,7 +171,7 @@ liveTestSuite('Enabler Attribution & Commission — Flow Doc 06', () => {
 
   it('[P1] [ENA-03] seller commission list returns paginated response shape', async () => {
     const res = await requestJson(
-      `/api/commissions/sellers/${SEEDED_USERS.seller.id}`,
+      `/api/commission/sellers/${SEEDED_USERS.seller.id}`,
       { headers: authHeader(sellerToken) }
     );
 
@@ -196,7 +196,7 @@ liveTestSuite('Enabler Attribution & Commission — Flow Doc 06', () => {
   // -------------------------------------------------------------------------
 
   it('[P2] [ENA-03] commission calculate rejects negative order amount', async () => {
-    const res = await requestJson('/api/commissions/calculate', {
+    const res = await requestJson('/api/commission/calculate', {
       method: 'POST',
       headers: { ...authHeader(adminToken), 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -213,7 +213,7 @@ liveTestSuite('Enabler Attribution & Commission — Flow Doc 06', () => {
   });
 
   it('[P2] [ENA-03] commission calculate rejects missing required fields', async () => {
-    const res = await requestJson('/api/commissions/calculate', {
+    const res = await requestJson('/api/commission/calculate', {
       method: 'POST',
       headers: { ...authHeader(adminToken), 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -232,7 +232,7 @@ liveTestSuite('Enabler Attribution & Commission — Flow Doc 06', () => {
   // -------------------------------------------------------------------------
 
   it('[P2] [COU-05] courier commission calculation returns record for delivery task', async () => {
-    const res = await requestJson('/api/commissions/calculate', {
+    const res = await requestJson('/api/commission/calculate', {
       method: 'POST',
       headers: { ...authHeader(adminToken), 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -253,7 +253,7 @@ liveTestSuite('Enabler Attribution & Commission — Flow Doc 06', () => {
 
   it('[P1] [ENA-02] enabler-assisted order with live attribution chain — endpoint responds without 5xx', async () => {
     // Full event-bus attribution chain is integration-tested via the commission endpoint.
-    const res = await requestJson('/api/commissions/calculate', {
+    const res = await requestJson('/api/commission/calculate', {
       method: 'POST',
       headers: { ...authHeader(adminToken), 'content-type': 'application/json' },
       body: JSON.stringify({

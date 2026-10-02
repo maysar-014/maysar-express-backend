@@ -34,12 +34,14 @@ Show SLA compliance rate, breach history list with dates and order references.
 
 Show action items list with type and priority.
 
-## ⚠️ Known Gap — Action Item Resolution (500 FAILING)
+## ✅ Resolved — Action Item Resolution (DEF-003)
 
-> `PATCH /api/analytics/action-items/{actionId}/resolve` → **500 FAILING**
+> `PATCH /api/analytics/action-items/{actionId}/resolve` now returns `200 {success:true}` for existing action items and `404 {success:false, error:"Action item not found"}` for unknown ids (previously an unhandled `500`).
 >
 > **UI treatment:**
-> - Show action items in a read-only list
-> - Disable the "Mark as resolved" / "Resolve" button
-> - Show tooltip on hover: "Action resolution is temporarily unavailable"
-> - Do NOT hide the resolve button entirely — sellers should see that it exists but is unavailable
+> - Keep the "Mark as resolved" / "Resolve" button enabled.
+> - On `200`, remove the item from the list optimistically.
+> - On `404`, the action item no longer exists — refresh the action items list instead of showing an error.
+> - Only show a generic error message on `5xx`.
+>
+> **Tracked in:** `docs/FLOWS/_verification/defect-register.md` (DEF-003)

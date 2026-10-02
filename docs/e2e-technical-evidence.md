@@ -630,7 +630,7 @@ const makeTestOrderId = (): string =>
   `c${randomUUID().replace(/-/g, '').toLowerCase()}`; // valid system ID format
 
 it('[P1] [ENA-03] seller commission calculation returns breakdown with positive total', async () => {
-  const res = await requestJson('/api/commissions/calculate', {
+  const res = await requestJson('/api/commission/calculate', {
     method: 'POST',
     headers: { ...authHeader(adminToken), 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -653,7 +653,7 @@ it('[P1] [ENA-03] seller commission calculation returns breakdown with positive 
 
 ```typescript
 it('[P2] [ENA-03] commission calculate rejects negative order amount', async () => {
-  const res = await requestJson('/api/commissions/calculate', {
+  const res = await requestJson('/api/commission/calculate', {
     body: JSON.stringify({ ..., orderAmount: -5_000, ... }),
   });
   expect(res.status).toBeGreaterThanOrEqual(400);
@@ -661,7 +661,7 @@ it('[P2] [ENA-03] commission calculate rejects negative order amount', async () 
 });
 
 it('[P2] [ENA-03] commission calculate rejects missing required fields', async () => {
-  const res = await requestJson('/api/commissions/calculate', {
+  const res = await requestJson('/api/commission/calculate', {
     body: JSON.stringify({ recipientType: 'seller', commissionType: 'sale' }), // orderId/sellerId/orderAmount missing
   });
   expect(res.status).toBeGreaterThanOrEqual(400);

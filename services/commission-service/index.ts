@@ -4,7 +4,10 @@ import commissionRoutes from './src/api/routes/commission.routes';
 import { healthRoutes } from './src/api/routes/health.routes';
 
 export const CommissionModule: Module = {
-    name: 'commissions-service',
+    // Canonical module name: the bootstrap derives the public mount path from it
+    // (strip the `-service` suffix â†’ /api/commission), which is the path the platform
+    // contract, the flow docs and the E2E suite use.
+    name: 'commission-service',
     initialize: async () => {
         console.log('Initializing commission-service module');
     },

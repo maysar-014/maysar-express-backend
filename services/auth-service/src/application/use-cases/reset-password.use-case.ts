@@ -1,4 +1,4 @@
-import { IUserRepository, IPasswordResetRepository } from '../../domain/repositories';
+import { IPasswordResetUserReader, IPasswordResetRepository } from '../../domain/repositories';
 import { PasswordHash } from '../../domain/value-objects/password-hash.value-object';
 import { UserServiceClient } from '../../infrastructure/clients/user-service.client';
 import { logger } from '../../infrastructure/services/logger.service';
@@ -16,7 +16,7 @@ export interface ResetPasswordOutput {
 
 export class ResetPasswordUseCase {
   constructor(
-    private readonly userRepository: IUserRepository,
+    private readonly userRepository: IPasswordResetUserReader,
     private readonly passwordResetRepository: IPasswordResetRepository,
     private readonly userServiceClient: UserServiceClient
   ) {}
@@ -59,10 +59,13 @@ export class ResetPasswordUseCase {
 
       const passwordHash = await PasswordHash.fromPlainPassword(newPassword);
 
-      // Use the domain method — do NOT raw-mutate (user as any).passwordHash
-      user.changePassword(passwordHash);
-
-      // Persist the new password hash directly via the dedicated update path.
+      // `user` here is the AuthUser DTO (domain/entities/user.types.ts), NOT the
+      // User domain entity, so it has no changePassword() and no passwordHash.
+      // Calling it threw "user.changePassword is not a function", so password
+      // reset failed on every attempt. The aggregate-mutation rule belongs to the
+      // domain entity (which User does implement, and which registration uses);
+      // on this path the authoritative write is the dedicated update below.
+      // Persist the new password hash via the dedicated update path.
       // userRepository.save() only syncs login-tracking fields (failedLoginAttempts,
       // lockoutUntil, lastLoginAt) and would silently discard the passwordHash.
       await this.userServiceClient.updatePassword(user.id, passwordHash.toString());

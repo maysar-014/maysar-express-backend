@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { IUserRepository, IPasswordResetRepository } from '../../domain/repositories';
+import { IPasswordResetUserReader, IPasswordResetRepository } from '../../domain/repositories';
 import { logger } from '../../infrastructure/services/logger.service';
 import { IAuthEmailService } from '../../infrastructure/services/email.service';
 
@@ -16,7 +16,7 @@ export interface ForgotPasswordOutput {
 
 export class ForgotPasswordUseCase {
   constructor(
-    private readonly userRepository: IUserRepository,
+    private readonly userRepository: IPasswordResetUserReader,
     private readonly passwordResetRepository: IPasswordResetRepository,
     private readonly emailService?: IAuthEmailService
   ) {}

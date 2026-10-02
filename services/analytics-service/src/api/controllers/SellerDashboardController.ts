@@ -81,6 +81,13 @@ export class SellerDashboardController {
       });
       res.json({ success: true });
     } catch (error) {
+      // Prisma P2025 = "record to update not found" → the action item does not exist
+      const code = (error as { code?: string })?.code
+        ?? (error as { meta?: { cause?: string } })?.meta?.cause;
+      if (code === 'P2025' || String((error as Error)?.message || '').includes('Record to update not found')) {
+        res.status(404).json({ success: false, error: 'Action item not found' });
+        return;
+      }
       res.status(500).json({ error: 'Failed to resolve action item' });
     }
   }

@@ -51,6 +51,36 @@ export interface PayoutResponse {
 }
 
 /**
+ * Serialisable projection of a persisted payout, used for user-scoped
+ * payout history reads (e.g. `GET /api/wallet/wallets/:userId/payout`).
+ */
+export interface PayoutSummary {
+    payoutId: string;
+    userId: string;
+    userRole: string;
+    amount: number;
+    currency: string;
+    fee: number;
+    netAmount: number;
+    method: string;
+    status: PayoutStatus;
+    reference?: string;
+    failureReason?: string;
+    createdAt: string | null;
+    updatedAt: string | null;
+    processedAt: string | null;
+    completedAt: string | null;
+    failedAt: string | null;
+}
+
+export interface PayoutHistoryResponse {
+    success: boolean;
+    payouts: PayoutSummary[];
+    total: number;
+    message?: string;
+}
+
+/**
  * Payout Events
  */
 export enum PayoutEvents {
@@ -78,5 +108,6 @@ export interface PayoutEventPayload {
 export interface IPayoutServiceClient {
     initiatePayout(dto: InitiatePayoutDTO): Promise<PayoutResponse>;
     getPayoutStatus(payoutId: string): Promise<PayoutResponse>;
+    getPayoutsByUserId(userId: string, limit?: number): Promise<PayoutHistoryResponse>;
     cancelPayout(payoutId: string, reason: string): Promise<void>;
 }

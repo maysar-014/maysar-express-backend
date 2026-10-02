@@ -85,4 +85,13 @@ export class ModuleRegistry {
     }
 }
 
+/**
+ * Canonical public mount path of a service module: `/api/` + the module name with
+ * its `-service` suffix stripped, e.g. `commission-service` -> `/api/commission`.
+ * Kept here so the bootstrap (src/app.ts) and the contract tests share one
+ * derivation instead of duplicating the convention.
+ */
+export const resolveModuleMountPath = (moduleName: string): string =>
+    `/api/${moduleName.replace(/-service$/, '')}`;
+
 export const moduleRegistry = new ModuleRegistry();

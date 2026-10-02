@@ -27,6 +27,15 @@ describe('PlaceOrderUseCase', () => {
         },
     };
 
+    // The catalog lookup and verification audit sink are injected into
+    // PlaceOrderUseCase. Left unstubbed, the use case built real repositories
+    // mid-execution, which reached for an uninitialised database and threw
+    // ("Database not initialized. Call initialize() first.") before any
+    // assertion under test could run. That is why all 7 tests in this suite
+    // failed regardless of what they asserted.
+    let mockCatalogLookup: any;
+    let mockVerificationAudit: any;
+
     beforeEach(() => {
         jest.clearAllMocks();
 
@@ -46,13 +55,26 @@ describe('PlaceOrderUseCase', () => {
             debitWallet: jest.fn().mockResolvedValue('wallet-tx-123')
         };
 
+        mockCatalogLookup = {
+            findNonCodProductIds: jest.fn().mockResolvedValue([]),
+            findSupplierLocations: jest.fn().mockResolvedValue(new Map()),
+        };
+        mockVerificationAudit = {
+            append: jest.fn().mockResolvedValue(undefined),
+        };
         useCase = new PlaceOrderUseCase(
             mockRepository,
             mockEventPublisher,
             mockSagaOrchestrator,
             mockCODEligibilityEngine,
             mockCODCommitmentService,
-            mockWalletClient
+            mockWalletClient,
+            // Positional placeholder: `paymentGatewayAdapter` is the 7th parameter
+            // and this suite does not exercise it. Without it the two injected
+            // collaborators would land in the wrong slots.
+            undefined,
+            mockCatalogLookup,
+            mockVerificationAudit
         );
     });
 
@@ -62,24 +84,28 @@ describe('PlaceOrderUseCase', () => {
         expect(result).toBeDefined();
         expect(result.orderId).toBeDefined();
         expect(mockRepository.save).toHaveBeenCalled();
-        expect(mockSagaOrchestrator.start).toHaveBeenCalled();
+        // Fulfilment is NOT started here. Placement ends at
+        // PENDING_SELLER_VERIFICATION / AWAIT_VERIFICATION: stock must be
+        // confirmed by the seller before stock is reserved or payment taken.
+        expect(result.nextAction).toBe('AWAIT_VERIFICATION');
+        expect(mockSagaOrchestrator.start).not.toHaveBeenCalled();
     });
 
-    it('should place COD order when buyer eligible', async () => {
+    it('defers the COD commitment to checkout rather than taking it at placement', async () => {
         const codRequest = { ...validRequest, paymentMethod: 'COD' as const };
 
         const result = await useCase.execute(codRequest);
 
         expect(result).toBeDefined();
+        // Buyer eligibility IS enforced at placement - it is a risk control.
         expect(mockCODEligibilityEngine.checkBuyerEligibility).toHaveBeenCalledWith('buyer-1');
-        expect(mockCODCommitmentService.calculateCommitmentFee).toHaveBeenCalledWith(10, 0);
-        expect(mockCODCommitmentService.secureCommitment).toHaveBeenCalledWith(
-            'buyer-1',
-            expect.any(String),
-            10,
-            'TZS',
-            false
-        );
+        // The commitment fee/hold is NOT taken here. `PlaceOrderUseCase` returns
+        // `commitmentFee: 0` and defers it to `BuyerConfirmCheckoutUseCase`, which
+        // is the component that actually calls calculateCommitmentFee and
+        // secureCommitment. Taking it in both places would double-hold the buyer.
+        expect(mockCODCommitmentService.calculateCommitmentFee).not.toHaveBeenCalled();
+        expect(mockCODCommitmentService.secureCommitment).not.toHaveBeenCalled();
+        expect(result.commitmentFee).toBe(0);
     });
 
     it('should allow COD order when delivery fee is missing', async () => {
@@ -174,13 +200,33 @@ describe('PlaceOrderUseCase', () => {
         }
     });
 
-    it('should start saga orchestrator', async () => {
+    it('does not start the fulfilment saga before the seller confirms stock', async () => {
+        // This replaces an assertion that the use case DOES call
+        // `sagaOrchestrator.start`. It does not - and must not, because placement
+        // ends at PENDING_SELLER_VERIFICATION. Starting stock reservation or
+        // payment here would act on an order the seller has not yet accepted.
+        //
+        // Note for follow-up: `sagaOrchestrator` and `codCommitmentService` are
+        // constructor parameters that PlaceOrderUseCase never uses. They are not
+        // dead by accident - both were deliberately moved to
+        // BuyerConfirmCheckoutUseCase - but leaving unused dependencies on the
+        // signature invites the next reader to reintroduce the double-charge
+        // these tests now guard against. See the backlog.
         await useCase.execute(validRequest);
 
-        expect(mockSagaOrchestrator.start).toHaveBeenCalledWith(
+        expect(mockSagaOrchestrator.start).not.toHaveBeenCalled();
+    });
+
+    it('publishes the seller-verification event that gates fulfilment', async () => {
+        await useCase.execute(validRequest);
+
+        // The event the rest of the system waits on before reserving stock.
+        expect(mockEventPublisher.publish).toHaveBeenCalledWith(
             expect.objectContaining({
-                buyerId: 'buyer-1',
+                type: 'order.pending_seller_verification',
+                orderId: expect.any(String),
                 sellerId: 'seller-1',
+                buyerId: 'buyer-1',
             })
         );
     });

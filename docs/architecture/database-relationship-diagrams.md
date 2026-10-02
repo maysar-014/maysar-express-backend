@@ -542,7 +542,6 @@ erDiagram
         decimal totalAmount
         string paymentMethodId
         string paymentStatus
-        string trackingNumber
         json metadata
     }
 
@@ -590,9 +589,11 @@ erDiagram
 
 ```mermaid
 erDiagram
+    %% Order numbers (ORD-YYYYMMDD-NLNL) identify the WHOLE order for its lifecycle; the
+    %% order-level tracking number column is retired. Each shipment carries its own
+    %% independent tracking number (TRK-NLNLNL) on Logistics_Shipment.
     Order_Order {
         string id PK
-        string trackingNumber UK
         string buyerId
         string sellerId
         string enablerId

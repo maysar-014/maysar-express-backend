@@ -256,7 +256,18 @@ export const OrderModule: Module = {
                         status: PaymentStatus.PENDING
                     });
 
-                    await paymentSaga.start(payment.id, { payment });
+                    // DistributedSaga.start(payload, correlationId?) generates and returns
+                    // its own sagaId. This call previously passed `payment.id` as the
+                    // *payload* and `{ payment }` as the correlationId, so onStart and
+                    // every step received a string and `payload.payment` was undefined —
+                    // the COD/CARD payment saga could not execute at all.
+                    const paymentSagaId = await paymentSaga.start({ payment });
+                    logger.info('[OrderModule] Payment.Command.v1: PaymentSaga started', {
+                        orderId,
+                        paymentId: payment.id,
+                        method,
+                        sagaId: paymentSagaId,
+                    });
                     await eventBus.publish('Payment.Success.v1', { sagaId: parentSagaId, orderId, paymentId: payment.id });
                 } catch (err: any) {
                     logger.error('[OrderModule] Payment.Command.v1 handler failed', { error: err.message });

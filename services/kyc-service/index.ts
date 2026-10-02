@@ -92,7 +92,7 @@ complianceRouter.get('/audit-log', requireRole(['admin', 'compliance']), async (
   try {
     const { prisma: db } = await import('../../src/config/prisma');
     const entries = await db.kyc_AuditLog.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: { timestamp: 'desc' },
       take: 50
     });
     res.json({

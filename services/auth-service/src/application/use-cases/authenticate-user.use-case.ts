@@ -1,4 +1,5 @@
 import { AuthUser, UserStatus } from '../../domain/entities/user.types';
+import { toPublicUser } from '../mappers/user.mapper';
 import { IUserRepository } from '../../domain/repositories';
 import { UserServiceRepository } from '../../infrastructure/repositories/user-service.repository';
 import { getUserServiceClient } from '../../infrastructure/services/service-discovery';
@@ -206,7 +207,10 @@ export class AuthenticateUserUseCase {
 
       return {
         success: true,
-        user,
+        // SECURITY: project through the public allow-list. Returning the entity
+        // here serialized `passwordHash` (and would serialize `twoFactorSecret`)
+        // because the repository attaches them as own properties.
+        user: toPublicUser(user as AuthUser & { passwordHash?: unknown }),
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         message: 'Authentication successful'

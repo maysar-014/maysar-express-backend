@@ -1367,6 +1367,12 @@ export class PrismaUserRepository implements IUserRepository {
     }
   }
 
+  // NOTE: `${rows?.[0]}` rather than `${rows[0]}`. These legacy lookups are
+  // defensive by design - they run on a fallback path and swallow missing-table
+  // errors - so they must not throw a TypeError on an unexpected $queryRaw result.
+  // Prisma returns [] for no rows, but a partial/mocked client can return
+  // undefined, which previously turned a clean "not found" into a crash and made
+  // `exportUserData` report the wrong error entirely.
   private async tryFindLegacyUserById(id: string): Promise<any | null> {
     try {
       const rows = await this.prisma.$queryRaw<Array<Record<string, any>>>`
@@ -1375,7 +1381,7 @@ export class PrismaUserRepository implements IUserRepository {
         WHERE id = ${id}
         LIMIT 1
       `;
-      return rows[0] ?? null;
+      return rows?.[0] ?? null;
     } catch (error: any) {
       if (this.isMissingLegacySchemaTable(error)) {
         return null;
@@ -1402,7 +1408,7 @@ export class PrismaUserRepository implements IUserRepository {
           AND value = ${hash}
         LIMIT 1
       `;
-      return rows[0] ?? null;
+      return rows?.[0] ?? null;
     } catch (error: any) {
       if (this.isMissingLegacySchemaTable(error)) {
         return null;
@@ -1529,13 +1535,21 @@ export class PrismaUserRepository implements IUserRepository {
 
   /**
    * Map domain User entity to Prisma create input
+   *
+   * PII STORAGE POLICY: `email` and `phoneNumber` are stored in plain, normalized
+   * form. They are not credentials, and encrypting them with a random-IV cipher
+   * made the column unusable: `@unique` could not enforce uniqueness and no
+   * query could match a plaintext address (see
+   * scripts/maintenance/backfill-users-plaintext-pii.ts). Lookup runs through
+   * the HMAC `user_UserIndex` table, which is the right tool for that. Passwords
+   * remain one-way hashed and never leave the process.
    */
     private mapToPrismaCreateData(user: User): any {
     return {
       id: user.id,
       publicCode: user.publicCode ?? null,
-      email: this.piiService.encrypt(user.email.value),
-      phoneNumber: user.phoneNumber?.value ? this.piiService.encrypt(user.phoneNumber.value) : null,
+      email: user.email.value.toLowerCase(),
+      phoneNumber: user.phoneNumber?.value ?? null,
       firstName: user.firstName,
       lastName: user.lastName,
       dateOfBirth: user.dateOfBirth,
@@ -1562,12 +1576,14 @@ export class PrismaUserRepository implements IUserRepository {
 
   /**
    * Map domain User entity to Prisma update input
+   *
+   * Plain, normalized email/phone - see mapToPrismaCreateData for the rationale.
    */
     private mapToPrismaUpdateData(user: User): any {
       const data: Record<string, any> = {
         publicCode: user.publicCode ?? null,
-      email: this.piiService.encrypt(user.email.value),
-      phoneNumber: user.phoneNumber?.value ? this.piiService.encrypt(user.phoneNumber.value) : null,
+      email: user.email.value.toLowerCase(),
+      phoneNumber: user.phoneNumber?.value ?? null,
       firstName: user.firstName,
       lastName: user.lastName,
       dateOfBirth: user.dateOfBirth,

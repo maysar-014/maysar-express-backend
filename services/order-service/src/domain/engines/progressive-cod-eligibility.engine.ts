@@ -60,7 +60,12 @@ export class ProgressiveCODEligibilityEngine {
     // 2. Load score (default 0 for new buyers — they are eligible for low-value COD)
     const scoreRecord = await this.trustScoreRepo.findByBuyerId(buyerId);
     const score = scoreRecord?.score ?? 0;
-    const tier = deriveTier(score);
+    // Tier is dual-axis: score AND lifetime COD value. Passing only the score
+    // left `lifetimeCODValue` undefined, so every `>= threshold` comparison was
+    // false and deriveTier returned NEW_BUYER for EVERY buyer — the progression
+    // was dead and everyone was capped at the 30,000 TZS NEW_BUYER limit.
+    const lifetimeCODValue = scoreRecord?.lifetimeCODValue ?? 0;
+    const tier = deriveTier(score, lifetimeCODValue);
 
     return { eligible: true };
   }
@@ -93,7 +98,11 @@ export class ProgressiveCODEligibilityEngine {
     // Load buyer's current tier
     const scoreRecord = await this.trustScoreRepo.findByBuyerId(buyerId);
     const score = scoreRecord?.score ?? 0;
-    const tier = deriveTier(score);
+    // Dual-axis tier — see checkBuyerEligibility. Without lifetime COD value
+    // this always resolved to NEW_BUYER, so `codLimit` was always the 30,000 TZS
+    // floor and the tier progression never applied.
+    const lifetimeCODValue = scoreRecord?.lifetimeCODValue ?? 0;
+    const tier = deriveTier(score, lifetimeCODValue);
     const codLimit = getCODLimit(tier);
     // Support both Money value object and raw number
     const orderAmount = typeof (order.totalAmount as any)?.amount === 'number'
@@ -154,7 +163,18 @@ export class ProgressiveCODEligibilityEngine {
   private async countActiveCODOrders(buyerId: string): Promise<number> {
     try {
       const orders = await this.orderRepo.findByBuyerId(buyerId);
-      const activeStatuses = ['pending', 'confirmed', 'processing', 'assigned', 'shipped', 'in_transit', 'PENDING', 'CONFIRMED', 'PROCESSING', 'ASSIGNED', 'SHIPPED', 'IN_TRANSIT'];
+      // Statuses an order occupies between placement and delivery.
+      //
+      // The seller-verification statuses MUST be listed. Since every order now
+      // enters PENDING_SELLER_VERIFICATION and waits there for the seller,
+      // omitting them made this count always 0 — so the NEW_BUYER "1 active COD
+      // order" cap never fired and a buyer could stack unlimited COD orders.
+      const activeStatuses = [
+        'pending', 'confirmed', 'processing', 'assigned', 'shipped', 'in_transit',
+        'pending_seller_verification', 'seller_verified', 'verification_overdue',
+        'PENDING', 'CONFIRMED', 'PROCESSING', 'ASSIGNED', 'SHIPPED', 'IN_TRANSIT',
+        'PENDING_SELLER_VERIFICATION', 'SELLER_VERIFIED', 'VERIFICATION_OVERDUE',
+      ];
       return orders.filter(
         (o: any) =>
           (o.paymentMethod === 'COD' || o.paymentMethod === 'cod') &&

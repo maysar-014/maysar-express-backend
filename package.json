@@ -199,10 +199,7 @@
     "test:wallet-service:unit": "jest --selectProjects=wallet-service --testPathPattern=domain|application",
     "test:wallet-service:integration": "jest --selectProjects=wallet-service --testPathPattern=infrastructure",
     "test:wallet-service:e2e": "jest --selectProjects=wallet-service --testPathPattern=e2e",
-    "test:wallet-service:coverage": "jest --selectProjects=wallet-service --coverage",
-    "test:governance-service": "jest --selectProjects=governance-service",
-    "governance:dev": "tsx services/governance-service/src/main.ts",
-    "governance:audit": "tsx services/governance-service/src/cli/run-audit.ts"
+    "test:wallet-service:coverage": "jest --selectProjects=wallet-service --coverage"
   },
   "dependencies": {
     "@aws-sdk/client-cloudfront": "^3.713.0",

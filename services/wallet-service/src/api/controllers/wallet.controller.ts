@@ -13,6 +13,7 @@ import { InitiatePayoutFromWalletUseCase } from '../../application/use-cases/ini
 import { IWalletRepository } from '../../domain/repositories/wallet.repository';
 import { IHoldRepository } from '../../domain/repositories/hold.repository';
 import { AuditInfo } from '../../domain/value-objects/audit-info.value-object';
+import { IPayoutServiceClient } from '../../../../../shared-contracts/payout-service-contracts';
 
 export class WalletController {
     constructor(
@@ -28,7 +29,8 @@ export class WalletController {
         private readonly topUpUseCase: TopUpWalletUseCase,
         private readonly walletRepository: IWalletRepository,
         private readonly initiatePayoutUseCase: InitiatePayoutFromWalletUseCase,
-        private readonly holdRepository: IHoldRepository
+        private readonly holdRepository: IHoldRepository,
+        private readonly payoutServiceClient: IPayoutServiceClient
     ) { }
 
     private getAuditInfo(req: Request): AuditInfo {
@@ -294,7 +296,10 @@ export class WalletController {
             const wallet = await this.walletRepository.findByUserId(req.params.userId);
 
             if (!wallet) {
-                res.status(200).json({ success: true, data: { holds: [], total: 0 } });
+                res.status(404).json({
+                    success: false,
+                    error: 'Wallet not found'
+                });
                 return;
             }
 
@@ -520,6 +525,54 @@ export class WalletController {
                 return;
             }
             res.status(result.success ? 201 : this.mapWalletErrorStatus(result.message || 'Wallet operation failed')).json(result);
+        } catch (error: unknown) {
+            const message = this.getErrorMessage(error);
+            res.status(this.mapWalletErrorStatus(message)).json({ success: false, error: message });
+        }
+    }
+
+    /**
+     * GET /wallets/:userId/payout
+     * Returns the persisted payout history for the wallet owner, read from the
+     * payout service. 404 when the user has no wallet at all; an empty (but
+     * genuine) list when the wallet exists but no payout has been requested yet.
+     */
+    async getPayoutHistory(req: Request, res: Response): Promise<void> {
+        try {
+            const wallet = await this.walletRepository.findByUserId(req.params.userId);
+
+            if (!wallet) {
+                res.status(404).json({
+                    success: false,
+                    error: 'Wallet not found'
+                });
+                return;
+            }
+
+            const rawLimit = Number((req.query as Record<string, unknown>)?.limit);
+            const limit = Number.isFinite(rawLimit) && rawLimit > 0
+                ? Math.min(Math.trunc(rawLimit), 100)
+                : 20;
+
+            const history = await this.payoutServiceClient.getPayoutsByUserId(wallet.userId, limit);
+
+            if (!history.success) {
+                res.status(this.mapWalletErrorStatus(history.message || 'Failed to retrieve payout history')).json({
+                    success: false,
+                    error: history.message || 'Failed to retrieve payout history'
+                });
+                return;
+            }
+
+            res.status(200).json({
+                success: true,
+                data: {
+                    userId: wallet.userId,
+                    walletId: wallet.id,
+                    payouts: history.payouts,
+                    total: history.total
+                }
+            });
         } catch (error: unknown) {
             const message = this.getErrorMessage(error);
             res.status(this.mapWalletErrorStatus(message)).json({ success: false, error: message });

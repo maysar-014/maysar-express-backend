@@ -1,4 +1,5 @@
 import { UserRole, UserStatus, AuthUser } from '../entities/user.types';
+import { Email } from '../value-objects/email.value-object';
 
 /**
  * AUTH SERVICE - REPOSITORY INTERFACES
@@ -39,6 +40,31 @@ export interface IUserRepository {
  * Session Repository Interface
  * Manages user sessions and tokens
  */
+/**
+ * Minimal user read model needed by the password-reset flows.
+ *
+ * `IUserRepository` above returns `AuthUser`, which carries the 2FA secret,
+ * lockout counters and verification flags. The forgot/reset flows read only
+ * `id` and `email`, so depending on `IUserRepository` coupled them to a shape
+ * they do not consume — and, because the concrete Prisma repository returns the
+ * `User` aggregate instead, the mismatch surfaced at the composition root as an
+ * unsatisfiable `IUserRepository` argument. Declaring the capability actually
+ * consumed keeps the use case honest and makes the concrete repository satisfy
+ * it structurally (a class with extra members is assignable to a narrower port).
+ *
+ * `email` keeps the `string | Email` union used by the `User` aggregate; callers
+ * that need the raw address should read it through the existing normaliser
+ * rather than assuming a plain string.
+ */
+export interface IPasswordResetUserReader {
+  /** Look up the reset target by id. */
+  findById(id: string): Promise<{ id: string; email: string | Email } | null>;
+  /** Look up the reset target by already-normalised email. */
+  findByEmail(email: string): Promise<{ id: string; email: string | Email } | null>;
+  /** Whether an account exists for this email (used for enumeration-safe replies). */
+  emailExists(email: string): Promise<boolean>;
+}
+
 export interface ISessionRepository {
   /**
    * Create new session

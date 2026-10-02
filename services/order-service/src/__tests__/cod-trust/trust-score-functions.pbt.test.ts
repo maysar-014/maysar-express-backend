@@ -90,26 +90,43 @@ describe('Property 2 — Tier Completeness (no gaps, no overlaps)', () => {
   it('deriveTier returns exactly one tier for every integer in [0, 100]', () => {
     fc.assert(
       fc.property(scoreArb, (score) => {
-        const tier = deriveTier(score);
+        // deriveTier is DUAL-AXIS (score AND lifetime COD value). This test used
+        // to call it with the score alone, which is the exact bug that pinned
+        // every buyer to NEW_BUYER in production. Lifetime is supplied here, and
+        // the boundaries property below pins the interaction of both axes.
+        const tier = deriveTier(score, 500_000);
         expect(ALL_TIERS).toContain(tier);
       }),
       { numRuns: 101 } // covers all integers 0–100
     );
   });
 
-  it('tier boundaries are correct: 0–20 → NEW_BUYER, 21–40 → TRUSTED_BEGINNER, 41–100 → TRUSTED_BUYER', () => {
-    // Boundary values
-    expect(deriveTier(0)).toBe('NEW_BUYER');
-    expect(deriveTier(20)).toBe('NEW_BUYER');
-    expect(deriveTier(21)).toBe('TRUSTED_BEGINNER');
-    expect(deriveTier(40)).toBe('TRUSTED_BEGINNER');
-    expect(deriveTier(41)).toBe('TRUSTED_BUYER');
-    expect(deriveTier(100)).toBe('TRUSTED_BUYER');
-  });
+    it('tier boundaries are correct: BOTH score and lifetime COD value must clear their gate', () => {
+        // These assertions used to treat the tier as a function of score alone,
+        // which the implementation has never done — every tier above NEW_BUYER
+        // also requires a lifetime COD threshold. As written they would have
+        // passed only while the second argument was undefined, i.e. while the
+        // tier was stuck at NEW_BUYER for everyone.
+
+        expect(deriveTier(0, 0)).toBe('NEW_BUYER');
+        expect(deriveTier(20, 0)).toBe('NEW_BUYER');
+
+        // Score clears the gate but lifetime does not → still NEW_BUYER.
+        expect(deriveTier(41, 0)).toBe('NEW_BUYER');
+        expect(deriveTier(100, 0)).toBe('NEW_BUYER');
+
+        // Lifetime clears but score does not → still NEW_BUYER.
+        expect(deriveTier(20, 10_000_000)).toBe('NEW_BUYER');
+
+        // Both axes clear → progression actually happens.
+        expect(deriveTier(21, 100_000)).toBe('TRUSTED_BEGINNER');
+        expect(deriveTier(41, 500_000)).toBe('TRUSTED_BUYER');
+        expect(deriveTier(65, 2_000_000)).toBe('GOLD_BUYER');
+    });
 
   it('no score in [0, 100] maps to more than one tier', () => {
     for (let score = 0; score <= 100; score++) {
-      const tier = deriveTier(score);
+      const tier = deriveTier(score, 500_000);
       const matchCount = ALL_TIERS.filter(t => t === tier).length;
       expect(matchCount).toBe(1);
     }

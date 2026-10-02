@@ -82,6 +82,7 @@ export class WalletServiceClient implements IWalletServiceClient {
     amount: number,
     currency: string,
     reason: string,
+    referenceId?: string,
   ): Promise<string> {
     try {
       const idempotencyKey = `hold-${userId}-${Date.now()}`;
@@ -90,6 +91,12 @@ export class WalletServiceClient implements IWalletServiceClient {
         amount,
         currency,
         reason,
+        // The order id is stored as a structured reference on the hold. Without
+        // it, a hold that failed to release could only be identified by parsing
+        // the human-readable reason — and the wallet's reconciliation job (the
+        // safety net for stranded customer funds) has to be able to trust that
+        // lookup.
+        ...(referenceId ? { referenceId, referenceType: 'ORDER' } : {}),
         expiresInSeconds: 48 * 3600, // 48 hours in seconds
         idempotencyKey,
         correlationId: require("crypto").randomUUID(),
@@ -106,19 +113,18 @@ export class WalletServiceClient implements IWalletServiceClient {
     }
   }
 
-  async releaseHold(holdId: string): Promise<void> {
+  async releaseHold(holdId: string, userId: string, reason?: string): Promise<void> {
     try {
-      // NOTE: This method is live — reached via CODCommitmentService.releaseCommitment from
-      // OrderController.cancelOrderInternal (~L129) and main.ts (~L382, refused-delivery forfeit).
-      // TODO (Harden COD hold client phase): method is currently broken:
-      //   1. Wrong URL: posts to /api/wallet/wallets/holds/:holdId/release but wallet routes
-      //      require /:userId/hold/:holdId/release — holdId alone is not enough to route correctly.
-      //   2. Uses excluded 'system' identity — authorizeWalletAccess will reject it.
-      //   3. Body missing required `userId` and UUID `correlationId` fields.
-      //   Fix: thread `userId` through IWalletServiceClient.releaseHold signature + all call sites.
-      const token = generateUserToken("system");
-      await fetch(
-        `${WALLET_BASE_URL}/api/wallet/wallets/holds/${holdId}/release`,
+      // The wallet exposes holds under their owner:
+      //   POST /:userId/hold/:holdId/release
+      // This used to post to /holds/:holdId/release with a "system" token. Both
+      // were wrong: the route did not exist under that shape, and
+      // authorizeWalletAccess() rejects a "system" identity — so every release
+      // silently failed and a cancelled COD order left the buyer's funds frozen
+      // forever (the controller only logged a warning).
+      const token = generateUserToken(userId);
+      const res = await fetch(
+        `${WALLET_BASE_URL}/api/wallet/wallets/${userId}/hold/${holdId}/release`,
         {
           method: "POST",
           headers: {
@@ -127,30 +133,40 @@ export class WalletServiceClient implements IWalletServiceClient {
             "idempotency-key": `release-${holdId}`,
           },
           body: JSON.stringify({
+            userId,
             holdId,
-            reason: "Order cancelled",
+            reason: reason ?? `COD commitment released for hold ${holdId}`,
             correlationId: require("crypto").randomUUID(),
+            idempotencyKey: `release-${holdId}`,
           }),
         },
       );
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(
+          `Failed to release wallet hold ${holdId}: HTTP ${res.status} ${text.slice(0, 200)}`
+        );
+      }
     } catch (error: any) {
-      console.error(
-        `[WalletServiceClient] releaseHold failed for hold ${holdId}:`,
-        error.message,
+      // Re-thrown rather than swallowed: the caller (OrderController) decides how
+      // a failed release is handled and logs it there. Swallowing it here is what
+      // let a permanently frozen hold go unnoticed.
+      throw new Error(
+        `[WalletServiceClient] releaseHold failed for hold ${holdId}: ${error.message}`
       );
     }
   }
 
-  async captureHold(holdId: string): Promise<void> {
+  async captureHold(holdId: string, userId: string, reason?: string): Promise<void> {
     try {
-      // NOTE: This method is live — reached via CODCommitmentService.captureCommitment from
-      // OrderController.confirmDelivery (~L289).
-      // TODO (Harden COD hold client phase): method is currently broken for the same reasons
-      // as releaseHold above — wrong URL shape, excluded 'system' identity, missing required
-      // body fields. Fix: thread `userId` through IWalletServiceClient.captureHold + call sites.
-      const token = generateUserToken("system");
+      // Same defects as releaseHold: the real route is
+      // POST /:userId/hold/:holdId/capture, and authorizeWalletAccess() rejects
+      // the "system" identity. Capturing is what actually takes the money on
+      // confirmed delivery, so a silent failure here means the platform never
+      // collects the COD delivery fee.
+      const token = generateUserToken(userId);
       const res = await fetch(
-        `${WALLET_BASE_URL}/api/wallet/wallets/holds/${holdId}/capture`,
+        `${WALLET_BASE_URL}/api/wallet/wallets/${userId}/hold/${holdId}/capture`,
         {
           method: "POST",
           headers: {
@@ -159,13 +175,20 @@ export class WalletServiceClient implements IWalletServiceClient {
             "idempotency-key": `capture-${holdId}`,
           },
           body: JSON.stringify({
+            userId,
             holdId,
-            reason: "COD delivery confirmed",
+            reason: reason ?? "COD delivery confirmed",
             correlationId: require("crypto").randomUUID(),
+            idempotencyKey: `capture-${holdId}`,
           }),
         },
       );
-      if (!res.ok) throw new Error(`captureHold HTTP ${res.status}`);
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(
+          `captureHold HTTP ${res.status} ${text.slice(0, 200)}`
+        );
+      }
     } catch (error: any) {
       console.error(
         `[WalletServiceClient] captureHold failed for hold ${holdId}:`,
@@ -180,6 +203,7 @@ export class WalletServiceClient implements IWalletServiceClient {
     amount: number,
     currency: string,
     description: string,
+    referenceId?: string,
   ): Promise<string> {
     try {
       const idempotencyKey = `debit-${userId}-${Date.now()}`;
@@ -190,6 +214,10 @@ export class WalletServiceClient implements IWalletServiceClient {
         currency,
         description,
         reason: description,
+        // The debit endpoint already accepts referenceId/referenceType; without
+        // them the stored transaction keeps referenceId = NULL and order
+        // cancellation cannot find the debit to refund.
+        ...(referenceId ? { referenceId, referenceType: 'ORDER' } : {}),
         idempotencyKey,
         correlationId,
       });

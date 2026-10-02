@@ -92,6 +92,18 @@ import { CategoryStrategyService } from './src/domain/buy-box/category-strategy.
 import { BuyBoxRecomputationJob } from './src/infrastructure/jobs/buy-box-recomputation.job';
 import { RollingAverageJob } from './src/infrastructure/jobs/rolling-average.job';
 
+/**
+ * Normalise a caught value into logger context.
+ *
+ * The logger's second parameter is a context object, not an error. Handing it an
+ * Error instance means a structured logger serialises it as {} and the message and
+ * stack are lost, so a swallowed failure shows up as an empty log line. The stack
+ * matters here because several of these call sites are background jobs and
+ * fire-and-forget event handlers whose failures are otherwise invisible.
+ */
+const errorContext = (e: unknown): Record<string, unknown> =>
+    e instanceof Error ? { error: e.message, stack: e.stack } : { error: String(e) };
+
 class PrismaCategoryRepository implements CategoryRepository {
     constructor(private readonly client: PrismaClient) {}
 
@@ -388,7 +400,7 @@ export const CatalogModule: Module = {
 
         // Seed built-in category strategies (GROCERIES, ELECTRONICS, FASHION, MEDICINES, FURNITURE)
         categoryStrategyService.seedDefaultStrategies().catch((e: unknown) => {
-            logger.warn('Failed to seed default category strategies:', e);
+            logger.warn('Failed to seed default category strategies:', errorContext(e));
         });
 
         const computeBuyBoxRankingUseCase = new ComputeBuyBoxRankingUseCase(
@@ -415,15 +427,15 @@ export const CatalogModule: Module = {
 
         // Run rolling averages immediately on startup (catches up on any missed window),
         // then every 24 hours
-        rollingAverageJob.run().catch((e: unknown) => logger.warn('Initial rolling average run failed:', e));
+        rollingAverageJob.run().catch((e: unknown) => logger.warn('Initial rolling average run failed:', errorContext(e)));
         const rollingAverageInterval = setInterval(() => {
-            rollingAverageJob.run().catch((e: unknown) => logger.warn('Rolling average job failed:', e));
+            rollingAverageJob.run().catch((e: unknown) => logger.warn('Rolling average job failed:', errorContext(e)));
         }, 24 * 60 * 60 * 1000);
 
         // Full Buy Box recomputation every 6 hours
         const buyBoxRecomputationInterval = setInterval(() => {
             buyBoxRecomputationJob.runFullRecomputation().catch((e: unknown) =>
-                logger.warn('Buy Box full recomputation failed:', e)
+                logger.warn('Buy Box full recomputation failed:', errorContext(e))
             );
         }, 6 * 60 * 60 * 1000);
 
@@ -434,11 +446,11 @@ export const CatalogModule: Module = {
             const sellerId = envelope?.payload?.sellerId || envelope?.data?.sellerId;
             if (productId) {
                 computeBuyBoxRankingUseCase.execute(productId, { productId }, 'DEFAULT')
-                    .catch((e: unknown) => logger.warn(`Buy Box recompute failed for product ${productId}:`, e));
+                    .catch((e: unknown) => logger.warn(`Buy Box recompute failed for product ${productId}:`, errorContext(e)));
             }
             if (sellerId) {
                 buyBoxRecomputationJob.runDeltaRecomputation(sellerId)
-                    .catch((e: unknown) => logger.warn(`Buy Box delta recompute failed for seller ${sellerId}:`, e));
+                    .catch((e: unknown) => logger.warn(`Buy Box delta recompute failed for seller ${sellerId}:`, errorContext(e)));
             }
         });
 
@@ -447,7 +459,7 @@ export const CatalogModule: Module = {
             const sellerId = envelope?.payload?.sellerId || envelope?.data?.sellerId;
             if (sellerId) {
                 buyBoxRecomputationJob.runDeltaRecomputation(sellerId)
-                    .catch((e: unknown) => logger.warn(`Buy Box delta recompute failed for seller ${sellerId}:`, e));
+                    .catch((e: unknown) => logger.warn(`Buy Box delta recompute failed for seller ${sellerId}:`, errorContext(e)));
             }
         });
 
@@ -480,7 +492,7 @@ export const CatalogModule: Module = {
                 logger.info('Campaign handlers subscribed to events');
             }
         } catch (e) {
-            logger.warn('Campaign handlers not initialized:', e);
+            logger.warn('Campaign handlers not initialized:', errorContext(e));
         }
 
         // Initialize and start OutboxProcessor
@@ -536,7 +548,7 @@ export const CatalogModule: Module = {
                 router.use('/campaigns', campaignRoutes);
             }
         } catch (e) {
-            logger.warn('Failed to mount campaign routes:', e);
+            logger.warn('Failed to mount campaign routes:', errorContext(e));
         }
 
         // Pricing routes
@@ -564,7 +576,7 @@ export const CatalogModule: Module = {
                 router.use('/seller-locations', createSellerLocationRoutes(prisma));
                 logger.info('✅ Seller location routes mounted at /seller-locations');
             } catch (e) {
-                logger.warn('⚠️ Failed to mount seller-location routes:', e);
+                logger.warn('⚠️ Failed to mount seller-location routes:', errorContext(e));
             }
 
             // ── Product media upload endpoint ─────────────────────────────────
@@ -597,7 +609,7 @@ export const CatalogModule: Module = {
                 uploadProductMedia,
             );
         } catch (e) {
-            logger.warn('Failed to mount catalog API routes, falling back to degraded handler:', e);
+            logger.warn('Failed to mount catalog API routes, falling back to degraded handler:', errorContext(e));
             router.all('/v1/*', (_req, res) => {
                 res.status(503).json({
                     success: false,

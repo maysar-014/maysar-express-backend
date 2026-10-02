@@ -117,6 +117,11 @@ export class PrismaDeliveryRepository implements IDeliveryRepository {
       if (metadata.codCollected !== undefined) data.codCollected = metadata.codCollected;
       if (metadata.codCollectedAt) data.codCollectedAt = metadata.codCollectedAt;
       if (metadata.codOtpVerified !== undefined) data.codOtpVerified = metadata.codOtpVerified;
+      // Persist the generated OTP. The saga issues it in one request and
+      // verification reads it back in another, so dropping it here made COD
+      // delivery confirmation impossible.
+      if (metadata.otp !== undefined) data.otp = metadata.otp;
+      if (metadata.otpExpiresAt) data.otpExpiresAt = metadata.otpExpiresAt;
       if (metadata.codProofGpsLat !== undefined) data.codProofGpsLat = metadata.codProofGpsLat;
       if (metadata.codProofGpsLng !== undefined) data.codProofGpsLng = metadata.codProofGpsLng;
       if (metadata.codProofTimestamp) data.codProofTimestamp = metadata.codProofTimestamp;
@@ -124,6 +129,9 @@ export class PrismaDeliveryRepository implements IDeliveryRepository {
       if (metadata.buyerId) data.buyerId = metadata.buyerId;
       if (metadata.sellerId) data.sellerId = metadata.sellerId;
       if (metadata.codCommitmentHoldId) data.codCommitmentHoldId = metadata.codCommitmentHoldId;
+      // Saga id of the in-flight COD initiation saga. Verification arrives on a
+      // later HTTP request and cannot re-derive it, so it must be persisted here.
+      if (metadata.codSagaId !== undefined) data.codSagaId = metadata.codSagaId;
     }
 
     await this.prisma.logistics_Delivery.update({
@@ -247,14 +255,20 @@ export class PrismaDeliveryRepository implements IDeliveryRepository {
       codCollected: !!record.codCollected,
       codCollectedAt: record.codCollectedAt || undefined,
       codOtpVerified: !!record.codOtpVerified,
-      otp: undefined,
-      otpExpiresAt: undefined,
+      // Read back the durable OTP. Previously hard-coded to `undefined`, which
+      // made every COD delivery verification fail: the saga generated the code
+      // in one request and verification is a different one.
+      otp: record.otp || undefined,
+      otpExpiresAt: record.otpExpiresAt || undefined,
       codProofGpsLat: record.codProofGpsLat || undefined,
       codProofGpsLng: record.codProofGpsLng || undefined,
       codProofTimestamp: record.codProofTimestamp || undefined,
       buyerId: record.buyerId || undefined,
       sellerId: record.sellerId || undefined,
       codCommitmentHoldId: record.codCommitmentHoldId || undefined,
+      // Saga id of the in-flight COD initiation saga, so verification on a later
+      // request can continue it instead of starting a fresh one (BLG-024).
+      codSagaId: record.codSagaId || undefined,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt
     };

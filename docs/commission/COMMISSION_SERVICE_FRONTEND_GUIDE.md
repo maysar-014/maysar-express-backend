@@ -1,7 +1,7 @@
 # Commission Service — Frontend Integration Guide
 
 > Audience: Client app engineers (seller dashboard, admin panel, enabler portal)
-> Mount path: `/api/commissions`
+> Mount path: `/api/commission`
 
 ---
 
@@ -20,7 +20,7 @@ Admin/ops reviews → PUT /:id/approve → status APPROVED → payout-service tr
 
 | Aspect | Detail |
 |--------|--------|
-| Mount path | `/api/commissions` |
+| Mount path | `/api/commission` |
 | Auth | `requireAuth` on all routes — JWT required |
 | IDs | `com_` prefix (commission), `cpay_` prefix (commission payout) |
 | Error envelope | `{ success: false, error: { code, message }, timestamp }` |
@@ -99,7 +99,7 @@ PENDING → APPROVED → PAID
 ## 6. API Reference
 
 ### 6.1 Calculate commission (system/admin only)
-`POST /api/commissions/calculate` → **201**
+`POST /api/commission/calculate` → **201**
 
 This is called internally by the order-service on order completion. Frontend admin tools may call it manually for corrections.
 
@@ -146,7 +146,7 @@ Response:
 ```
 
 ### 6.2 Approve a commission
-`PUT /api/commissions/:id/approve` → **200**
+`PUT /api/commission/:id/approve` → **200**
 
 ```jsonc
 {
@@ -166,10 +166,10 @@ Response:
 }
 ```
 
-> ⚠️ The approve response does **not** return the updated commission object. It returns `{ approved: true, eventsGenerated: N }`. Re-fetch `GET /api/commissions/:id` after approval to get the updated `status`, `approvedAt`, and `approvedBy`.
+> ⚠️ The approve response does **not** return the updated commission object. It returns `{ approved: true, eventsGenerated: N }`. Re-fetch `GET /api/commission/:id` after approval to get the updated `status`, `approvedAt`, and `approvedBy`.
 
 ### 6.3 Get commissions for a seller
-`GET /api/commissions/sellers/:sellerId?status=PENDING&limit=20&cursor=...` → **200**
+`GET /api/commission/sellers/:sellerId?status=PENDING&limit=20&cursor=...` → **200**
 
 > Route ordering note: `/sellers/:sellerId` is registered **before** `/:id` in the router. Always use the full `/sellers/` prefix — never try to access a seller ID via `/:id`.
 
@@ -196,7 +196,7 @@ Query params: `status` (filter by status), `limit` (default 20), `offset` (integ
 > ⚠️ Pagination uses **`limit`/`offset`** (not cursor-based). The `pagination` block in the response contains `{ limit, offset, count }` — there is no `cursor` or `hasMore` field. The doc's earlier mention of `cursor` is incorrect.
 
 ### 6.4 Get commission summary for a seller
-`GET /api/commissions/sellers/:sellerId/summary` → **200**
+`GET /api/commission/sellers/:sellerId/summary` → **200**
 
 ```jsonc
 {
@@ -215,7 +215,7 @@ Query params: `status` (filter by status), `limit` (default 20), `offset` (integ
 ```
 
 ### 6.5 Get a single commission
-`GET /api/commissions/:id` → **200**
+`GET /api/commission/:id` → **200**
 
 Returns full commission detail including `breakdown`, `payoutId` (if PAID), and `rate`.
 
@@ -273,9 +273,9 @@ Returns full commission detail including `breakdown`, `payoutId` (if PAID), and 
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/api/commissions/health` | none | Health check |
-| POST | `/api/commissions/calculate` | JWT (admin/system) | Calculate commission |
-| GET | `/api/commissions/sellers/:sellerId` | JWT | List seller commissions |
-| GET | `/api/commissions/sellers/:sellerId/summary` | JWT | Seller summary |
-| PUT | `/api/commissions/:id/approve` | JWT (admin/ops) | Approve commission |
-| GET | `/api/commissions/:id` | JWT | Get single commission |
+| GET | `/api/commission/health` | none | Health check |
+| POST | `/api/commission/calculate` | JWT (admin/system) | Calculate commission |
+| GET | `/api/commission/sellers/:sellerId` | JWT | List seller commissions |
+| GET | `/api/commission/sellers/:sellerId/summary` | JWT | Seller summary |
+| PUT | `/api/commission/:id/approve` | JWT (admin/ops) | Approve commission |
+| GET | `/api/commission/:id` | JWT | Get single commission |

@@ -33,12 +33,18 @@ export class TrainingController {
                 learnerId: resolvedLearnerId,
             };
             const result = await this.startTrainingUseCase.execute(body);
-            // Include trainingRecordId at top level for backward compatibility
-            // (some test consumers read it at response.trainingRecordId, not response.data.trainingRecordId)
+            // Include trainingRecordId and status at top level for backward
+            // compatibility and shape consistency: the idempotent/already-started
+            // paths below already return `status: 'IN_PROGRESS'` at the top level,
+            // so the happy path omitting it meant a client could not tell whether
+            // an enrollment was in progress.
             res.status(201).json({
                 success: true,
                 message: 'Training started',
                 trainingRecordId: result.trainingRecordId,
+                status: result.status,
+                warnings: result.warnings,
+                recommendations: result.recommendations,
                 data: result
             });
         } catch (error: any) {

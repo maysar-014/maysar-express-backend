@@ -100,10 +100,15 @@ const mapRole = (role: string | undefined): User_UserRole => {
 
 export class AuthEventHandlers {
   /**
-   * @param piiService - Used to encrypt PII fields (email, phone) before storing
-   *   in `user_User` and to create hashed lookup entries in `user_UserIndex`.
-   *   Every write to `user_User.email` MUST go through `piiService.encrypt()`;
-   *   every `user_UserIndex` entry MUST use `piiService.hash()` as the value.
+   * @param piiService - Used to build the HMAC-SHA256 lookup entries stored in
+   *   `user_UserIndex` (email/phone) and to read any legacy ciphertext rows.
+   *
+   * STORAGE POLICY: `user_User.email` and `.phoneNumber` are stored plain and
+   * normalized. They are identifiers, not credentials, and encrypting them with
+   * a random-IV cipher made the column unusable — `@unique` could not enforce
+   * uniqueness and no query could match a plaintext address. Every
+   * `user_UserIndex` entry MUST use `piiService.hash()` as the value; passwords
+   * are never stored here in any reversible form.
    */
   constructor(private readonly piiService: PiiEncryptionService) {}
 
@@ -174,23 +179,22 @@ export class AuthEventHandlers {
     });
 
     // ── UserRegistered.v1 ─────────────────────────────────────────────────────
-    // FIX: email and phoneNumber MUST be PII-encrypted before storage.
-    // The `user_User.email` column stores AES-256-GCM ciphertext.
-    // The `user_UserIndex` table stores HMAC-SHA256 hashes for lookups.
-    // Previously this handler wrote plaintext email directly, which violated
-    // the PII contract and produced ghost rows invisible to findByEmail().
+    // PII STORAGE POLICY: `user_User.email` and `.phoneNumber` hold plain,
+    // normalized values - they are not credentials. They were previously stored
+    // as AES-256-GCM ciphertext, which made `@unique` unenforceable and made
+    // every plaintext email lookup miss. `user_UserIndex` stores HMAC-SHA256
+    // hashes and remains the lookup mechanism; passwords stay one-way hashed.
     eventBus.subscribe('UserRegistered.v1', async (envelope: EventEnvelope) => {
       const payload = asUserRegistered(envelope.data);
       if (!payload.userId) return;
 
       const { firstName = null, lastName = null, phoneNumber = null } = payload.profile ?? {};
 
-      const rawEmail = payload.email ?? '';
-      const encryptedEmail = rawEmail ? this.piiService.encrypt(rawEmail) : '';
-      const emailHash = rawEmail ? this.piiService.hash(rawEmail) : '';
+      const plainEmail = (payload.email ?? '').trim().toLowerCase();
+      const emailHash = plainEmail ? this.piiService.hash(plainEmail) : '';
 
-      const encryptedPhone = phoneNumber ? this.piiService.encrypt(phoneNumber) : null;
-      const phoneHash = phoneNumber ? this.piiService.hash(phoneNumber) : null;
+      const plainPhone = phoneNumber ? phoneNumber.trim() : null;
+      const phoneHash = plainPhone ? this.piiService.hash(plainPhone) : null;
 
       // ── FIX: read existing record so we can protect ACTIVE status ──────────
       // Also check by email hash in case the row was created with a different ID
@@ -222,19 +226,19 @@ export class AuthEventHandlers {
         where: { id: existingId },
         create: {
           id: existingId,
-          email: encryptedEmail,        // ← PII-encrypted ✓
+          email: plainEmail,
           publicCode: payload.publicCode ?? null,
           passwordHash: '',
           role: mapRole(payload.role),
           status: User_UserStatus.PENDING_VERIFICATION,
           firstName: firstName ?? null,
           lastName: lastName ?? null,
-          phoneNumber: encryptedPhone   // ← PII-encrypted (or null) ✓
+          phoneNumber: plainPhone
         },
         update: {
           // Only update non-destructive fields on existing records.
-          // Never overwrite an existing encrypted email — the create path
-          // already set it correctly via PrismaUserRepository.create().
+          // Never overwrite an existing email - the create path already set it
+          // correctly via PrismaUserRepository.create().
           publicCode: payload.publicCode ?? null,
           // FIX 1: only update role when the payload carries a role value —
           // when absent, leave existing role untouched (prevents SYSTEM → BUYER demotion)

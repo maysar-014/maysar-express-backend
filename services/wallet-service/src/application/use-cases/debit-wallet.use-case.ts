@@ -18,6 +18,17 @@ export interface DebitWalletDTO {
     amount: number;
     currency: string;
     description: string;
+    /**
+     * Machine-readable reference to the business entity that caused this debit
+     * (e.g. an order id). Credits already accept `referenceId`; debits did not,
+     * which left every DEBIT transaction with `referenceId = NULL`.
+     *
+     * This is not cosmetic: order cancellation looks up the debit by
+     * `referenceId` to decide whether a refund is owed. With a NULL reference the
+     * lookup found nothing, the refund was silently skipped, and a paid order
+     * that was later cancelled left the customer's money debited forever.
+     */
+    referenceId?: string;
     metadata?: Record<string, unknown>;
     idempotencyKey: string;
     correlationId: string;
@@ -134,6 +145,9 @@ export class DebitWalletUseCase {
                 frozenAmountBefore: frozenBefore,
                 frozenAmountAfter: wallet.frozenAmount,
                 description: dto.description,
+                // Persisted so downstream services can locate this debit by the
+                // business entity that caused it (see DebitWalletDTO.referenceId).
+                ...(dto.referenceId ? { referenceId: dto.referenceId } : {}),
                 metadata: {
                     ...dto.metadata,
                     velocityRiskScore: velocityResult.riskScore,

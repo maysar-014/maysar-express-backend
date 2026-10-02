@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { DependencyContainer } from '../../infrastructure/container';
 import { ITrackingRepository, IDeliveryRepository } from '../../domain/repositories';
 import { TrackingUpdateService } from '../../application/services/tracking-update.service';
+import { isOrderNumber, isTrackingLookupIdentifier } from '@shared/ids/human-readable-ids';
 
 export class TrackingController {
   private get trackingRepository(): ITrackingRepository {
@@ -18,12 +19,59 @@ export class TrackingController {
 
   async getTrackingHistory(req: Request, res: Response): Promise<void> {
     try {
-      const { trackingNumber } = req.params;
+      const { identifier } = req.params;
       const { startDate, endDate, page = 1, limit = 100 } = req.query;
 
-      // For now, assume tracking number maps to delivery ID
-      // In production, you'd have a separate tracking number to delivery ID mapping
-      const deliveryId = trackingNumber;
+      if (!isTrackingLookupIdentifier(identifier)) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_TRACKING_IDENTIFIER',
+            message: 'Provide an order number (ORD-YYYYMMDD-NLNL) or a shipment tracking number (TRK-NLNLNL)',
+          },
+        });
+        return;
+      }
+
+      const prisma = (globalThis as any).prisma;
+
+      // â”€â”€ Order-level lookup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // The order number resolves to the order plus EVERY shipment it contains
+      // (one order can span several sellers), so the customer can pick which
+      // shipment to follow. Tracking numbers are shipment-level identifiers.
+      if (isOrderNumber(identifier)) {
+        const order = prisma?.order_Order?.findFirst
+          ? await prisma.order_Order.findFirst({ where: { id: identifier }, select: { id: true, status: true } })
+          : null;
+        const orderShipments = prisma?.logistics_Shipment?.findMany
+          ? await prisma.logistics_Shipment.findMany({
+              where: { orderId: identifier },
+              orderBy: { createdAt: 'asc' },
+              select: { id: true, trackingNumber: true, status: true, sellerId: true, createdAt: true },
+            })
+          : [];
+
+        if (!order && orderShipments.length === 0) {
+          res.status(404).json({
+            success: false,
+            error: { code: 'TRACKING_NOT_FOUND', message: `No order or shipment matches ${identifier}` },
+          });
+          return;
+        }
+
+        res.json({
+          success: true,
+          data: { lookupType: 'ORDER', identifier, order, shipments: orderShipments },
+        });
+        return;
+      }
+
+      // â”€â”€ Shipment-level lookup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // A TRK- tracking number resolves directly to the one shipment that owns it.
+      const shipment = prisma?.logistics_Shipment?.findFirst
+        ? await prisma.logistics_Shipment.findFirst({ where: { trackingNumber: identifier } })
+        : null;
+      const deliveryId = shipment?.id || identifier;
 
       const timeRange = startDate && endDate ? {
         start: new Date(startDate as string),
@@ -60,13 +108,13 @@ export class TrackingController {
           courierId: (delivery as any).courierId || null,
         };
       } else {
-        // Try to derive delivery status from the order service via the global Prisma client
+        // Derive delivery status from the parent order via the global Prisma client
         try {
           const globalForPrisma = globalThis as unknown as { prisma: { order_Order?: { findFirst(a: any): Promise<any> } } | undefined };
-          const prisma = globalForPrisma.prisma;
-          if (prisma?.order_Order?.findFirst) {
-            const orderRecord = await prisma.order_Order.findFirst({
-              where: { trackingNumber },
+          const prismaClient = globalForPrisma.prisma;
+          if (shipment?.orderId && prismaClient?.order_Order?.findFirst) {
+            const orderRecord = await prismaClient.order_Order.findFirst({
+              where: { id: shipment.orderId },
               select: { id: true, status: true }
             });
             if (orderRecord) {
@@ -93,7 +141,12 @@ export class TrackingController {
       res.json({
         success: true,
         data: {
-          trackingNumber,
+          lookupType: 'SHIPMENT',
+          identifier,
+          trackingNumber: identifier,
+          shipment: shipment
+            ? { id: shipment.id, trackingNumber: shipment.trackingNumber, status: shipment.status, orderId: shipment.orderId }
+            : null,
           status: deliveryObj?.status || 'unknown',
           // `delivery` object for consumers that read tracking.delivery.status
           delivery: deliveryObj,

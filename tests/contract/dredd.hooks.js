@@ -87,23 +87,30 @@ const ensurePrismaClient = () => {
 
 const randomId = (prefix) => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
+// Mirrors shared/ids/human-readable-ids.ts so contract fixtures use exactly the shapes
+// the validators enforce: ORD-YYYYMMDD-NLNL for an order number and TRK-NLNLNL for a
+// shipment tracking number (N = digit 2-9, L = letter A-Z without I, L and O).
+const HUMAN_DIGITS = '23456789';
+const HUMAN_LETTERS = 'ABCDEFGHJKMNPQRSTUVWXYZ';
+
+const pick = (alphabet) => alphabet[Math.floor(Math.random() * alphabet.length)];
+
+const digitLetterPairs = (pairs) =>
+  Array.from({ length: pairs }, () => `${pick(HUMAN_DIGITS)}${pick(HUMAN_LETTERS)}`).join('');
+
+// Order number: identifies the whole order for its lifecycle; never a shipment identifier.
 const buildOrderId = () => {
   const now = new Date();
-  const date = now.toISOString().slice(0, 10).replace(/-/g, '');
-  const time = now.toTimeString().slice(0, 8).replace(/:/g, '');
-  const random = Math.random().toString(16).slice(2, 6).toUpperCase().padEnd(4, '0');
-  return `MSR-ORD-${date}-${time}-${random}`;
+  const date = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+  ].join('');
+  return `ORD-${date}-${digitLetterPairs(2)}`;
 };
 
-const buildTrackingNumber = () => {
-  const now = new Date();
-  const date = now.toISOString().slice(0, 10).replace(/-/g, '');
-  const rand = () => {
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    return `${Math.floor(Math.random() * 10)}${letters[Math.floor(Math.random() * letters.length)]}`;
-  };
-  return `MYS-TZ-ORD-${date}-${rand()}${rand()}`;
-};
+// Shipment tracking number: one per shipment, independent of any order number.
+const buildTrackingNumber = () => `TRK-${digitLetterPairs(3)}`;
 
 const encryptSecret = (plaintext) => {
   const keySource = process.env.TWO_FACTOR_ENCRYPTION_KEY || 'default-two-factor-encryption-key-32-chars!!';

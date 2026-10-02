@@ -86,7 +86,7 @@ describe('Bug Condition B — ResetPasswordUseCase: userServiceClient.updatePass
           const mockUser = {
             id: userId,
             email: 'user@example.com',
-            changePassword: jest.fn(),
+            
           };
 
           const updatePasswordSpy = jest.fn().mockResolvedValue(undefined);
@@ -123,8 +123,11 @@ describe('Bug Condition B — ResetPasswordUseCase: userServiceClient.updatePass
           expect(typeof calledHash).toBe('string');
           expect(calledHash.startsWith('$2')).toBe(true); // bcrypt hash prefix
 
-          // changePassword domain method must be used (not raw mutation)
-          expect(mockUser.changePassword).toHaveBeenCalledTimes(1);
+          // The AuthUser DTO has no changePassword method, so the use case must
+          // not (and cannot) call it — the authoritative write is updatePassword
+          // above, which is already asserted. Asserting the DTO mutation was what
+          // let this regression pass: the mock defined changePassword, masking
+          // that the real object does not have it.
 
           // markAsUsed must be called
           expect(mockPasswordResetRepository.markAsUsed).toHaveBeenCalledWith('reset-record-1');

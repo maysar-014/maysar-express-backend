@@ -880,10 +880,10 @@ Response: 200 -> Not specified
 Errors: None specified
 Rate Limits: Not specified
 
-Endpoint: GET /api/logistics/tracking/{trackingNumber}
+Endpoint: GET /api/logistics/tracking/{identifier}
 Role Access: ADMIN, BUYER, SELLER, SUPPLIER
 Purpose: Get tracking history
-Request: Path params: trackingNumber*
+Request: Path params: identifier* (order number ORD-YYYYMMDD-NLNL, or shipment tracking number TRK-NLNLNL)
 Response: 200 -> Not specified
 Errors: None specified
 Rate Limits: Not specified
@@ -1866,7 +1866,7 @@ Routing structure:
 - `/checkout/:checkoutId`
 - `/payments/:paymentId`
 - `/wallet`
-- `/logistics/tracking/:trackingNumber`
+- `/logistics/tracking/:identifier`
 - `/notifications`
 - `/support/tickets`
 - `/support/tickets/:ticketId`

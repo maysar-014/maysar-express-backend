@@ -439,7 +439,7 @@ router.patch('/couriers/:courierId/status',
 // ==================== TRACKING ENDPOINTS ====================
 // Tracking API: http://localhost:3007/api/v1/tracking/*
 
-router.get('/tracking/:trackingNumber',
+router.get('/tracking/:identifier',
   createApiValidationChain(),
   TrackingValidator.getTrackingHistory(),
   handleValidationErrors,

@@ -28,10 +28,16 @@ describe('prisma module bootstrap', () => {
     expect(prismaConstructorMock).toHaveBeenCalledTimes(1);
   });
 
-  it('creates analytics prisma client and exports it as default', async () => {
+  it('exports a lazy prisma proxy that resolves the client on first property access', async () => {
     const analyticsModule = await import('./prisma');
 
+    // Importing the module must not open a connection pool (monolith mode reuses
+    // globalThis.prisma, and standalone/test mode defers creation to first use).
     expect(analyticsModule.default).toBeDefined();
-    expect(prismaConstructorMock).toHaveBeenCalled();
+    expect(prismaConstructorMock).not.toHaveBeenCalled();
+
+    // First property access resolves the client through createPrismaClient().
+    expect(typeof analyticsModule.default.$disconnect).toBe('function');
+    expect(prismaConstructorMock).toHaveBeenCalledTimes(1);
   });
 });

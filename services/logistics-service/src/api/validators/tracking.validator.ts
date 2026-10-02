@@ -1,6 +1,7 @@
 ﻿// @ts-nocheck
 import { body, param, query } from 'express-validator';
 import { isSystemId } from '@shared/validation/id';
+import { isTrackingLookupIdentifier } from '@shared/ids/human-readable-ids';
 
 export class TrackingValidator {
   static storeLocationUpdate(): ValidationChain[] {
@@ -85,9 +86,11 @@ export class TrackingValidator {
 
   static getTrackingHistory(): ValidationChain[] {
     return [
-      param('trackingNumber')
-        .isLength({ min: 8, max: 50 })
-        .withMessage('Tracking number must be between 8 and 50 characters'),
+      // Accepts either identifier: an ORDER NUMBER (ORD-YYYYMMDD-NLNL) or a
+      // SHIPMENT TRACKING NUMBER (TRK-NLNLNL) - separate namespaces.
+      param('identifier')
+        .custom(isTrackingLookupIdentifier)
+        .withMessage('Provide a valid order number (ORD-YYYYMMDD-NLNL) or shipment tracking number (TRK-NLNLNL)'),
 
       query('startDate')
         .optional()

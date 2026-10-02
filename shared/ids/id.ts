@@ -128,28 +128,6 @@ export const makeId = (prefix: string): string => {
   return `${prefix}_${createUlid()}`;
 };
 
-/**
- * Generate a Master Order ID in the format MSR-MO-{YYYYMMDD}-{6 uppercase alphanumeric}
- * Example: MSR-MO-20260823-A3K7PQ
- */
-export const makeMasterOrderId = (): string => {
-  const now = new Date();
-  const yyyy = now.getUTCFullYear().toString();
-  const mm = (now.getUTCMonth() + 1).toString().padStart(2, '0');
-  const dd = now.getUTCDate().toString().padStart(2, '0');
-  const dateStr = `${yyyy}${mm}${dd}`;
-
-  // 6 uppercase alphanumeric chars from crypto random
-  const chars = 'ABCDEFGHJKMNPQRSTVWXYZ0123456789'; // Crockford-safe chars
-  const bytes = randomBytes(6);
-  let suffix = '';
-  for (let i = 0; i < 6; i++) {
-    suffix += chars[bytes[i] % chars.length];
-  }
-
-  return `MSR-MO-${dateStr}-${suffix}`;
-};
-
 export const isPrefixedUlid = (value: string): boolean => {
   if (!value) return false;
   const pattern = /^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$/;

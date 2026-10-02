@@ -1,13 +1,15 @@
 
 import { z } from 'zod';
-import { isSystemId, zodId } from '@shared/validation/id';
+import { zodId } from '@shared/validation/id';
+import { zodOrderNumber } from '@shared/ids/human-readable-ids';
 
-const MAYSAR_ORDER_ID_PATTERN = /^MSR-ORD-\d{8}-\d{6}-[A-F0-9]{4}$/;
-
-export const orderIdSchema = z.string().refine(
-    (value) => isSystemId(value) || MAYSAR_ORDER_ID_PATTERN.test(value),
-    { message: 'Invalid ID format' }
-);
+/**
+ * An order reference is exactly an ORDER NUMBER (ORD-YYYYMMDD-NLNL) - the only shape
+ * the platform id generator produces. Nothing else is accepted: not the retired branded
+ * shape, not an internal row id, and not a shipment tracking number (TRK-NLNLNL),
+ * which identifies one shipment rather than the order.
+ */
+export const orderIdSchema = zodOrderNumber();
 
 export const createPaymentSchema = z.object({
     body: z.object({

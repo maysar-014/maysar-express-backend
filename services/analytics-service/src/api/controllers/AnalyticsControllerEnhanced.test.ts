@@ -153,15 +153,25 @@ describe('AnalyticsController', () => {
     expect(res.json).toHaveBeenCalledWith({ error: 'Failed to fetch growth indicators' });
   });
 
-  it('returns 500 when founder operating system retrieval fails', async () => {
+  it('degrades to a 200 stub when founder operating system retrieval fails', async () => {
     founderDashboardExecuteMock.mockRejectedValue(new Error('dashboard-failed'));
     const controller = new AnalyticsController();
     const res = makeRes();
 
     await controller.getFounderOperatingSystem({} as any, res);
 
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Failed to fetch founder operating system dashboard' });
+    // The founder dashboard intentionally degrades instead of erroring so the
+    // admin panel keeps rendering when the analytics pipeline is unavailable
+    // (docs/Flow Docs/08-platform-operations.md: dashboards stay useful even
+    // when upstream systems are degraded). The stub is flagged for the UI.
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        currentBottleneck: { type: 'data_unavailable', description: 'Analytics data unavailable' },
+        _degraded: true,
+        _error: 'dashboard-failed'
+      })
+    );
   });
 });
 

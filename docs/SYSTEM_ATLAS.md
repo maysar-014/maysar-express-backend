@@ -969,17 +969,14 @@ flowchart LR
   K["catalog-service"] --> O
   K --> Z["maps-service"]
   K --> F["community-service"]
-  K --> G["governance-service"]
 
   H["chat-service"] --> N
   H --> S["support-service"]
   H --> R["review / moderation flows"]
 
-  V["kyc-service"] --> G
   V --> C
   V --> O
 
-  Q["analytics-service"] --> G
   X["payout-service"] --> C
   E["enabler-service"] --> M
   T["business-registry-service"] --> Q
@@ -1032,11 +1029,7 @@ Observed relationship themes:
    category strategy, while external data comes from orders, sellers, and zone
    performance history.
 
-4. Governance sits above the rest of the platform.
-   It observes runtime behavior, API readiness, evidence, and compliance gates
-   without becoming the source of operational truth itself.
-
-5. Event-driven fanout is the common integration pattern.
+4. Event-driven fanout is the common integration pattern.
    The event bus and outbox let one service persist state first and publish
    side effects safely after the fact.
 
@@ -1055,7 +1048,7 @@ their current usage in the platform.
 | Orders and inventory | `order-service`, `inventory-service`, `checkout-service` | Order saga, stock reservation, order lifecycle, checkout orchestration |
 | Marketplace discovery | `catalog-service`, `maps-service`, `community-service` | Product discovery, buy-box ranking, geo-aware scoring, public marketplace surfaces |
 | Messaging and support | `chat-service`, `notification-service`, `support-service` | Buyer/seller/courier chat, push/email/SMS delivery, service assistance workflows |
-| Trust and compliance | `kyc-service`, `governance-service`, `business-registry-service` | KYC verification, compliance checks, audit reports, release gates |
+| Trust and compliance | `kyc-service`, `business-registry-service` | KYC verification, compliance records, business registry data |
 | Growth and partnerships | `enabler-service`, `commission-service`, `training-service` | Enabler attribution, commission splits, onboarding and partner enablement |
 | Analytics and reporting | `analytics-service` | Aggregated reporting, operational metrics, decision support |
 | Fulfillment and operations | `logistics-service`, `production-service` | Dispatch, delivery lifecycle, operational throughput and fulfillment support |
@@ -1067,8 +1060,6 @@ The important thing is not just ownership, but dependency direction:
   of authentication events.
 - `order-service` is the central transaction coordinator for commerce flows.
 - `catalog-service` consumes transactional history but does not own payment truth.
-- `governance-service` reads the platform state and evidence, but does not own
-  the business workflows it audits.
 
 ---
 
@@ -1079,9 +1070,8 @@ The important thing is not just ownership, but dependency direction:
    modules, and `src/app.ts` mounts each service under `/api/{service-name}`.
 
 2. Each service exposes its own runtime contract.
-   The governance service exposes health, ready, report, dashboard, and evidence
-   endpoints; the core platform services expose their own feature routes through
-   the same mounting pattern.
+   Core platform services expose their feature routes through the same mounting
+   pattern.
 
 3. Persistence happens before publication.
    The event bus and outbox pattern ensure important domain changes are saved
@@ -1092,12 +1082,12 @@ The important thing is not just ownership, but dependency direction:
    read models and ranking signals aligned with the latest platform state.
 
 5. Operational visibility is part of the contract.
-   Health endpoints, readiness checks, logs, structured errors, and governance
-   audits are all meant to prove the system is safe to run, not merely alive.
+   Health endpoints, readiness checks, logs and structured errors are all meant to
+   prove the system is safe to run, not merely alive.
 
-6. CI uses the same governance path as operators.
-   The audit CLI and OpenAPI contract let the release pipeline validate the same
-   logic that admins inspect in the dashboard.
+6. CI validates the same contracts operators rely on.
+   The OpenAPI contract and the constitution audit scripts let the release pipeline
+   validate what the platform exposes.
 
 ---
 
@@ -1114,7 +1104,7 @@ This system treats failure as a first-class citizen.
 - P3 issues are logged, but they do not block advancement.
 
 Recovery behavior follows the rollback law already described elsewhere in this
-doc and in the governance service:
+doc:
 
 - A new phase may not begin while an unresolved P0 or P1 from a prior phase is
   still open.
@@ -1150,8 +1140,7 @@ event families that each service owns and other services consume.
 
 - **Compliance events**
   - `KYCStatusChanged.v1` is the clearest compliance signal in the registry.
-  - It updates trust and eligibility state and creates an audit trail for
-    governance.
+  - It updates trust and eligibility state and creates a compliance audit trail.
 
 - **Payment and wallet events**
   - `PaymentInitiated`, `PaymentProcessing`, `PaymentCompleted`,
@@ -1179,7 +1168,7 @@ The relationship rule is simple:
 
 - domain services emit truth,
 - infrastructure services deliver side effects,
-- and governance observes both to decide whether the platform is safe.
+- and read/analytics services observe both without owning either.
 
 ---
 
@@ -1201,7 +1190,6 @@ strict database migration dump.
 | `kyc-service` | `kyc_AuditLog` and related compliance records | Verification decisions, compliance history, trust updates |
 | `commission-service` | `commission`, `payout` | Commission ledger, payout records |
 | `analytics-service` | analytics/read-model tables and aggregates | Reporting, derived metrics, operating dashboards |
-| `governance-service` | inspection runs, gate results, evidence indexes | Compliance evidence, verdicts, readiness history |
 | `enabler-service`, `business-registry-service`, `logistics-service`, `production-service`, `support-service` | service-specific domain tables | Partner onboarding, fulfillment, support, and operational workflows |
 
 Important ownership rule:
@@ -1209,8 +1197,6 @@ Important ownership rule:
 - if a service writes the row, it owns the row;
 - if a service reads the row, it depends on it;
 - if a service aggregates the row, it must tolerate lag or partial staleness;
-- and if governance audits the row, it must not be the same system deciding the
-  verdict.
 
 ---
 
@@ -1224,8 +1210,7 @@ This is the clearest “who depends on whom” view in the platform.
 
 - `user-service`
   - Depends on `auth-service` identity events.
-  - Feeds `wallet-service`, `kyc-service`, `notification-service`, and
-    `governance-service` audit checks.
+  - Feeds `wallet-service`, `kyc-service`, and `notification-service`.
 
 - `wallet-service`
   - Depends on `user-service` for account identity.
@@ -1241,12 +1226,11 @@ This is the clearest “who depends on whom” view in the platform.
 - `payment-service`
   - Depends on `wallet-service` for wallet-based value movement and on provider
     webhook truth for card/payment-provider flows.
-  - Emits events consumed by `order-service`, `analytics-service`, and
-    `governance-service`.
+  - Emits events consumed by `order-service` and `analytics-service`.
 
 - `catalog-service`
   - Depends on `order-service`, `inventory-service`, and seller/product data.
-  - Feeds search, buy-box, campaigns, analytics, and governance.
+  - Feeds search, buy-box, campaigns, and analytics.
 
 - `chat-service`
   - Depends on user identity, product/order context, media storage, and
@@ -1260,7 +1244,7 @@ This is the clearest “who depends on whom” view in the platform.
 - `kyc-service`
   - Depends on user identity, order history, wallet activity, and compliance
     audit requirements.
-  - Feeds trust signals back into order eligibility and governance.
+  - Feeds trust signals back into order eligibility.
 
 - `commission-service`
   - Depends on order/payment truth and enabler attribution.
@@ -1271,15 +1255,10 @@ This is the clearest “who depends on whom” view in the platform.
     services.
   - Produces read-optimized, decision-support projections.
 
-- `governance-service`
-  - Depends on every public service’s health, evidence, and auditability.
-  - Does not own product truth; it owns release truth.
-
 This is the structural reason the platform works:
 
 - transactional services own the canonical state,
-- read/analytics services derive views from it,
-- and governance verifies that the two still match.
+- and read/analytics services derive views from it.
 
 ---
 

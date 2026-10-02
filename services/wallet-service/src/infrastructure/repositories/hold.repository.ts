@@ -60,6 +60,22 @@ export class HoldRepository implements IHoldRepository {
         return records.map(r => this.toDomain(r));
     }
 
+    async findReconciliationCandidates(limit: number = 200): Promise<Hold[]> {
+        // Only holds that actually name an order can be reconciled; a hold with
+        // no structured reference has nothing to classify against.
+        const records = await this.prisma.wallet_Hold.findMany({
+            where: {
+                status: 'ACTIVE',
+                isReleased: false,
+                isCaptured: false,
+                metadata: { path: ['referenceId'], not: Prisma.DbNull },
+            },
+            orderBy: { createdAt: 'asc' },
+            take: limit,
+        });
+        return records.map(r => this.toDomain(r));
+    }
+
     async update(hold: Hold): Promise<void> {
         await this.save(hold); // upsert handles update
     }

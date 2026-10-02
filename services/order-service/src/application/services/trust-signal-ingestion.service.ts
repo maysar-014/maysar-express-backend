@@ -63,7 +63,12 @@ export class TrustSignalIngestionService {
 
     // Compute new score
     const newScore = applySignal(currentScore, dto.signalType);
-    const newTier = deriveTier(newScore);
+    // deriveTier is dual-axis (score AND lifetime COD value). Passing only the
+    // score left the second argument undefined, so every threshold comparison
+    // was false and the tier was always NEW_BUYER — buyers could never
+    // progress regardless of their signal history.
+    const lifetimeCODValue = existing?.lifetimeCODValue ?? 0;
+    const newTier = deriveTier(newScore, lifetimeCODValue);
     const delta = newScore - currentScore;
 
     logger.info('[TrustSignalIngestionService] Recording signal', {

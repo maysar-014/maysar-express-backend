@@ -25,6 +25,9 @@ jest.mock('@prisma/client', () => ({
       deleteMany: jest.fn(),
       createMany: jest.fn()
     },
+    mediaRef: {
+      findMany: jest.fn().mockResolvedValue([])
+    },
     $transaction: jest.fn(),
     $connect: jest.fn(),
     $disconnect: jest.fn()

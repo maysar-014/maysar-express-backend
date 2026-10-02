@@ -15,7 +15,8 @@
 > - There is no standalone compliance HTTP service or compliance dashboard endpoint.
 >
 > Additionally, governance routes (`/api/governance/*`) referenced in this document as live admin
-> capabilities return route-level 404 in the verified sweep — the governance feature is **not active**.
+> capabilities **do not exist** — governance has been removed from the platform, with its paths and
+> schemas deleted from both API specs (DEF-007).
 >
 > **Canonical replacement:** [`docs/FLOWS/role-overviews/compliance-officer-lifecycle.md`](../FLOWS/role-overviews/compliance-officer-lifecycle.md)
 > **Canonical replacement for support flows:** [`docs/FLOWS/support/user-flow/support-agent-flows.md`](../FLOWS/support/user-flow/support-agent-flows.md)

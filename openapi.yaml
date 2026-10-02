@@ -18210,7 +18210,7 @@ paths:
       responses:
         '200':
           description: Success
-  '/api/checkout/{cartId}':
+  '/api/checkout/cart/{cartId}':
     parameters:
       - name: cartId
         in: path
@@ -18222,7 +18222,7 @@ paths:
         - Checkout
       summary: 'DELETE {cartId}'
       description: Auto-generated from mounted Express routes to keep the contract aligned with the reachable API surface.
-      operationId: delete_api_checkout_cartId
+      operationId: delete_api_checkout_cart_cartId
       x-generated-route-sync: true
       responses:
         '200':
@@ -18232,7 +18232,7 @@ paths:
         - Checkout
       summary: 'GET {cartId}'
       description: Auto-generated from mounted Express routes to keep the contract aligned with the reachable API surface.
-      operationId: get_api_checkout_cartId
+      operationId: get_api_checkout_cart_cartId
       x-generated-route-sync: true
       responses:
         '200':
@@ -18421,13 +18421,13 @@ paths:
               schema: {}
       security:
         - BearerAuth: []
-  /api/checkout/current:
+  /api/checkout/cart/current:
     get:
       tags:
         - Checkout
-      summary: GET current
+      summary: GET cart current
       description: Auto-generated from mounted Express routes to keep the contract aligned with the reachable API surface.
-      operationId: get_api_checkout_current
+      operationId: get_api_checkout_cart_current
       x-generated-route-sync: true
       responses:
         '200':
@@ -18788,13 +18788,13 @@ paths:
       parameters: []
       security:
         - BearerAuth: []
-  /api/checkout/items:
+  /api/checkout/cart/items:
     delete:
       tags:
         - Checkout
-      summary: DELETE items
+      summary: DELETE cart items
       description: Auto-generated from mounted Express routes to keep the contract aligned with the reachable API surface.
-      operationId: delete_api_checkout_items
+      operationId: delete_api_checkout_cart_items
       x-generated-route-sync: true
       responses:
         '200':
@@ -18802,9 +18802,9 @@ paths:
     patch:
       tags:
         - Checkout
-      summary: PATCH items
+      summary: PATCH cart items
       description: Auto-generated from mounted Express routes to keep the contract aligned with the reachable API surface.
-      operationId: patch_api_checkout_items
+      operationId: patch_api_checkout_cart_items
       x-generated-route-sync: true
       responses:
         '200':
@@ -18812,20 +18812,20 @@ paths:
     post:
       tags:
         - Checkout
-      summary: POST items
+      summary: POST cart items
       description: Auto-generated from mounted Express routes to keep the contract aligned with the reachable API surface.
-      operationId: post_api_checkout_items
+      operationId: post_api_checkout_cart_items
       x-generated-route-sync: true
       responses:
         '200':
           description: Success
-  /api/checkout/merge:
+  /api/checkout/cart/merge:
     post:
       tags:
         - Checkout
-      summary: POST merge
+      summary: POST cart merge
       description: Auto-generated from mounted Express routes to keep the contract aligned with the reachable API surface.
-      operationId: post_api_checkout_merge
+      operationId: post_api_checkout_cart_merge
       x-generated-route-sync: true
       responses:
         '200':
@@ -19292,9 +19292,10 @@ paths:
               properties:
                 orderId:
                   type: string
+                  pattern: '^ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$'
                   minLength: 1
             example:
-              orderId: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              orderId: ORD-20260927-3C8B
               sellerId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
               orderAmount: 1000
               recipientType: seller
@@ -22734,7 +22735,8 @@ paths:
                               example: enb_ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
                             orderId:
                               type: string
-                              example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                              pattern: '^ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$'
+                              example: ORD-20260927-3C8B
                               nullable: true
                             commissionId:
                               type: string
@@ -23585,11 +23587,11 @@ paths:
         required: true
         schema:
           type: string
-          pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+          pattern: '^ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$'
           enum:
-            - ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
-          example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
-        example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            - ORD-20260927-3C8B
+          example: ORD-20260927-3C8B
+        example: ORD-20260927-3C8B
     get:
       tags:
         - Enabler
@@ -23701,11 +23703,11 @@ paths:
           required: true
           schema:
             type: string
-            pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
+            pattern: '^ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$'
             enum:
-              - ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
-            example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
-          example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              - ORD-20260927-3C8B
+            example: ORD-20260927-3C8B
+          example: ORD-20260927-3C8B
   '/api/enabler/enablers/{enablerId}/promotion-jobs':
     parameters:
       - name: enablerId
@@ -25672,190 +25674,6 @@ paths:
       parameters: []
       security:
         - ServiceKey: []
-  /api/governance/constitution:
-    get:
-      tags:
-        - Governance
-      summary: Get the active governance constitution
-      description: Returns the currently active phase constitution used by the governance engine.
-      operationId: get_api_governance_constitution
-      responses:
-        '200':
-          description: Active constitution document
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - constitution
-                properties:
-                  constitution:
-                    $ref: '#/components/schemas/GovernanceConstitutionDocument'
-  /api/governance/dashboard:
-    get:
-      tags:
-        - Governance
-      summary: Get the governance dashboard payload
-      description: Returns the latest dashboard summary for operator review.
-      operationId: get_api_governance_dashboard
-      responses:
-        '200':
-          description: Dashboard payload
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GovernanceDashboardResponse'
-  /api/governance/reports/latest:
-    get:
-      tags:
-        - Governance
-      summary: Get the latest governance report
-      description: Returns the latest immutable governance report if one exists.
-      operationId: get_api_governance_reports_latest
-      responses:
-        '200':
-          description: Latest report
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - report
-                properties:
-                  report:
-                    $ref: '#/components/schemas/GovernanceInspectionRun'
-        '404':
-          description: No governance report has been generated yet
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-  /api/governance/runs:
-    get:
-      tags:
-        - Governance
-      summary: List governance runs
-      description: Returns the immutable run index ordered by latest run first.
-      operationId: get_api_governance_runs
-      responses:
-        '200':
-          description: Run index
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - runs
-                properties:
-                  runs:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/GovernanceRunIndexEntry'
-    post:
-      tags:
-        - Governance
-      summary: Start a governance audit run
-      description: Executes a new governance audit against the configured or supplied target base URL.
-      operationId: post_api_governance_runs
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GovernanceRunRequest'
-      responses:
-        '201':
-          description: Run completed and persisted
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - report
-                properties:
-                  report:
-                    $ref: '#/components/schemas/GovernanceInspectionRun'
-  '/api/governance/runs/{runId}':
-    get:
-      tags:
-        - Governance
-      summary: Get a governance run
-      description: Returns a single immutable governance run by id.
-      operationId: get_api_governance_runs_runId
-      responses:
-        '200':
-          description: Run payload
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - run
-                properties:
-                  run:
-                    $ref: '#/components/schemas/GovernanceInspectionRun'
-        '404':
-          description: Governance run not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-    parameters:
-      - name: runId
-        in: path
-        required: true
-        schema:
-          type: string
-  '/api/governance/runs/{runId}/evidence/{gateId}':
-    get:
-      tags:
-        - Governance
-      summary: Get evidence for a governance gate
-      description: Returns the evidence artifact bundle associated with a gate result.
-      operationId: get_api_governance_runs_runId_evidence_gateId
-      responses:
-        '200':
-          description: Evidence payload
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - evidence
-                properties:
-                  evidence:
-                    $ref: '#/components/schemas/GovernanceGateEvidence'
-        '404':
-          description: Governance evidence not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-    parameters:
-      - name: runId
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: gateId
-        in: path
-        required: true
-        schema:
-          type: string
-  /api/governance/summary:
-    get:
-      tags:
-        - Governance
-      summary: Get the latest governance summary
-      description: Returns a compact summary of the most recent governance run, or a default denied summary when no run exists.
-      operationId: get_api_governance_summary
-      responses:
-        '200':
-          description: Governance summary
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GovernanceSummaryResponse'
   /api/inventory/analytics/stock-levels:
     get:
       tags:
@@ -26550,6 +26368,7 @@ paths:
         required: true
         schema:
           type: string
+          pattern: '^ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$'
     delete:
       tags:
         - Inventory
@@ -28271,6 +28090,7 @@ paths:
               properties:
                 orderId:
                   type: string
+                  pattern: '^ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$'
                   minLength: 1
                   maxLength: 100
                 courierId:
@@ -28339,7 +28159,7 @@ paths:
                     - express
                     - urgent
             example:
-              orderId: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              orderId: ORD-20260927-3C8B
               pickupAddress:
                 street: Uhuru Street
                 city: Dar es Salaam
@@ -30763,25 +30583,27 @@ paths:
       parameters: []
       security:
         - BearerAuth: []
-  '/api/logistics/api/v1/tracking/{trackingNumber}':
+  '/api/logistics/api/v1/tracking/{identifier}':
     parameters:
-      - name: trackingNumber
+      - name: identifier
         in: path
         required: true
         schema:
           type: string
-        example: MYS-TRACK-123
+          pattern: '^(ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]|TRK-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z])$'
+        example: TRK-3C8B2D
     get:
       tags:
         - Logistics
       summary: Get tracking history
       parameters:
-        - name: trackingNumber
+        - name: identifier
           in: path
           required: true
           schema:
             type: string
-          example: MYS-TRACK-123
+            pattern: '^(ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]|TRK-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z])$'
+          example: TRK-3C8B2D
       responses:
         '200':
           description: Tracking history
@@ -33782,12 +33604,12 @@ paths:
               schema: {}
       security:
         - BearerAuth: []
-  /api/notification/sms/webhook/africastalking:
+  /api/notification/sms/webhook/meseji:
     parameters: []
     post:
       tags:
         - Notifications
-      summary: Africa's Talking delivery webhook
+      summary: Meseji delivery webhook
       requestBody:
         content:
           application/json:
@@ -35428,7 +35250,7 @@ paths:
         required: true
         schema:
           type: string
-        example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: ORD-20260927-3C8B
     delete:
       tags:
         - Orders
@@ -35439,7 +35261,7 @@ paths:
           required: true
           schema:
             type: string
-          example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: ORD-20260927-3C8B
       responses:
         '200':
           description: Success
@@ -35530,7 +35352,7 @@ paths:
           required: true
           schema:
             type: string
-          example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: ORD-20260927-3C8B
       responses:
         '200':
           description: Success
@@ -35614,7 +35436,7 @@ paths:
           required: true
           schema:
             type: string
-          example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: ORD-20260927-3C8B
       responses:
         '200':
           description: Success
@@ -35695,7 +35517,7 @@ paths:
         required: true
         schema:
           type: string
-        example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: ORD-20260927-3C8B
     post:
       tags:
         - Orders
@@ -35706,7 +35528,7 @@ paths:
           required: true
           schema:
             type: string
-          example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: ORD-20260927-3C8B
       requestBody:
         required: false
         content:
@@ -35765,6 +35587,196 @@ paths:
               schema: {}
       security:
         - BearerAuth: []
+  '/api/order/orders/{id}/cancel-request':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: ORD-20260927-3C8B
+    post:
+      tags:
+        - Orders
+      summary: Request cancellation of a paid order (seller consent required)
+      description: >
+        Opens a cancellation request for an order that has already been paid for
+        (CONFIRMED). CancellationPolicy requires seller consent in that state, so
+        the buyer cannot cancel unilaterally; this records the request so the
+        seller can approve or decline. Idempotent — retrying while a request is
+        pending returns 200 with alreadyRequested=true and does not reset it.
+      operationId: requestOrderCancellation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: ORD-20260927-3C8B
+      responses:
+        '200':
+          description: A request is already pending seller decision
+          content:
+            application/json:
+              schema: {}
+        '202':
+          description: Cancellation request opened
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: Caller is neither the buyer nor the seller
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema: {}
+        '409':
+          description: Order is in a non-cancellable state
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BearerAuth: []
+  '/api/order/orders/{id}/cancel-request/approve':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: ORD-20260927-3C8B
+    post:
+      tags:
+        - Orders
+      summary: Approve a pending cancellation request (seller only)
+      description: >
+        The seller approves a pending cancellation request. The order is then
+        cancelled through the same path as any other cancellation, so the wallet
+        refund and COD commitment release behave identically. Only the order's
+        seller may approve; a buyer approving their own request is refused.
+      operationId: approveOrderCancellation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: ORD-20260927-3C8B
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                reason:
+                  type: string
+                  minLength: 1
+            example:
+              reason: Seller agreed to cancellation
+      responses:
+        '200':
+          description: Order cancelled and the buyer refunded
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: Caller is not the order's seller
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema: {}
+        '409':
+          description: No pending cancellation request
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BearerAuth: []
+  '/api/order/orders/{id}/cancel-request/decline':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: ORD-20260927-3C8B
+    post:
+      tags:
+        - Orders
+      summary: Decline a pending cancellation request (seller only)
+      description: >
+        The seller declines a pending cancellation request. The order is left
+        completely untouched — no refund and no status change. Only the order's
+        seller may decline.
+      operationId: declineOrderCancellation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: ORD-20260927-3C8B
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                reason:
+                  type: string
+                  minLength: 1
+            example:
+              reason: Item already dispatched
+      responses:
+        '200':
+          description: Request declined; order unchanged
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema: {}
+        '403':
+          description: Caller is not the order's seller
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema: {}
+        '409':
+          description: No pending cancellation request
+          content:
+            application/json:
+              schema: {}
+      security:
+        - BearerAuth: []
   '/api/order/orders/{id}/confirm-delivery':
     parameters:
       - name: id
@@ -35789,7 +35801,7 @@ paths:
         required: true
         schema:
           type: string
-        example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: ORD-20260927-3C8B
     post:
       tags:
         - Orders
@@ -35800,7 +35812,7 @@ paths:
           required: true
           schema:
             type: string
-          example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: ORD-20260927-3C8B
       requestBody:
         required: true
         content:
@@ -35823,6 +35835,8 @@ paths:
                   type: string
                 trackingNumber:
                   type: string
+                  description: Shipment tracking number (TRK-NLNLNL) of the shipment being dispatched. An order number is never accepted here.
+                  pattern: '^TRK-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$'
                 carrier:
                   type: string
                 estimatedDeliveryDate:
@@ -36220,7 +36234,7 @@ paths:
         required: true
         schema:
           type: string
-        example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+        example: ORD-20260927-3C8B
     post:
       tags:
         - Orders
@@ -36231,7 +36245,7 @@ paths:
           required: true
           schema:
             type: string
-          example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          example: ORD-20260927-3C8B
       responses:
         '200':
           description: Success
@@ -36410,27 +36424,27 @@ paths:
               schema: {}
       security:
         - BearerAuth: []
-  '/api/order/orders/tracking/{trackingNumber}':
+  '/api/order/orders/tracking/{identifier}':
     parameters:
-      - name: trackingNumber
+      - name: identifier
         in: path
         required: true
         schema:
           type: string
-          pattern: '^MYS-TZ-ORD-\d{8}-\d[A-Z]\d[A-Z]$'
-        example: MYS-TZ-ORD-20260320-1A2B
+          pattern: '^(ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]|TRK-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z])$'
+        example: ORD-20260927-3C8B
     get:
       tags:
         - Orders
       summary: Get order by tracking number
       parameters:
-        - name: trackingNumber
+        - name: identifier
           in: path
           required: true
           schema:
             type: string
-            pattern: '^MYS-TZ-ORD-\d{8}-\d[A-Z]\d[A-Z]$'
-          example: MYS-TZ-ORD-20260320-1A2B
+            pattern: '^(ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]|TRK-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z])$'
+          example: ORD-20260927-3C8B
       responses:
         '200':
           description: Success
@@ -37026,8 +37040,8 @@ paths:
                       type: string
                       pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
                       enum:
-                        - ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
-                      example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                        - ORD-20260927-3C8B
+                      example: ORD-20260927-3C8B
                     userId:
                       type: string
                       pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
@@ -37086,8 +37100,8 @@ paths:
                       type: string
                       pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
                       enum:
-                        - ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
-                      example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                        - ORD-20260927-3C8B
+                      example: ORD-20260927-3C8B
                     userId:
                       type: string
                       pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
@@ -37142,8 +37156,8 @@ paths:
                       type: string
                       pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
                       enum:
-                        - ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
-                      example: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+                        - ORD-20260927-3C8B
+                      example: ORD-20260927-3C8B
                     userId:
                       type: string
                       pattern: '^[a-z]{2,6}(?:_[a-z]{2,6})?_[0-9A-HJKMNP-TV-Z]{26}$'
@@ -37188,7 +37202,7 @@ paths:
                       format: uri
                       example: 'https://example.com/payment/callback'
             example:
-              orderId: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              orderId: ORD-20260927-3C8B
               userId: usr_01ARZ3NDEKTSV4RRFFQ69G5FAV
               amount: 1000
               currency: TZS
@@ -37581,7 +37595,8 @@ paths:
         required: true
         schema:
           type: string
-        example: pay_01ARZ3NDEKTSV4RRFFQ69G5FAV
+          pattern: '^ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$'
+        example: ORD-20260927-3C8B
     get:
       tags:
         - Payments
@@ -37592,7 +37607,8 @@ paths:
           required: true
           schema:
             type: string
-          example: pay_01ARZ3NDEKTSV4RRFFQ69G5FAV
+            pattern: '^ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$'
+          example: ORD-20260927-3C8B
       responses:
         '200':
           description: Success
@@ -37666,7 +37682,7 @@ paths:
               schema: {}
       security:
         - BearerAuth: []
-  /api/payment/payments/webhooks/paymentGateway:
+  /api/payment/payments/webhooks/payment-gateway:
     parameters:
       - name: x-webhook-idempotency-key
         in: header
@@ -37967,7 +37983,7 @@ paths:
       parameters: []
       security:
         - ServiceKey: []
-  /api/payment/webhooks/paymentGateway:
+  /api/payment/webhooks/payment-gateway:
     parameters:
       - name: x-webhook-idempotency-key
         in: header
@@ -37980,7 +37996,7 @@ paths:
     post:
       tags:
         - Payments
-      summary: POST /api/payment/webhooks/paymentGateway
+      summary: POST /api/payment/webhooks/payment-gateway
       requestBody:
         required: true
         content:
@@ -38972,6 +38988,7 @@ paths:
               properties:
                 orderId:
                   type: string
+                  pattern: '^ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$'
                   minLength: 1
                 reason:
                   type: string
@@ -39013,7 +39030,7 @@ paths:
                         type: string
                         minLength: 1
             example:
-              orderId: ord_01ARZ3NDEKTSV4RRFFQ69G5FAV
+              orderId: ORD-20260927-3C8B
               reason: Wrong item delivered
               description: The shipment does not match the ordered product and needs review.
               priority: HIGH
@@ -39051,6 +39068,7 @@ paths:
                         type: string
                       orderId:
                         type: string
+                        pattern: '^ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$'
                       reason:
                         type: string
                       description:
@@ -47235,675 +47253,6 @@ components:
       type: object
       description: Generic health/readiness response (shape varies by service)
       additionalProperties: true
-    GovernanceSeverity:
-      type: string
-      enum:
-        - P0
-        - P1
-        - P2
-        - P3
-    GovernanceCategory:
-      type: string
-      enum:
-        - Functional
-        - Data Integrity
-        - Financial
-        - Operational
-        - Regression
-    GovernanceGateTarget:
-      type: object
-      additionalProperties: false
-      required:
-        - name
-        - url
-      properties:
-        name:
-          type: string
-        url:
-          type: string
-          format: uri
-        expectedStatus:
-          type: integer
-          minimum: 100
-          maximum: 599
-    GovernanceConstitutionGateDefinition:
-      type: object
-      additionalProperties: false
-      required:
-        - id
-        - title
-        - category
-        - severity
-        - runner
-      properties:
-        id:
-          type: string
-        title:
-          type: string
-        category:
-          $ref: '#/components/schemas/GovernanceCategory'
-        severity:
-          $ref: '#/components/schemas/GovernanceSeverity'
-        blocking:
-          type: boolean
-        runner:
-          type: string
-          enum:
-            - http-endpoint
-            - service-readiness
-            - node-script-report
-            - filesystem-roundtrip
-            - database-query
-        path:
-          type: string
-        expectedStatus:
-          type: integer
-          minimum: 100
-          maximum: 599
-        script:
-          type: string
-        reportPath:
-          type: string
-        targets:
-          type: array
-          items:
-            $ref: '#/components/schemas/GovernanceGateTarget'
-    GovernanceConstitutionDocument:
-      type: object
-      additionalProperties: false
-      required:
-        - constitutionName
-        - constitutionVersion
-        - targetPhase
-        - gates
-      properties:
-        constitutionName:
-          type: string
-        constitutionVersion:
-          type: string
-        targetPhase:
-          type: string
-        gates:
-          type: array
-          items:
-            $ref: '#/components/schemas/GovernanceConstitutionGateDefinition'
-    GovernanceEvidenceArtifact:
-      type: object
-      additionalProperties: false
-      required:
-        - label
-        - type
-        - value
-      properties:
-        label:
-          type: string
-        type:
-          type: string
-          enum:
-            - json
-            - text
-            - url
-            - path
-        value:
-          type: string
-    GovernanceGateResult:
-      type: object
-      additionalProperties: false
-      required:
-        - gateId
-        - title
-        - category
-        - severity
-        - status
-        - summary
-        - evidence
-        - startedAt
-        - finishedAt
-        - durationMs
-      properties:
-        gateId:
-          type: string
-        title:
-          type: string
-        category:
-          type: string
-        severity:
-          $ref: '#/components/schemas/GovernanceSeverity'
-        status:
-          type: string
-          enum:
-            - PASS
-            - FAIL
-            - MANUAL
-            - SKIPPED
-        summary:
-          type: string
-        evidence:
-          type: array
-          items:
-            $ref: '#/components/schemas/GovernanceEvidenceArtifact'
-        startedAt:
-          type: string
-          format: date-time
-        finishedAt:
-          type: string
-          format: date-time
-        durationMs:
-          type: number
-    GovernanceInspectionSummary:
-      type: object
-      additionalProperties: false
-      required:
-        - totalGates
-        - passed
-        - failed
-        - manual
-        - skipped
-        - p0
-        - p1
-        - p2
-        - p3
-      properties:
-        totalGates:
-          type: integer
-        passed:
-          type: integer
-        failed:
-          type: integer
-        manual:
-          type: integer
-        skipped:
-          type: integer
-        p0:
-          type: integer
-        p1:
-          type: integer
-        p2:
-          type: integer
-        p3:
-          type: integer
-    GovernanceInspectionRun:
-      type: object
-      additionalProperties: false
-      required:
-        - runId
-        - constitutionName
-        - constitutionVersion
-        - targetPhase
-        - startedAt
-        - finishedAt
-        - durationMs
-        - targetBaseUrl
-        - verdict
-        - gateResults
-        - phaseCertifications
-        - summary
-      properties:
-        runId:
-          type: string
-        constitutionName:
-          type: string
-        constitutionVersion:
-          type: string
-        targetPhase:
-          type: string
-        startedAt:
-          type: string
-          format: date-time
-        finishedAt:
-          type: string
-          format: date-time
-        durationMs:
-          type: number
-        targetBaseUrl:
-          type: string
-          format: uri
-        verdict:
-          $ref: '#/components/schemas/GovernanceReleaseVerdict'
-        gateResults:
-          type: array
-          items:
-            $ref: '#/components/schemas/GovernanceGateResult'
-        phaseCertifications:
-          type: array
-          items:
-            $ref: '#/components/schemas/GovernancePhaseCertification'
-        summary:
-          $ref: '#/components/schemas/GovernanceInspectionSummary'
-    GovernancePhaseCertification:
-      type: object
-      additionalProperties: false
-      required:
-        - phase
-        - title
-        - implementationStatus
-        - status
-        - reason
-        - prerequisites
-      properties:
-        phase:
-          type: string
-        title:
-          type: string
-        implementationStatus:
-          type: string
-          enum:
-            - READY_TO_LAUNCH
-            - IN_DEVELOPMENT
-            - DESIGNED
-            - PLANNED
-        status:
-          type: string
-          enum:
-            - CERTIFIED
-            - PENDING
-            - NOT_CERTIFIED
-        certifiedAt:
-          type: string
-          nullable: true
-          format: date-time
-        reason:
-          type: string
-        prerequisites:
-          type: array
-          items:
-            type: string
-    GovernancePhaseReadinessSection:
-      type: object
-      additionalProperties: false
-      required:
-        - title
-        - description
-        - totalPhases
-        - certifiedPhases
-        - pendingPhases
-        - notCertifiedPhases
-        - rows
-        - catalog
-      properties:
-        title:
-          type: string
-        description:
-          type: string
-        totalPhases:
-          type: integer
-        certifiedPhases:
-          type: integer
-        pendingPhases:
-          type: integer
-        notCertifiedPhases:
-          type: integer
-        rows:
-          type: array
-          items:
-            $ref: '#/components/schemas/GovernancePhaseCertification'
-        catalog:
-          type: array
-          items:
-            $ref: '#/components/schemas/GovernancePhaseCatalogEntry'
-    GovernancePhaseCatalogEntry:
-      type: object
-      additionalProperties: false
-      required:
-        - phase
-        - title
-        - implementationStatus
-        - constitutionPath
-        - plannedGateCount
-        - prerequisites
-        - note
-      properties:
-        phase:
-          type: string
-        title:
-          type: string
-        implementationStatus:
-          type: string
-          enum:
-            - READY_TO_LAUNCH
-            - IN_DEVELOPMENT
-            - DESIGNED
-            - PLANNED
-        constitutionPath:
-          type: string
-        plannedGateCount:
-          type: integer
-        prerequisites:
-          type: array
-          items:
-            type: string
-        note:
-          type: string
-    GovernanceRunIndexEntry:
-      type: object
-      additionalProperties: false
-      required:
-        - runId
-        - constitutionVersion
-        - targetPhase
-        - startedAt
-        - finishedAt
-        - verdict
-        - summary
-      properties:
-        runId:
-          type: string
-        constitutionVersion:
-          type: string
-        targetPhase:
-          type: string
-        startedAt:
-          type: string
-          format: date-time
-        finishedAt:
-          type: string
-          format: date-time
-        verdict:
-          type: string
-          enum:
-            - APPROVED
-            - DENIED
-            - APPROVED_WITH_RISK
-        summary:
-          $ref: '#/components/schemas/GovernanceInspectionSummary'
-    GovernanceRunRequest:
-      type: object
-      additionalProperties: false
-      properties:
-        targetBaseUrl:
-          type: string
-          format: uri
-          description: Optional override for the target platform base URL.
-    GovernanceGateEvidence:
-      type: object
-      additionalProperties: false
-      required:
-        - runId
-        - gateId
-        - title
-        - severity
-        - status
-        - summary
-        - evidence
-        - startedAt
-        - finishedAt
-        - durationMs
-      properties:
-        runId:
-          type: string
-        gateId:
-          type: string
-        title:
-          type: string
-        severity:
-          $ref: '#/components/schemas/GovernanceSeverity'
-        status:
-          type: string
-          enum:
-            - PASS
-            - FAIL
-            - MANUAL
-            - SKIPPED
-        summary:
-          type: string
-        evidence:
-          type: array
-          items:
-            $ref: '#/components/schemas/GovernanceEvidenceArtifact'
-        startedAt:
-          type: string
-          format: date-time
-        finishedAt:
-          type: string
-          format: date-time
-        durationMs:
-          type: number
-    GovernanceSummaryResponse:
-      type: object
-      additionalProperties: false
-      required:
-        - targetPhase
-        - verdict
-        - summary
-        - phaseCertifications
-        - startedAt
-        - finishedAt
-        - runId
-      properties:
-        targetPhase:
-          type: string
-        verdict:
-          $ref: '#/components/schemas/GovernanceReleaseVerdict'
-        summary:
-          $ref: '#/components/schemas/GovernanceInspectionSummary'
-        phaseCertifications:
-          type: array
-          items:
-            $ref: '#/components/schemas/GovernancePhaseCertification'
-        startedAt:
-          type: string
-          nullable: true
-          format: date-time
-        finishedAt:
-          type: string
-          nullable: true
-          format: date-time
-        runId:
-          type: string
-          nullable: true
-    GovernanceReleaseVerdict:
-      type: string
-      enum:
-        - APPROVED
-        - DENIED
-        - APPROVED_WITH_RISK
-    GovernanceDashboardGateRow:
-      type: object
-      additionalProperties: false
-      required:
-        - gateId
-        - title
-        - category
-        - severity
-        - status
-        - summary
-        - durationMs
-        - evidenceCount
-      properties:
-        gateId:
-          type: string
-        title:
-          type: string
-        category:
-          type: string
-        severity:
-          $ref: '#/components/schemas/GovernanceSeverity'
-        status:
-          type: string
-          enum:
-            - PASS
-            - FAIL
-            - MANUAL
-            - SKIPPED
-        summary:
-          type: string
-        durationMs:
-          type: number
-        evidenceCount:
-          type: integer
-        blocking:
-          type: boolean
-    GovernanceDashboardResponse:
-      oneOf:
-        - type: object
-          additionalProperties: false
-          required:
-            - hasRun
-            - constitution
-            - latestReport
-            - gateTable
-            - blockerCount
-            - advisoryCount
-            - advisoryGateTable
-            - operatorSummary
-            - phaseCertifications
-            - phaseReadiness
-            - verdict
-          properties:
-            hasRun:
-              type: boolean
-              enum:
-                - false
-            constitution:
-              $ref: '#/components/schemas/GovernanceConstitutionDocument'
-            latestReport:
-              type: object
-              nullable: true
-            gateTable:
-              type: array
-              items:
-                $ref: '#/components/schemas/GovernanceDashboardGateRow'
-            blockerCount:
-              type: integer
-            advisoryCount:
-              type: integer
-            advisoryGateTable:
-              type: array
-              items:
-                $ref: '#/components/schemas/GovernanceDashboardGateRow'
-            operatorSummary:
-              type: object
-              additionalProperties: false
-              required:
-                - totalGates
-                - blockingGates
-                - advisoryGates
-                - passedGates
-                - failedGates
-                - skippedGates
-              properties:
-                totalGates:
-                  type: integer
-                blockingGates:
-                  type: integer
-                advisoryGates:
-                  type: integer
-                passedGates:
-                  type: integer
-                failedGates:
-                  type: integer
-                skippedGates:
-                  type: integer
-            phaseCertifications:
-              type: array
-              items:
-                $ref: '#/components/schemas/GovernancePhaseCertification'
-            phaseReadiness:
-              $ref: '#/components/schemas/GovernancePhaseReadinessSection'
-            verdict:
-              $ref: '#/components/schemas/GovernanceReleaseVerdict'
-        - type: object
-          additionalProperties: false
-          required:
-            - hasRun
-            - constitution
-            - latestReport
-            - gateTable
-            - blockerCount
-            - advisoryCount
-            - advisoryGateTable
-            - operatorSummary
-            - phaseCertifications
-            - phaseReadiness
-          properties:
-            hasRun:
-              type: boolean
-              enum:
-                - true
-            constitution:
-              type: object
-              additionalProperties: false
-              required:
-                - name
-                - version
-                - targetPhase
-              properties:
-                name:
-                  type: string
-                version:
-                  type: string
-                targetPhase:
-                  type: string
-            latestReport:
-              type: object
-              additionalProperties: false
-              required:
-                - runId
-                - verdict
-                - startedAt
-                - finishedAt
-                - summary
-                - phaseCertifications
-              properties:
-                runId:
-                  type: string
-                verdict:
-                  $ref: '#/components/schemas/GovernanceReleaseVerdict'
-                startedAt:
-                  type: string
-                  nullable: true
-                  format: date-time
-                finishedAt:
-                  type: string
-                  nullable: true
-                  format: date-time
-                summary:
-                  $ref: '#/components/schemas/GovernanceInspectionSummary'
-                phaseCertifications:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/GovernancePhaseCertification'
-            gateTable:
-              type: array
-              items:
-                $ref: '#/components/schemas/GovernanceDashboardGateRow'
-            blockerCount:
-              type: integer
-            advisoryCount:
-              type: integer
-            advisoryGateTable:
-              type: array
-              items:
-                $ref: '#/components/schemas/GovernanceDashboardGateRow'
-            operatorSummary:
-              type: object
-              additionalProperties: false
-              required:
-                - totalGates
-                - blockingGates
-                - advisoryGates
-                - passedGates
-                - failedGates
-                - skippedGates
-              properties:
-                totalGates:
-                  type: integer
-                blockingGates:
-                  type: integer
-                advisoryGates:
-                  type: integer
-                passedGates:
-                  type: integer
-                failedGates:
-                  type: integer
-                skippedGates:
-                  type: integer
-            phaseCertifications:
-              type: array
-              items:
-                $ref: '#/components/schemas/GovernancePhaseCertification'
-            phaseReadiness:
-              $ref: '#/components/schemas/GovernancePhaseReadinessSection'
     PublicBusinessAddress:
       type: object
       additionalProperties: false

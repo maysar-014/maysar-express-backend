@@ -17,13 +17,22 @@ export interface IPushProvider {
 export class PushProviderAdapter implements IPushProvider {
   private messaging?: admin.messaging.Messaging;
 
-  constructor(private config?: { projectId?: string; privateKey?: string }) {}
+  /**
+   * Firebase service-account configuration.
+   *
+   * `clientEmail` was previously read only from `FIREBASE_CLIENT_EMAIL`, so
+   * `new PushProviderAdapter({ projectId, privateKey })` could never satisfy the
+   * credential guard — the adapter would silently skip every push unless the
+   * environment happened to supply the third value. All three parts of a service
+   * account can now be injected directly, with the environment as fallback.
+   */
+  constructor(private config?: { projectId?: string; clientEmail?: string; privateKey?: string }) {}
 
   private ensureMessaging(): admin.messaging.Messaging | undefined {
     if (this.messaging) return this.messaging;
 
     const projectId = this.config?.projectId || process.env.FIREBASE_PROJECT_ID;
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const clientEmail = this.config?.clientEmail || process.env.FIREBASE_CLIENT_EMAIL;
     const privateKeyRaw = this.config?.privateKey || process.env.FIREBASE_PRIVATE_KEY;
     const privateKey = privateKeyRaw ? privateKeyRaw.replace(/\\n/g, '\n') : undefined;
     const isProduction = process.env.NODE_ENV === 'production';

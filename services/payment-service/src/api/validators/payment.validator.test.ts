@@ -8,7 +8,7 @@ describe('payment.validator', () => {
   it('parses valid create payment payload and applies defaults', () => {
     const parsed = createPaymentSchema.parse({
       body: {
-        orderId: 'MSR-ORD-20260408-173921-9500',
+        orderId: 'ORD-20260408-5N8Q',
         amount: 15000,
         method: 'MOBILE_MONEY',
         phoneNumber: '+255712345678'

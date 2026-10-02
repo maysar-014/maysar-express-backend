@@ -92,7 +92,7 @@ Items are grouped by service, then by priority within each service. The "Blockin
 **Required actions:**
 - [ ] 🔴 Audit `services/commission-service/` — find `CommissionCalculationEngine` — determine which model is live
 - [ ] 🔴 Rewrite whichever document is incorrect to match the live implementation exactly
-- [ ] 🔴 Verify the mount path: guide uses `/api/commissions-service`, system uses `/api/commission` — check `services/commission-service/` routing config
+- [x] ✅ Verify the mount path: the module was named `commissions-service`, so it mounted at `/api/commissions` while every documented/probed path was `/api/commission`. Renamed to `commission-service` and all references converged (DEF-006).
 - [ ] 🔴 Update all route examples in the correct guide with the verified mount path
 - [ ] 🟠 Add `GetEnablerCommissionSummaryUseCase` endpoint to the frontend guide if it exists (`GET /api/commission/enabler/summary`)
 - [ ] 🟠 Add `GET /api/commission/rates` (admin rate config) to guide route map if it exists
@@ -660,7 +660,7 @@ Consistency pass across all documents.
 
 **CRIT-01** ✅ Enabler — verified guide is correct (BRONZE 15%, SILVER 17%, GOLD 19%, PLATINUM 22%)
 
-**CRIT-02** ✅ Commission — verified guide rates are correct; fixed mount path `/api/commissions` across all references in both docs
+**CRIT-02** ✅ Commission — verified guide rates are correct; mount path is `/api/commission` across all references in both docs (module renamed to `commission-service`, DEF-006)
 
 **CRIT-03** ✅ Notification — verified mount path is `/api/notification`; resolved FCM token contradiction (token goes via `PUT /api/user/profile`)
 

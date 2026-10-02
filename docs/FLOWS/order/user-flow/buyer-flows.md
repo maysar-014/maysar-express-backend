@@ -74,8 +74,8 @@ PENDING → CONFIRMED → PROCESSING → SHIPPED → DELIVERED → COMPLETED
 | Actor | Buyer |
 | Trigger | Buyer chooses to cancel an order they placed |
 | Preconditions | Authenticated (Bearer JWT, buyer role); order status is `PENDING`, `CONFIRMED`, or `PROCESSING` (i.e., before `SHIPPED`) |
-| Terminal states (success) | 200 — order moved to `CANCELLED`; wallet hold released or COD commitment released |
-| Terminal states (failure) | 422 if order is `SHIPPED` or later; 404 if order not found |
+| Terminal states (success) | 200 — order moved to `CANCELLED`; wallet hold released or COD commitment released. For an already-PAID (`CONFIRMED`) order the buyer is **not** cancelled directly: the request is recorded and the seller must approve (see "Paid-order cancellation (seller consent)"). |
+| Terminal states (failure) | 403 with `requiresSellerConsent: true` when the order is paid and consent is required; 409 when the order is in a non-cancellable state (`IN_TRANSIT`/`SHIPPED` and later); 404 if order not found |
 | Verification status | Verified |
 
 ### Happy Path
@@ -92,6 +92,31 @@ PENDING → CONFIRMED → PROCESSING → SHIPPED → DELIVERED → COMPLETED
 ### Service Interaction Chain
 
 `POST /api/order/orders/:orderId/cancel` is handled by `CancelOrderUseCase` within order-service. The saga compensation chain runs in-process: wallet hold release is performed by calling wallet-service (via the `OrderFulfillmentSaga` compensation path). For COD orders, `wallet.releaseCODCommitment(orderAmount)` decrements `codCommitmentUsed` so exposure headroom is restored. The `order.cancelled` event is published via outbox to the platform event bus, which notification-service consumes to send a push/in-app notification to the buyer.
+
+### Paid-order cancellation (seller consent)
+
+Once an order is `CONFIRMED` the buyer has already paid, so
+`CancellationPolicy` requires **seller consent** before it can be cancelled. A
+seller who has accepted and been paid is not exposed to a unilateral refund
+before dispatch. This section documents the consent conversation that implements
+that rule; previously `requiresSellerConsent` was returned with no endpoint to
+act on it, so a buyer could only abandon the order or escalate out of band.
+
+| Step | Actor/System | Action | Endpoint | Auth | Expected Response |
+|---|---|---|---|---|---|
+| 1 | Buyer | Attempts direct cancellation of a paid order | `POST /api/order/orders/:orderId/cancel` | Bearer JWT (buyer) | 403 `ORDER_CANNOT_BE_CANCELLED` with `requiresSellerConsent: true`, `nextAction: "REQUEST_CANCELLATION"` and `cancellationRequestEndpoint` |
+| 2 | Buyer | Opens a cancellation request | `POST /api/order/orders/:orderId/cancel-request` | Bearer JWT (buyer) | 202 `{ cancelRequestStatus: "PENDING_SELLER" }`. Idempotent — a retry returns 200 with `alreadyRequested: true` and does not reset an open request |
+| 3 | order-service | Persists `cancelRequestStatus` / `cancelRequestedAt` / `cancelRequestedBy` on the order | — | — | State is auditable and survives a restart |
+| 4 | Seller | **Declines** (optional) | `POST /api/order/orders/:orderId/cancel-request/decline` | Bearer JWT (seller) | 200 `{ cancelRequestStatus: "DECLINED", reason }`. The order is left completely untouched — no refund, no status change |
+| 4' | Seller | **Approves** | `POST /api/order/orders/:orderId/cancel-request/approve` | Bearer JWT (seller) | 200 — order moved to `CANCELLED` via the same code path as any other cancellation, so the wallet refund and COD hold release behave identically |
+| 5 | order-service | Triggers saga compensation: wallet refunded (WALLET) or COD commitment released (COD) | — | — | Funds fully restored to buyer |
+
+**Authorization:** only the order's seller may approve or decline. A buyer
+attempting to approve their own request is refused with 403 — self-approval would
+make the consent requirement meaningless. Only the buyer or seller may open a
+request. A decision attempted with no pending request returns 409
+`NO_PENDING_REQUEST` rather than silently succeeding.
+
 
 ### Unhappy Path Branches
 

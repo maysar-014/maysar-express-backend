@@ -37,118 +37,57 @@ describe('BulkOperationsController', () => {
   });
 
   describe('bulkCreateProducts', () => {
-    it('should create products and return the batch count', async () => {
-      const req = createRequest({
-        body: {
-          products: [
-            { name: 'Product 1', price: 100 },
-            { name: 'Product 2', price: 200 }
-          ]
-        }
-      });
+    it('should report NOT_IMPLEMENTED instead of fabricating a created count', async () => {
+      const req = createRequest({ body: { products: [{ productName: 'Product 1', price: 100 }] } });
       const res = createResponse();
 
       await controller.bulkCreateProducts(req as Request, res as Response);
 
-      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.status).toHaveBeenCalledWith(501);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          success: true,
-          data: expect.objectContaining({
-            createdCount: 2,
-            operationId: expect.stringMatching(/^bulk-create-/)
-          }),
-          meta: expect.objectContaining({
-            timestamp: expect.any(Date)
-          })
+          success: false,
+          error: expect.objectContaining({ code: 'NOT_IMPLEMENTED' })
         })
       );
-    });
-
-    it('should treat a missing products list as an empty batch', async () => {
-      const req = createRequest({ body: {} });
-      const res = createResponse();
-
-      await controller.bulkCreateProducts(req as Request, res as Response);
-
-      expect(res.status).toHaveBeenCalledWith(201);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          data: expect.objectContaining({
-            createdCount: 0
-          })
-        })
+      expect(res.json).not.toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ createdCount: expect.anything() }) })
       );
     });
   });
 
   describe('bulkUpdateProducts', () => {
-    it('should update products and return the batch count', async () => {
-      const req = createRequest({
-        body: {
-          products: [
-            { id: '1', status: 'active' },
-            { id: '2', status: 'active' },
-            { id: '3', status: 'archived' }
-          ]
-        }
-      });
+    it('should report NOT_IMPLEMENTED instead of fabricating an updated count', async () => {
+      const req = createRequest({ body: { productIds: ['1', '2'], updates: { productName: 'Updated' } } });
       const res = createResponse();
 
       await controller.bulkUpdateProducts(req as Request, res as Response);
 
-      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.status).toHaveBeenCalledWith(501);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          success: true,
-          data: expect.objectContaining({
-            updatedCount: 3,
-            operationId: expect.stringMatching(/^bulk-update-/)
-          }),
-          meta: expect.objectContaining({
-            timestamp: expect.any(Date)
-          })
+          success: false,
+          error: expect.objectContaining({ code: 'NOT_IMPLEMENTED' })
         })
       );
     });
   });
 
   describe('bulkDeleteProducts', () => {
-    it('should delete products when ids are provided', async () => {
-      const req = createRequest({
-        body: {
-          productIds: ['1', '2', '3']
-        }
-      });
+    it('should report NOT_IMPLEMENTED instead of reporting a successful deletion', async () => {
+      const req = createRequest({ body: { productIds: ['1', '2', '3'] } });
       const res = createResponse();
 
       await controller.bulkDeleteProducts(req as Request, res as Response);
 
-      expect(res.status).toHaveBeenCalledWith(204);
-      expect(res.end).toHaveBeenCalledTimes(1);
-      expect(res.json).not.toHaveBeenCalled();
-    });
-
-    it('should return a validation error when productIds are missing', async () => {
-      const req = createRequest({ body: {} });
-      const res = createResponse();
-
-      await controller.bulkDeleteProducts(req as Request, res as Response);
-
-      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.status).toHaveBeenCalledWith(501);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          error: expect.objectContaining({
-            code: 'VALIDATION_ERROR',
-            message: 'At least one product ID is required'
-          }),
-          meta: expect.objectContaining({
-            timestamp: expect.any(Date)
-          })
+          error: expect.objectContaining({ code: 'NOT_IMPLEMENTED' })
         })
       );
+      expect(res.end).not.toHaveBeenCalled();
     });
   });
 

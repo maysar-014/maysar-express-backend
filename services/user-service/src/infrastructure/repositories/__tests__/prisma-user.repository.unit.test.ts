@@ -32,7 +32,9 @@ describe('PrismaUserRepository unit tests (mocked prisma)', () => {
         delete: jest.fn()
       },
       user_AuditLog: { findMany: jest.fn(), create: jest.fn() },
-      $queryRaw: jest.fn()
+      // Prisma $queryRaw always resolves an array, never undefined. A bare
+      // jest.fn() returned undefined, which the repository then indexed as rows[0].
+      $queryRaw: jest.fn().mockResolvedValue([])
     };
 
     Object.assign(prisma, prismaOverrides);

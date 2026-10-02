@@ -1,12 +1,12 @@
 ﻿# Seller Flows — Analytics Service
 
-> **Verification status:** Partially Verified (read endpoints); Failing (`PATCH /api/analytics/action-items/{actionId}/resolve` → 500)
+> **Verification status:** Partially Verified (read endpoints); Fixed (`PATCH /api/analytics/action-items/{actionId}/resolve` → accurate 404 on unknown id, DEF-003)
 > **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` (September 2026); `docs/analytics/ANALYTICS_SERVICE_SYSTEM.md`
 > **Last updated:** September 2026
 
 ## Overview
 
-This document covers analytics-service flows from the seller's perspective: viewing sales dashboard metrics, checking SLA performance, and managing action items. The action item resolution endpoint is **500 FAILING** — sellers can view action items but not resolve them.
+This document covers analytics-service flows from the seller's perspective: viewing sales dashboard metrics, checking SLA performance, and managing action items. The action item resolution endpoint previously returned **500** for unknown action item ids and now returns **404** (DEF-003) — resolving an existing action item returns `200 {success:true}`.
 
 ---
 
@@ -17,7 +17,7 @@ This document covers analytics-service flows from the seller's perspective: view
 | 1 | View Seller Dashboard | Partially Verified | `GET /api/analytics/dashboard` (seller-scoped) |
 | 2 | View SLA Metrics | Partially Verified | `GET /api/analytics/sellers/:sellerId/sla` |
 | 3 | View Action Items | Partially Verified | `GET /api/analytics/action-items` |
-| 4 | Resolve Action Item | ⚠️ FAILING | `PATCH /api/analytics/action-items/:actionId/resolve` |
+| 4 | Resolve Action Item | ✅ Verified | `PATCH /api/analytics/action-items/:actionId/resolve` |
 
 ---
 
@@ -83,14 +83,15 @@ This document covers analytics-service flows from the seller's perspective: view
 
 ---
 
-## Known Gap — Action Item Resolution (500 FAILING)
+## Resolved — Action Item Resolution (DEF-003)
 
-> ⚠️ **Known Gap — Not Yet Verified**
+> ✅ **Resolved:** `PATCH /api/analytics/action-items/{actionId}/resolve` previously raised an unhandled Prisma error (`P2025`) and answered **500** for action item ids that do not exist.
 >
-> `PATCH /api/analytics/action-items/{actionId}/resolve` → **500 FAILING** in the September 2026 sweep.
+> **Current behaviour:**
+> - Existing action item → `200 {success:true}` (sets `isResolved: true`)
+> - Unknown action item id → `404 {success:false, error:"Action item not found"}`
+> - Genuine infrastructure failure → `500 {error:"Failed to resolve action item"}`
 >
-> Sellers can view action items but cannot resolve them.
+> **UI handling:** Keep the "Mark as resolved" button enabled. Treat `404` as a stale list (refresh the action items) rather than a server error.
 >
-> **UI fallback:** Show action items in a read-only list. Disable the "Mark as resolved" button with tooltip: "Action resolution temporarily unavailable."
->
-> **Tracked in:** `docs/FLOWS/_verification/analysis-report.md`
+> **Tracked in:** `docs/FLOWS/_verification/defect-register.md` (DEF-003)

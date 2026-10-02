@@ -3,7 +3,8 @@
     "webhookNotConfigured": "Mfumo wa webhook haujawekwa",
     "invalidSignature": "Saini batili",
     "missingParameters": "Vigezo vinavyohitajika havipo",
-    "notFound": "Malipo hayajapatikana"
+    "notFound": "Malipo hayajapatikana",
+    "orderNotFound": "Hakuna malipo yaliyopatikana kwa oda iliyotajwa"
   },
   "status": {
     "PENDING": "Inasubiri",

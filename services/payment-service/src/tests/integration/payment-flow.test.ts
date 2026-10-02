@@ -12,7 +12,7 @@ describe('Payment Flow Integration', () => {
 
     it('should reject invalid payment payload', async () => {
         const payload = {
-            orderId: '00000000-0000-0000-0000-000000000001',
+            orderId: 'ORD-20260101-3C8B',
             userId: '00000000-0000-0000-0000-000000000002',
             amount: 0,
             currency: 'XXX',
@@ -30,10 +30,23 @@ describe('Payment Flow Integration', () => {
         expect(Object.keys(response.body).length).toBeGreaterThan(0);
     });
 
-    it('should return not-found or server-error for unknown order ID', async () => {
-        const orderId = '00000000-0000-0000-0000-000000000001';
+    it('should reject anonymous payment lookups before any record read', async () => {
+        const orderId = 'ORD-20300101-3C8B';
         const response = await request(app)
-            .get(`/api/payments/order/${orderId}`);
+            .get('/api/payments/order/' + orderId);
+
+        // No caller identity — the read guard answers 401 before the lookup, so
+        // payment ids cannot be probed for existence.
+        expect(response.status).toBe(401);
+        expect(response.body.success).toBe(false);
+    });
+
+    it('should return not-found or server-error for unknown order ID', async () => {
+        const orderId = 'ORD-20300101-3C8B';
+        const response = await request(app)
+            .get(`/api/payments/order/${orderId}`)
+            .set('x-user-id', 'usr_int_test_buyer')
+            .set('x-user-roles', 'buyer');
 
         expect([400, 404, 500]).toContain(response.status);
         expect(response.body.success).toBe(false);

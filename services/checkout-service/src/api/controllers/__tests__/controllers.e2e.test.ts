@@ -301,7 +301,18 @@ describe('CheckoutController E2E', () => {
     );
   });
 
-  it('should include orderId in confirm checkout response', async () => {
+  it('should include the order number in the confirm checkout response', async () => {
+    // The response only ever carries an ORDER NUMBER (ORD-YYYYMMDD-NLNL), produced by the
+    // synchronous order placement - never the checkout id.
+    (globalThis as any).__placeOrderUseCase = {
+      execute: jest.fn().mockResolvedValue({ orderId: 'ORD-20260927-3C8B' })
+    };
+    // A session with items and a seller is what the synchronous placement path requires.
+    mockCheckoutRepository.getSession.mockResolvedValueOnce({
+      ...(await mockCheckoutRepository.getSession()),
+      items: [{ productId: 'cat_pro_test_001', quantity: 1, price: 50000, weight: 1 }],
+      metadata: { sellerId: 'usr_seller_test_001', orderSource: 'CART' }
+    });
     mockRequest.body = {
       sessionId: 'session-1',
       paymentMethodId: 'pm-1'
@@ -311,10 +322,36 @@ describe('CheckoutController E2E', () => {
 
     const jsonCall = (mockResponse.json as jest.Mock).mock.calls[0][0];
     expect(jsonCall.success).toBe(true);
-    expect(jsonCall.data.orderId).toBe('ord_checkout_test_001');
+    expect(jsonCall.data.orderId).toBe('ORD-20260927-3C8B');
+    expect(jsonCall.data.checkoutId).toBeUndefined();
+    delete (globalThis as any).__placeOrderUseCase;
+  });
+
+  it('should not fabricate an order id when no order was placed', async () => {
+    delete (globalThis as any).__placeOrderUseCase;
+    mockRequest.body = {
+      sessionId: 'session-1',
+      paymentMethodId: 'pm-1'
+    };
+
+    await controller.confirmCheckout(mockRequest as Request, mockResponse as Response);
+
+    const jsonCall = (mockResponse.json as jest.Mock).mock.calls[0][0];
+    expect(jsonCall.success).toBe(true);
+    // The checkout id is reported under its own field; no order id is invented.
+    expect(jsonCall.data.orderId).toBeUndefined();
+    expect(jsonCall.data.checkoutId).toBeDefined();
   });
 
   it('should return same orderId on repeated confirm (idempotency)', async () => {
+    (globalThis as any).__placeOrderUseCase = {
+      execute: jest.fn().mockResolvedValue({ orderId: 'ORD-20260927-3C8B' })
+    };
+    mockCheckoutRepository.getSession.mockResolvedValue({
+      ...(await mockCheckoutRepository.getSession()),
+      items: [{ productId: 'cat_pro_test_001', quantity: 1, price: 50000, weight: 1 }],
+      metadata: { sellerId: 'usr_seller_test_001', orderSource: 'CART' }
+    });
     mockCheckoutOrderRepository.findByCheckoutSessionId.mockResolvedValueOnce({ id: 'ord_checkout_test_001' });
     mockRequest.body = {
       sessionId: 'session-1',
@@ -330,8 +367,9 @@ describe('CheckoutController E2E', () => {
 
     const calls = (mockResponse.json as jest.Mock).mock.calls;
     // Both calls should return success with orderId
-    expect(calls[0][0].data.orderId).toBe('ord_checkout_test_001');
-    expect(calls[1][0].data.orderId).toBe('ord_checkout_test_001');
+    expect(calls[0][0].data.orderId).toBe('ORD-20260927-3C8B');
+    expect(calls[1][0].data.orderId).toBe('ORD-20260927-3C8B');
+    delete (globalThis as any).__placeOrderUseCase;
   });
 
   it('should reject checkout confirmation below the minimum basket value', async () => {

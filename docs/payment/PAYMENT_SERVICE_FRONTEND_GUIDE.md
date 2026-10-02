@@ -274,21 +274,18 @@ Use this for efficient polling instead of `GET /payments/:id` when you only need
 ### Get payment by order ID
 `GET /api/payment/payments/order/:orderId`
 
-Returns the payment record for a given order. If no payment record exists (e.g. wallet-deferred or direct orders), returns **200** with a synthesized stub:
+Returns the payment record for a given order. If no payment record exists for that order (e.g. wallet-deferred or direct-wallet orders), it returns **404**:
 
 ```jsonc
 {
-  "success": true,
-  "data": {
-    "orderId": "ORD-01J...",
-    "status": "cancelled",
-    "paymentMethod": "WALLET",
-    "message": "Order was paid via wallet debit — no payment service record exists"
-  }
+  "success": false,
+  "error": "No payment found for the specified order"
 }
 ```
 
-This is not an error — it means the order was fulfilled through a path that doesn't create a payment-service record (e.g. internal wallet debit). Do not treat `status: "cancelled"` here as a payment failure.
+A malformed order id (not a ULID) is rejected by the request validator with **400** before the lookup runs.
+
+Treat `404` as "this order has no payment-service record" — it does not mean the payment failed. Orders paid through an internal wallet debit are fulfilled without creating a payment-service record, so fall back to the order status (`GET /api/order/orders/:orderId`) to confirm fulfillment.
 
 ### Refund payment
 `POST /api/payment/payments/:paymentId/refund`

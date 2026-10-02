@@ -146,8 +146,8 @@ describe('InitiateCODDeliveryUseCase', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
-        mockRepository = { findById: jest.fn().mockResolvedValue({ id: 'del-1', isCOD: true, orderId: 'order-1', buyerId: 'buyer-1', sellerId: 'seller-1', codAmount: 50000, codCurrency: 'TZS' }) };
-        mockSaga = { start: jest.fn() };
+        mockRepository = { findById: jest.fn().mockResolvedValue({ id: 'del-1', isCOD: true, orderId: 'order-1', buyerId: 'buyer-1', sellerId: 'seller-1', codAmount: 50000, codCurrency: 'TZS' }), updateStatus: jest.fn().mockResolvedValue(undefined) };
+        mockSaga = { start: jest.fn().mockResolvedValue('saga-1') };
         useCase = new InitiateCODDeliveryUseCase(mockRepository, mockSaga);
     });
 

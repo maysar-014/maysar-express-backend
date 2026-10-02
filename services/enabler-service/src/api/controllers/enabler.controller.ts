@@ -60,14 +60,9 @@ export class EnablerController {
                 }
             }
             if (lower.includes('not found')) {
-                // Enabler not registered yet — return a stub approved response
-                res.status(200).json({
-                    id: req.params.id,
-                    userId: req.params.id,
-                    status: 'APPROVED',
-                    approved: true,
-                    message: 'Enabler approved (registration pending)'
-                });
+                // Enabler does not exist — report it accurately instead of
+                // fabricating an approval for a non-existent record.
+                res.status(404).json({ error: message });
                 return;
             }
             let status = 400;
@@ -83,17 +78,11 @@ export class EnablerController {
             const { id } = req.params;
             const enabler = await this.enablerRepository.findById(id);
             if (!enabler) {
-                // Return stub profile — enabler may not be registered yet
-                // Status 'pending' matches the test regex /approved|active|pending/i
-                res.status(200).json({
-                    success: true,
-                    data: {
-                        id,
-                        userId: id,
-                        status: 'pending',
-                        approvalStatus: 'pending',
-                        message: 'Enabler profile not yet registered'
-                    }
+                // Enabler profile does not exist — return an accurate 404.
+                res.status(404).json({
+                    success: false,
+                    error: 'Enabler not found',
+                    data: { userId: id }
                 });
                 return;
             }

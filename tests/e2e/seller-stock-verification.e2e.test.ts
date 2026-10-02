@@ -134,7 +134,7 @@ liveTestSuite('Seller Stock Verification — Feature spec', () => {
       // Seller confirms stock
       const verifyRes = await requestJson(`/api/order/orders/${orderId}/verify`, {
         method: 'POST',
-        headers: { ...authHeader(sellerToken), 'content-type': 'application/json' },
+        headers: { ...authHeader(sellerToken), 'content-type': 'application/json', 'idempotency-key': createIdempotencyKey('e2e-api-order-orders-orderId-verify') },
       });
       expect(verifyRes.status).toBe(200);
 
@@ -170,14 +170,14 @@ liveTestSuite('Seller Stock Verification — Feature spec', () => {
       // 2. Seller verifies
       const verifyRes = await requestJson(`/api/order/orders/${orderId}/verify`, {
         method: 'POST',
-        headers: { ...authHeader(sellerToken), 'content-type': 'application/json' },
+        headers: { ...authHeader(sellerToken), 'content-type': 'application/json', 'idempotency-key': createIdempotencyKey('e2e-api-order-orders-orderId-verify') },
       });
       expect(verifyRes.status).toBe(200);
 
       // 3. Buyer confirms checkout (wallet debit happens here)
       const checkoutRes = await requestJson(`/api/order/orders/${orderId}/buyer/confirm-checkout`, {
         method: 'POST',
-        headers: { ...authHeader(buyerToken), 'content-type': 'application/json' },
+        headers: { ...authHeader(buyerToken), 'content-type': 'application/json', 'idempotency-key': createIdempotencyKey('e2e-api-order-orders-orderId-buyer-confirm-c') },
       });
       expect(checkoutRes.status).toBe(200);
 
@@ -212,7 +212,7 @@ liveTestSuite('Seller Stock Verification — Feature spec', () => {
 
       const declineRes = await requestJson(`/api/order/orders/${orderId}/decline`, {
         method: 'POST',
-        headers: { ...authHeader(sellerToken), 'content-type': 'application/json' },
+        headers: { ...authHeader(sellerToken), 'content-type': 'application/json', 'idempotency-key': createIdempotencyKey('e2e-api-order-orders-orderId-decline') },
         body: JSON.stringify({ reason: 'Item out of stock — e2e test' }),
       });
       expect(declineRes.status).toBe(200);
@@ -244,7 +244,7 @@ liveTestSuite('Seller Stock Verification — Feature spec', () => {
       // Attempt checkout without seller verification first
       const checkoutRes = await requestJson(`/api/order/orders/${orderId}/buyer/confirm-checkout`, {
         method: 'POST',
-        headers: { ...authHeader(buyerToken), 'content-type': 'application/json' },
+        headers: { ...authHeader(buyerToken), 'content-type': 'application/json', 'idempotency-key': createIdempotencyKey('e2e-api-order-orders-orderId-buyer-confirm-c') },
       });
       // Must be rejected (422)
       expect(checkoutRes.status).toBe(422);
@@ -269,7 +269,7 @@ liveTestSuite('Seller Stock Verification — Feature spec', () => {
       // Admin force-approves (override to SELLER_VERIFIED)
       const overrideRes = await requestJson(`/api/order/orders/${orderId}/admin/override`, {
         method: 'POST',
-        headers: { ...authHeader(adminToken), 'content-type': 'application/json' },
+        headers: { ...authHeader(adminToken), 'content-type': 'application/json', 'idempotency-key': createIdempotencyKey('e2e-api-order-orders-orderId-admin-override') },
         body: JSON.stringify({
           targetStatus: 'SELLER_VERIFIED',
           reason: 'Admin bypassing verification for e2e test',
@@ -296,7 +296,7 @@ liveTestSuite('Seller Stock Verification — Feature spec', () => {
 
       const overrideRes = await requestJson(`/api/order/orders/${orderId}/admin/override`, {
         method: 'POST',
-        headers: { ...authHeader(adminToken), 'content-type': 'application/json' },
+        headers: { ...authHeader(adminToken), 'content-type': 'application/json', 'idempotency-key': createIdempotencyKey('e2e-api-order-orders-orderId-admin-override') },
         body: JSON.stringify({ targetStatus: 'SELLER_VERIFIED', reason: '' }),
       });
       expect(overrideRes.status).toBe(422);

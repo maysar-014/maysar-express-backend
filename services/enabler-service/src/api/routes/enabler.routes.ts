@@ -10,6 +10,7 @@ import { authorizeEnabler } from '../middleware/enabler-authorization.middleware
 import { requireAuth } from '@shared/middleware/auth-context.middleware';
 import { asyncHandler } from '@shared/middleware/async-handler';
 import { validateJoiRequest } from '@shared/middleware/joi-request-validation';
+import { joiOrderNumber } from '@shared/ids/human-readable-ids';
 import { joiId } from '@shared/validation/id';
 import { requireKycLevel, requireKycListingCapacity } from '../../../../kyc-service/src/api/middleware/kyc-gate.middleware';
 
@@ -64,13 +65,17 @@ const EXAMPLE_DOT_COM_EMAIL_PATTERN = /^[A-Za-z][A-Za-z0-9._-]{1,63}@example\.co
 const contractAwareUserIdSchema = Joi.alternatives().try(joiId(), Joi.string().valid('usr_test_0001'));
 const systemIdSchema = Joi.string().pattern(SYSTEM_ID_PATTERN);
 
+// Order references are exactly ORDER NUMBERS (ORD-YYYYMMDD-NLNL): no legacy branded
+// shape and no generic system id is accepted on an order-scoped path.
+const orderNumberSchema = joiOrderNumber();
+
 const enablerIdParamsSchema = Joi.object({
   enablerId: systemIdSchema.required(),
 }).unknown(false);
 
 const enablerOrderCommissionParamsSchema = Joi.object({
   enablerId: systemIdSchema.required(),
-  orderId: systemIdSchema.required(),
+  orderId: orderNumberSchema.required(),
 }).unknown(false);
 
 const promotionJobParamsSchema = Joi.object({

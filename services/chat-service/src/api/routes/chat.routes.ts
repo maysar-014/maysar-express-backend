@@ -1,6 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
 import { z } from "zod";
+import { zodOrderNumber } from "@shared/ids/human-readable-ids";
 import {
   requireAuth,
   requireRole,
@@ -50,7 +51,8 @@ const initiateSchema = z
       .enum(["BUYER", "SELLER", "SUPPLIER", "COURIER"])
       .optional(),
     relatedProductId: z.string().optional().nullable(),
-    relatedOrderId: z.string().optional().nullable(),
+    // An order reference is exactly an order number (ORD-YYYYMMDD-NLNL).
+    relatedOrderId: zodOrderNumber().optional().nullable(),
     relatedShipmentId: z.string().optional().nullable(),
     relatedSupplierRequestId: z.string().optional().nullable(),
     metadata: z.record(z.unknown()).optional(),

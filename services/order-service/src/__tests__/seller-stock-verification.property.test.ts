@@ -27,7 +27,7 @@ const allActors: VerificationActor[] = ['buyer', 'seller', 'system', 'admin'];
 const arbStatus = fc.constantFrom(...allStatuses);
 const arbActor = fc.constantFrom(...allActors);
 const arbPositiveInt = fc.integer({ min: 1, max: 180 }); // timeout minutes
-const arbDate = fc.date({ min: new Date('2024-01-01'), max: new Date('2030-12-31') });
+const arbDate = fc.date({ min: new Date('2024-01-01'), max: new Date('2030-12-31'), noInvalidDate: true });
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Feature: seller-stock-verification, Property 1: Audit log monotonicity
@@ -243,7 +243,7 @@ describe('Property 4: Deadline integrity', () => {
     fc.assert(
       fc.property(
         fc.integer({ min: 1, max: 180 }),
-        fc.date({ min: new Date('2024-01-01'), max: new Date('2030-12-31') }),
+        fc.date({ min: new Date('2024-01-01'), max: new Date('2030-12-31'), noInvalidDate: true }),
         (timeoutMinutes, createdAt) => {
           process.env.SELLER_VERIFICATION_TIMEOUT_MINUTES = String(timeoutMinutes);
           const configuredTimeout = verificationConfig.timeoutMinutes;

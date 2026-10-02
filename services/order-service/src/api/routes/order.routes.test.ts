@@ -110,7 +110,7 @@ describe('setupOrderRoutes', () => {
       .set(contractHeaders)
       .send({ resolution: 'Approved refund', decision: 'approved' });
     const cancelRes = await request(app)
-      .post('/api/orders/order-1/cancel')
+      .post('/api/orders/ORD-20260927-3C8B/cancel')
       .set(contractHeaders)
       .send({ reason: 'Changed my mind' });
 

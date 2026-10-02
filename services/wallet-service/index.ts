@@ -27,6 +27,9 @@ export const WalletModule: Module = {
         try {
             const container = Container.getInstance();
             router.use('/wallets', createWalletRoutes(container.walletController));
+            // Start hold expiry + hold reconciliation. These were wired but never
+            // started, so stranded COD holds were never recovered (DEF-036).
+            container.startBackgroundJobs();
         } catch (error) {
             console.log('Failed to mount wallet routes, falling back to degraded handler', error);
             router.all('/wallets/*', (_req, res) => {
@@ -43,6 +46,12 @@ export const WalletModule: Module = {
     routes: Router(),
     shutdown: async () => {
         console.log('Shutting down wallet-service module');
+        // Stop background jobs so timers do not outlive the module.
+        try {
+            Container.getInstance().stopBackgroundJobs();
+        } catch {
+            // Container may never have initialised; nothing to stop.
+        }
     }
 };
 

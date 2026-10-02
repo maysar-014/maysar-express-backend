@@ -48,17 +48,48 @@ import { Order } from '../../domain/entities/order.entity';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/**
+ * Minimum (score, lifetimeCODValue) pair that derives each tier. The eligibility
+ * engine recomputes the tier via deriveTier(score, lifetimeCODValue) and never
+ * reads the stored `tier` field, so the fixture must place the buyer on the
+ * requested tier through those two axes. Previously this helper set
+ * lifetimeCODValue: 0, which pins every buyer to NEW_BUYER regardless of the
+ * tier argument — the TRUSTED_* cases in this file were silently exercising the
+ * NEW_BUYER limit and concurrency rules.
+ */
+const TIER_AXES: Record<TrustTier, { score: number; lifetime: number }> = {
+  NEW_BUYER:        { score: 10,  lifetime: 0 },
+  TRUSTED_BEGINNER: { score: 30,  lifetime: 100_000 },
+  TRUSTED_BUYER:    { score: 50,  lifetime: 500_000 },
+  GOLD_BUYER:       { score: 70,  lifetime: 2_000_000 },
+  PLATINUM_BUYER:   { score: 90,  lifetime: 10_000_000 },
+};
+
 function makeScoreRepo(score: number, tier: TrustTier): ICODTrustScoreRepository {
+  const axes = TIER_AXES[tier];
   const record: TrustScoreRecord = {
     buyerId: 'buyer-001',
     score,
     tier,
+    lifetimeCODValue: axes.lifetime,
+    activeExposure: 0,
     updatedAt: new Date(),
     createdAt: new Date(),
   };
   return {
     findByBuyerId: jest.fn().mockResolvedValue(record),
     upsert: jest.fn().mockResolvedValue(record),
+    // Exposure/lifetime mutators added to the contract; these tests are read-only.
+    incrementLifetimeCODValue: jest.fn().mockResolvedValue(undefined),
+    decrementActiveExposure: jest.fn().mockResolvedValue(undefined),
+    incrementActiveExposure: jest.fn().mockResolvedValue(undefined),
+    // Dispute-window tracking members (setDisputeWindowExpiry /
+    // getDisputeWindowExpiry / suspendLifetimeCODValueIncrement) were added to
+    // the contract after this suite was written; these cases are read-only,
+    // so no-op mocks are correct here.
+    setDisputeWindowExpiry: jest.fn().mockResolvedValue(undefined),
+    getDisputeWindowExpiry: jest.fn().mockResolvedValue(null),
+    suspendLifetimeCODValueIncrement: jest.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -66,6 +97,13 @@ function makeEmptyScoreRepo(): ICODTrustScoreRepository {
   return {
     findByBuyerId: jest.fn().mockResolvedValue(null),
     upsert: jest.fn(),
+    incrementLifetimeCODValue: jest.fn().mockResolvedValue(undefined),
+    decrementActiveExposure: jest.fn().mockResolvedValue(undefined),
+    incrementActiveExposure: jest.fn().mockResolvedValue(undefined),
+    // Dispute-window tracking members; see makeScoreRepo above.
+    setDisputeWindowExpiry: jest.fn().mockResolvedValue(undefined),
+    getDisputeWindowExpiry: jest.fn().mockResolvedValue(null),
+    suspendLifetimeCODValueIncrement: jest.fn().mockResolvedValue(undefined),
   };
 }
 

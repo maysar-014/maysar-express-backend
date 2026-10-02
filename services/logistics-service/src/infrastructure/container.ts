@@ -33,7 +33,8 @@ import { GetDeliveryUseCase } from '../application/use-cases/get-delivery.use-ca
 import { GetDeliveriesUseCase } from '../application/use-cases/get-deliveries.use-case';
 import { UpdateDeliveryStatusUseCase } from '../application/use-cases/update-delivery-status.use-case';
 import { DeliverySaga } from '../application/sagas/delivery.saga';
-import { CODDeliveryConfirmationSaga } from '../application/sagas/cod-delivery-confirmation.saga';
+import { CODInitiationSaga } from '../application/sagas/cod-initiation.saga';
+import { CODSettlementSaga } from '../application/sagas/cod-settlement.saga';
 import { SagaRegistry } from '../application/sagas/saga-registry';
 import { VerifyCODDeliveryUseCase } from '../application/use-cases/verify-cod-delivery.use-case';
 import { InitiateCODDeliveryUseCase } from '../application/use-cases/initiate-cod-delivery.use-case';
@@ -88,7 +89,8 @@ export class DependencyContainer {
   private getDeliveriesUseCase!: GetDeliveriesUseCase;
   private updateDeliveryStatusUseCase!: UpdateDeliveryStatusUseCase;
   private deliverySaga!: DeliverySaga;
-  private codDeliveryConfirmationSaga!: CODDeliveryConfirmationSaga;
+  private codInitiationSaga!: CODInitiationSaga;
+  private codSettlementSaga!: CODSettlementSaga;
   private sagaRegistry!: SagaRegistry;
   private codConfirmationEngine!: CODConfirmationEngine;
   private verifyCODDeliveryUseCase!: VerifyCODDeliveryUseCase;
@@ -293,24 +295,36 @@ export class DependencyContainer {
     this.sagaRegistry.registerOrchestrator('DeliverySaga', this.deliverySaga);
     SagaFactory.registerByType('DeliverySaga', this.deliverySaga);
 
-    this.codDeliveryConfirmationSaga = new CODDeliveryConfirmationSaga(
+    // COD is split into two sagas so settlement is unreachable before a courier
+    // verifies the delivery. Registering the superseded combined saga as well
+    // would reintroduce a path that settles an unverified order (BLG-027).
+    this.codInitiationSaga = new CODInitiationSaga(
       this.sagaLogRepository,
       'logistics-service',
       this.deliveryRepository,
       this.codConfirmationEngine
     );
-    this.sagaRegistry.registerOrchestrator('CODDeliveryConfirmationSaga', this.codDeliveryConfirmationSaga);
-    SagaFactory.registerByType('CODDeliveryConfirmationSaga', this.codDeliveryConfirmationSaga);
+    this.sagaRegistry.registerOrchestrator('CODInitiationSaga', this.codInitiationSaga);
+    SagaFactory.registerByType('CODInitiationSaga', this.codInitiationSaga);
+
+    this.codSettlementSaga = new CODSettlementSaga(
+      this.sagaLogRepository,
+      'logistics-service',
+      this.deliveryRepository,
+      this.codConfirmationEngine
+    );
+    this.sagaRegistry.registerOrchestrator('CODSettlementSaga', this.codSettlementSaga);
+    SagaFactory.registerByType('CODSettlementSaga', this.codSettlementSaga);
 
     this.verifyCODDeliveryUseCase = new VerifyCODDeliveryUseCase(
       this.deliveryRepository,
       this.codConfirmationEngine,
-      this.codDeliveryConfirmationSaga
+      this.codSettlementSaga
     );
 
     this.initiateCODDeliveryUseCase = new InitiateCODDeliveryUseCase(
       this.deliveryRepository,
-      this.codDeliveryConfirmationSaga
+      this.codInitiationSaga
     );
 
     this.trackingUpdateService = new TrackingUpdateService(

@@ -586,7 +586,10 @@ export class CheckoutController {
         success: true,
         data: {
           ...CheckoutMapper.checkoutSessionToDTO(session),
-          orderId: realOrderId ?? orderId,
+          // Only an ORDER NUMBER (ORD-YYYYMMDD-NLNL) is ever exposed as `orderId`.
+          // When the synchronous placement did not run there is no order yet, so the
+          // checkout id is reported under its own field and no order id is fabricated.
+          ...(realOrderId ? { orderId: realOrderId } : { checkoutId: orderId }),
           ...(chatConversationId ? { chatConversationId } : {})
         },
         timestamp: new Date()

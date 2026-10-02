@@ -206,11 +206,11 @@ describe('StockApi', () => {
 
   describe('cancelReservation', () => {
     it('should cancel reservation', async () => {
-      mockReq.params = { orderId: 'order-1' };
+      mockReq.params = { orderId: 'ORD-20260927-3C8B' };
 
       await api.cancelReservation(mockReq as Request, mockRes as Response);
 
-      expect(mockReservationEngine.cancelReservations).toHaveBeenCalledWith('order-1');
+      expect(mockReservationEngine.cancelReservations).toHaveBeenCalledWith('ORD-20260927-3C8B');
       expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'cancelled' }));
     });
   });
@@ -273,7 +273,7 @@ describe('StockApi', () => {
 
   describe('getOrderReservations', () => {
     it('should return order reservations', async () => {
-      mockReq.params = { orderId: 'order-1' };
+      mockReq.params = { orderId: 'ORD-20260927-3C8B' };
       mockReservationEngine.getActiveReservations.mockResolvedValue([
         { id: 'res-1', orderItemId: 'item-1', productVariantId: 'var-1', warehouseId: 'wh-1', quantityReserved: 5, status: 'active', expiresAt: new Date(), createdAt: new Date() } as any
       ]);

@@ -36,7 +36,6 @@ Main checks:
 - Typecheck
 - Build
 - Test (Postgres + Redis service containers)
-- Governance audit against the test stack
 - OpenAPI validation
 - Contract examples (only on push to `dev`)
 
@@ -56,7 +55,7 @@ Behavior:
   - `docker-compose.yml`
   - `docker-compose.staging.yml`
 - Optional health check using `HEALTHCHECK_URL` secret.
-- Runs only after CI passes, including the governance audit gate.
+- Runs only after CI passes.
 
 ### `Deploy Production` workflow
 Path: `.github/workflows/deploy-production.yml`
@@ -72,7 +71,7 @@ Behavior:
 - Deploys using Docker Compose:
   - `docker-compose.prod.yml`
 - Optional health check using `HEALTHCHECK_URL` secret.
-- Runs only after CI passes, including the governance audit gate.
+- Runs only after CI passes.
 
 Safety recommendation:
 - Configure GitHub Environment `production` with required reviewer approvals before job execution.

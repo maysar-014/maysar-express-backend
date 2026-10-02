@@ -221,7 +221,8 @@ describe('SearchProductsUseCase', () => {
         expect.objectContaining({
           categoryId: 'category-books',
           sellerId: 'seller-123',
-          status: 'active'
+          // public search always pins the repository status to published
+          status: 'published'
         }),
         { limit: 10, offset: 0 }
       );

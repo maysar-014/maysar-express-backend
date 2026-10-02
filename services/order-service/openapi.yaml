@@ -238,8 +238,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/OrderResponse'
               example:
-                id: "order_abc123def456"
-                trackingNumber: "MYS-TZ-ORD-20260316-1A2B"
+                id: "ORD-20260927-3C8B"
+                shipments: []
                 buyerId: "buyer_123"
                 sellerId: "seller_456"
                 status: "pending"
@@ -394,7 +394,7 @@ paths:
                 $ref: '#/components/schemas/OrderListResponse'
               example:
                 orders:
-                  - id: "order_abc123"
+                  - id: "ORD-20260927-3C8B"
                     buyerId: "buyer_123"
                     sellerId: "seller_456"
                     status: "delivered"
@@ -402,7 +402,7 @@ paths:
                       amount: 30000
                       currency: "TZS"
                     createdAt: "2024-01-10T10:30:00.000Z"
-                  - id: "order_def456"
+                  - id: "ORD-20260927-7X2M"
                     buyerId: "buyer_789"
                     sellerId: "seller_456"
                     status: "shipped"
@@ -439,7 +439,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: '^order_[a-zA-Z0-9]+$'
+            pattern: '^ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$'
           description: Order ID
       responses:
         '200':
@@ -449,7 +449,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/OrderDetailResponse'
               example:
-                id: "order_abc123def456"
+                id: "ORD-20260927-3C8B"
                 buyerId: "buyer_123"
                 sellerId: "seller_456"
                 status: "shipped"
@@ -476,7 +476,7 @@ paths:
                 paymentMethod: "COD"
                 paymentStatus: "pending"
                 tracking:
-                  trackingNumber: "MYS-TZ-ORD-20260316-1A2B"
+                  trackingNumber: "TRK-3C8B2D"
                   carrier: "DHL"
                   status: "in_transit"
                   estimatedDelivery: "2024-01-15T10:30:00.000Z"
@@ -498,25 +498,29 @@ paths:
               example:
                 error: "NotFoundError"
                 message: "Order not found"
-                orderId: "order_invalid"
+                orderId: "ORD-invalid"
         '401':
           description: Authentication required
 
-  /orders/tracking/{trackingNumber}:
+  /orders/tracking/{identifier}:
     get:
-      summary: Get order by tracking number
+      summary: Tracking lookup by order number or shipment tracking number
       description: |
-        Retrieves order details using the public tracking number.
+        Accepts EITHER identifier: an order number (ORD-YYYYMMDD-NLNL) resolves to the order plus
+        every shipment created for it, so the customer can pick which shipment to follow; a
+        shipment tracking number (TRK-NLNLNL) resolves directly to that one shipment. Order
+        numbers and shipment tracking numbers are separate namespaces.
       tags:
         - Orders
       parameters:
-        - name: trackingNumber
+        - name: identifier
           in: path
           required: true
           schema:
             type: string
-            pattern: '^MYS-TZ-ORD-\\d{8}-\\d[A-Z]\\d[A-Z]$'
-          description: Public tracking number
+            pattern: '^(ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]|TRK-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z])$'
+          description: Order number (ORD-YYYYMMDD-NLNL) or shipment tracking number (TRK-NLNLNL)
+          example: "ORD-20260927-3C8B"
       responses:
         '200':
           description: Order details retrieved successfully
@@ -558,7 +562,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: '^order_[a-zA-Z0-9]+$'
+            pattern: '^ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$'
       requestBody:
         required: true
         content:
@@ -598,7 +602,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: '^order_[a-zA-Z0-9]+$'
+            pattern: '^ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$'
         - name: reason
           in: query
           schema:
@@ -619,7 +623,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/OrderResponse'
               example:
-                id: "order_abc123"
+                id: "ORD-20260927-3C8B"
                 status: "cancelled"
                 cancelledAt: "2024-01-13T11:00:00.000Z"
                 cancellationReason: "customer_request"
@@ -651,7 +655,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: '^order_[a-zA-Z0-9]+$'
+            pattern: '^ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$'
       requestBody:
         required: true
         content:
@@ -679,7 +683,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: '^order_[a-zA-Z0-9]+$'
+            pattern: '^ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$'
       responses:
         '200':
           description: Payment status retrieved
@@ -953,12 +957,26 @@ components:
       properties:
         id:
           type: string
-          pattern: '^order_[a-zA-Z0-9]+$'
-          example: "order_abc123def456"
-        trackingNumber:
-          type: string
-          pattern: '^MYS-TZ-ORD-\\d{8}-\\d[A-Z]\\d[A-Z]$'
-          example: "MYS-TZ-ORD-20260316-1A2B"
+          pattern: '^ORD-\d{8}-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$'
+          example: "ORD-20260927-3C8B"
+        shipments:
+          type: array
+          description: >-
+            Shipments created for this order (one per seller group). Each shipment owns its own
+            tracking number (TRK-NLNLNL); the order number itself is never a shipment identifier.
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: "SHP-01J9Z8Q2M4"
+              trackingNumber:
+                type: string
+                pattern: '^TRK-[2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z][2-9][A-HJKMNP-Z]$'
+                example: "TRK-3C8B2D"
+              status:
+                type: string
+                example: "CREATED"
         buyerId:
           type: string
           example: "buyer_123"
@@ -1020,7 +1038,7 @@ components:
               properties:
                 trackingNumber:
                   type: string
-                  example: "TN123456789"
+                  example: "TRK-3C8B2D"
                 carrier:
                   type: string
                   example: "DHL"
@@ -1148,7 +1166,7 @@ components:
           example: "pay_abc123"
         orderId:
           type: string
-          example: "order_abc123"
+          example: "ORD-20260927-3C8B"
         status:
           type: string
           enum: [pending, processing, completed, failed]
@@ -1312,7 +1330,7 @@ components:
     successful_order_creation:
       summary: Successful order creation
       value:
-        id: "order_abc123def456"
+        id: "ORD-20260927-3C8B"
         buyerId: "buyer_123"
         sellerId: "seller_456"
         status: "pending"

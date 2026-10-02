@@ -10,6 +10,7 @@ jest.mock('../../infrastructure/container', () => ({
 }));
 
 import { CODController } from './cod.controller';
+import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 
 const createResponse = () => {
   const res: any = {};
@@ -68,7 +69,7 @@ describe('CODController', () => {
     });
   });
 
-  it('verifyDelivery calls use case and responds with success', async () => {
+  it('verifyDelivery calls use case with a real GeoPoint, not a plain lat/lng object', async () => {
     const execute = jest.fn().mockResolvedValue(undefined);
     mockContainer.getVerifyCODDeliveryUseCase.mockReturnValue({ execute });
     const controller = new CODController();
@@ -80,11 +81,20 @@ describe('CODController', () => {
 
     await controller.verifyDelivery(req, res);
 
-    expect(execute).toHaveBeenCalledWith({
-      deliveryId: 'del-1',
-      otp: '123456',
-      location: { lat: 1.25, lng: 2.75 }
-    });
+    expect(execute).toHaveBeenCalledTimes(1);
+    const passed = execute.mock.calls[0][0];
+    expect(passed.deliveryId).toBe('del-1');
+    expect(passed.otp).toBe('123456');
+
+    // The settlement saga calls `currentPos.distanceTo(deliveryPos)`, so anything
+    // without a real GeoPoint throws a TypeError inside the saga and the delivery
+    // silently stays in_transit while this endpoint still returns 200. This
+    // assertion is the regression guard for exactly that.
+    expect(passed.location).toBeInstanceOf(GeoPoint);
+    expect(typeof passed.location.distanceTo).toBe('function');
+    expect(passed.location.getLatitude()).toBe(1.25);
+    expect(passed.location.getLongitude()).toBe(2.75);
+
     expect(res.status).toHaveBeenCalledWith(200);
   });
 

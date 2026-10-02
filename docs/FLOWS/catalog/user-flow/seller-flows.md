@@ -1,6 +1,6 @@
 ﻿# Seller Flows — Catalog Service
 
-> **Verification status:** Mixed (product create/publish Verified; buy-box anomaly flag deletion FAILING — 500 in September 2026 sweep)
+> **Verification status:** Mixed (product create/publish Verified; buy-box anomaly flag deletion fixed — accurate 404 on unknown flag id, DEF-004)
 > **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` (September 2026)
 > **Last updated:** September 2026
 
@@ -205,8 +205,14 @@ If the product is `ACTIVE` and an update causes the quality score to drop below 
 
 ---
 
-## Known Gap
+## Resolved — Buy-Box Anomaly Flag Deletion (DEF-004)
 
-> ⚠️ **Known Gap:** `DELETE /api/catalog/v1/admin/buy-box/anomaly-flags/{flagId}` → **500 FAILING** (September 2026 sweep). Admin buy-box anomaly flag deletion is not currently working.
+> ✅ **Resolved:** `DELETE /api/catalog/v1/admin/buy-box/anomaly-flags/{flagId}` previously returned **500** whenever the flag id did not exist. It now returns:
 >
-> This affects sellers indirectly: if a product listing is flagged by the buy-box fraud detector (e.g., for sudden price drops below cost, coordinated price manipulation), the flag cannot be cleared by admins until this endpoint is fixed. Flagged sellers should contact platform support to request manual flag review. There is no seller-facing workaround — flag removal is an admin-only operation and is currently unavailable.
+> - `200 {success:true}` when the flag is cleared (audit record written)
+> - `404 {success:false, error:{code:"ANOMALY_FLAG_NOT_FOUND"}}` when no anomaly flag exists for that id
+> - `403 {success:false, error:{code:"INSUFFICIENT_PERMISSIONS"}}` when the caller lacks the operator/admin capability
+>
+> **Impact on sellers:** None — flag removal remains an admin-only operation, but it now works and reports accurate not-found responses. Sellers still see anomaly flags in read-only form; admins can clear them through the admin console.
+>
+> **Tracked in:** `docs/FLOWS/_verification/defect-register.md` (DEF-004)

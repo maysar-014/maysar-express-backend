@@ -18,7 +18,7 @@ Actual compliance work is performed through three verified mechanisms:
 2. **support-service KYC lookup** — `GET /api/support/admin/kyc/:userId` allows accounts with admin or support-agent role to look up a user's KYC status without accessing raw identity documents
 3. **support-service COD dispute resolution** — `POST /api/support/disputes/:id/resolve` → emits `COD_DISPUTE_RESOLVED` event → user-service applies COD reputation penalty to the buyer
 
-**Definition:** A Compliance Officer reviews KYC documents, monitors AML (anti-money laundering) signals, and manages escalated COD disputes. In the current system, there is **no dedicated `compliance` role** — compliance officers use the `admin` or `support-agent` role. There is no dedicated compliance dashboard, no compliance-specific API surface, and no `/api/governance/*` routes (all return route-level 404 — not live).
+**Definition:** A Compliance Officer reviews KYC documents, monitors AML (anti-money laundering) signals, and manages escalated COD disputes. In the current system, there is **no dedicated `compliance` role** — compliance officers use the `admin` or `support-agent` role. There is no dedicated compliance dashboard, no compliance-specific API surface, and no `/api/governance/*` route surface (governance was removed from the platform — DEF-007).
 
 **Primary services:** auth-service, support-service (KYC lookup and dispute resolution), kyc-service (events and middleware — no standalone HTTP surface), analytics-service (AML signals surfaced via admin dashboard), user-service (account states)
 
@@ -115,7 +115,7 @@ Suspicious accounts identified through this review can be flagged for admin acti
 - `POST /api/auth/admin/users/:id/suspend` — suspend a suspicious user account
 - `POST /api/support/tickets` (or direct admin action) — escalate for further review
 
-> ⚠️ **Known Gap:** `/api/governance/*` → ALL routes return route-level 404 (Missing). Any governance-related compliance workflow cannot be implemented via API. Do not surface governance features in the UI.
+> ⚠️ **Not available:** `/api/governance/*` does not exist in this platform — governance was removed (DEF-007). Any governance-related compliance workflow cannot be implemented via API, and governance must not be surfaced in the UI.
 
 ### Phase 4: Dispute Escalation Review
 
@@ -153,11 +153,15 @@ Compliance officers review escalated COD disputes via support-service:
 
 ---
 
-### ⚠️ `/api/governance/*` — Route-Level 404 (Missing)
+### ℹ️ `/api/governance/*` — Removed From The Platform (DEF-007)
 
-**Sweep result:** All routes under `/api/governance/*` return route-level 404 — the governance feature is **not live**.
+The governance route surface does not exist in this platform. The governance-service module was deleted
+(commit `cfcfd08b`), and its retainer artifacts were removed with it: all `/api/governance/*` paths and
+`Governance*` schemas are gone from `openapi.yaml` and `api-contract.yaml`, the CI `governance-audit`
+job and the `governance:*` npm scripts are deleted, and `reports/governance/` is gone.
 
-**Impact:** Any compliance workflow requiring governance endpoints cannot be implemented. Do not document or surface governance features as current capabilities.
+**Impact:** no admin or compliance workflow may reference governance endpoints. Platform administration
+runs through the service endpoints listed above.
 
 ---
 

@@ -75,7 +75,10 @@ describe('ResetPasswordUseCase', () => {
       used: false,
       expiresAt: new Date(Date.now() + 30 * 60 * 1000),
     };
-    const mockUser = { id: 'user-100', email: 'valid@example.com', changePassword: jest.fn() };
+    // Shaped exactly like the real AuthUser DTO: no changePassword member.
+    // The previous mock defined changePassword, which is why this suite stayed
+    // green while the use case called a method the real DTO does not have.
+    const mockUser = { id: 'user-100', email: 'valid@example.com' };
 
     const updatePasswordSpy = jest.fn().mockResolvedValue(undefined);
     mockPasswordResetRepository.findByToken.mockResolvedValue(mockRecord);
@@ -92,6 +95,7 @@ describe('ResetPasswordUseCase', () => {
     expect(updatePasswordSpy).toHaveBeenCalledTimes(1);
     expect(updatePasswordSpy.mock.calls[0][0]).toBe('user-100');
     expect(mockPasswordResetRepository.markAsUsed).toHaveBeenCalledWith('res-100');
-    expect(mockUser.changePassword).toHaveBeenCalledTimes(1);
+    // The persisted hash must be the one updatePassword received.
+    expect(updatePasswordSpy.mock.calls[0][1]).toMatch(/^\$2/);
   });
 });

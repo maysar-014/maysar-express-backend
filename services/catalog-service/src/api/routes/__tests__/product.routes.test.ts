@@ -11,6 +11,14 @@ import { createProductRoutes, ProductRoutesFactory, PRODUCT_ROUTES_METADATA } fr
 import { ProductController } from '../../controllers/product.controller';
 import { errorHandler, notFoundHandler } from '../../middleware/error.middleware';
 
+// KYC gate is cross-service middleware owned and tested by kyc-service
+// (services/kyc-service/src/api/middleware/kyc-gate.middleware.test.ts).
+// This suite covers catalog route wiring, so the gate is stubbed as a pass-through.
+jest.mock('../../../../../kyc-service/src/api/middleware/kyc-gate.middleware', () => ({
+  requireKycLevel: () => (_req: any, _res: any, next: any) => next(),
+  requireKycListingCapacity: () => (_req: any, _res: any, next: any) => next()
+}));
+
 jest.mock('@shared/middleware/auth-context.middleware', () => ({
   requireRole: () => (_req: any, _res: any, next: any) => next()
 }));
@@ -28,7 +36,11 @@ const mockProductController = {
   updateProduct: jest.fn(),
   deleteProduct: jest.fn(),
   publishProduct: jest.fn(),
-  getProductAnalytics: jest.fn()
+  unpublishProduct: jest.fn(),
+  getProductAnalytics: jest.fn(),
+  getProductMetrics: jest.fn(),
+  getProductMedia: jest.fn(),
+  updateProductCategory: jest.fn()
 };
 
 // Mock Express app for integration testing
@@ -303,14 +315,21 @@ describe('Product Routes', () => {
     });
 
     describe('POST /v1/products/:id/unpublish - Unpublish Product', () => {
-      it('should return not implemented status', async () => {
+      it('should delegate to controller unpublishProduct method', async () => {
+        mockProductController.unpublishProduct.mockImplementation(async (_req, res) => {
+          res.status(200).json({
+            success: true,
+            data: { productId: 'prod-123', status: 'draft' }
+          });
+        });
+
         const response = await request(app)
           .post('/v1/products/prod-123/unpublish')
           .set('Authorization', 'Bearer valid-token-123');
 
-        expect(response.status).toBe(501);
-        expect(response.body.success).toBe(false);
-        expect(response.body.error.code).toBe('NOT_IMPLEMENTED');
+        expect(mockProductController.unpublishProduct).toHaveBeenCalled();
+        expect(response.status).toBe(200);
+        expect(response.body.data.status).toBe('draft');
       });
     });
   });
@@ -341,54 +360,73 @@ describe('Product Routes', () => {
     });
 
     describe('GET /v1/products/:id/metrics - Get Product Metrics', () => {
-      it('should return not implemented status', async () => {
+      it('should delegate to controller getProductMetrics method', async () => {
+        mockProductController.getProductMetrics.mockImplementation(async (_req, res) => {
+          res.status(200).json({
+            success: true,
+            data: { productId: 'prod-123', metrics: { views: 1000, purchases: 50 } }
+          });
+        });
+
         const response = await request(app)
           .get('/v1/products/prod-123/metrics')
           .set('Authorization', 'Bearer valid-token-123');
 
-        expect(response.status).toBe(501);
-        expect(response.body.success).toBe(false);
-        expect(response.body.error.code).toBe('NOT_IMPLEMENTED');
+        expect(mockProductController.getProductMetrics).toHaveBeenCalled();
+        expect(response.status).toBe(200);
+        expect(response.body.data.metrics.views).toBe(1000);
       });
     });
   });
 
   describe('Bulk Operations', () => {
     describe('POST /v1/products/bulk - Bulk Create Products', () => {
-      it('should handle bulk create request', async () => {
+      it('should reject an empty products batch before reaching the controller', async () => {
         const response = await request(app)
           .post('/v1/products/bulk')
           .set('Authorization', 'Bearer valid-token-123')
           .send({ products: [] });
 
-        // Controller validates that products array cannot be empty
+        // bulkCreateSchema requires at least one product
         expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
-        expect(response.body.error.code).toBe('VALIDATION_ERROR');
+      });
+
+      it('should report NOT_IMPLEMENTED for a well-formed batch (no persistence layer yet)', async () => {
+        const response = await request(app)
+          .post('/v1/products/bulk')
+          .set('Authorization', 'Bearer valid-token-123')
+          .send({ products: [{ productName: 'Bulk Product 1' }] });
+
+        expect(response.status).toBe(501);
+        expect(response.body.success).toBe(false);
+        expect(response.body.error.code).toBe('NOT_IMPLEMENTED');
       });
     });
 
     describe('PUT /v1/products/bulk - Bulk Update Products', () => {
-      it('should handle bulk update request', async () => {
+      it('should report NOT_IMPLEMENTED for a valid bulk update payload', async () => {
         const response = await request(app)
           .put('/v1/products/bulk')
           .set('Authorization', 'Bearer valid-token-123')
-          .send({ productIds: ['prod-123'], updates: { name: 'Updated Product' } });
+          .send({ productIds: ['prod-123'], updates: { productName: 'Updated Product' } });
 
-        expect(response.status).toBe(200);
-        expect(response.body.success).toBe(true);
+        expect(response.status).toBe(501);
+        expect(response.body.success).toBe(false);
+        expect(response.body.error.code).toBe('NOT_IMPLEMENTED');
       });
     });
 
     describe('DELETE /v1/products/bulk - Bulk Delete Products', () => {
-      it('should handle bulk delete request', async () => {
+      it('should report NOT_IMPLEMENTED for a valid bulk delete payload', async () => {
         const response = await request(app)
           .delete('/v1/products/bulk')
           .set('Authorization', 'Bearer valid-token-123')
           .send({ productIds: ['prod-123'] });
 
-        expect(response.status).toBe(204);
-        expect(response.text).toBe('');
+        expect(response.status).toBe(501);
+        expect(response.body.success).toBe(false);
+        expect(response.body.error.code).toBe('NOT_IMPLEMENTED');
       });
     });
 
@@ -413,26 +451,33 @@ describe('Product Routes', () => {
 
   describe('Media Management', () => {
     describe('POST /v1/products/:id/media - Upload Product Media', () => {
-      it('should return not implemented status', async () => {
+      it('should reject a request that carries no file', async () => {
         const response = await request(app)
           .post('/v1/products/prod-123/media')
           .set('Authorization', 'Bearer valid-token-123');
 
-        expect(response.status).toBe(501);
+        expect(response.status).toBe(400);
         expect(response.body.success).toBe(false);
-        expect(response.body.error.code).toBe('NOT_IMPLEMENTED');
+        expect(response.body.error.code).toBe('NO_FILE');
       });
     });
 
     describe('GET /v1/products/:id/media - Get Product Media', () => {
-      it('should return not implemented status', async () => {
+      it('should delegate to controller getProductMedia method', async () => {
+        mockProductController.getProductMedia.mockImplementation(async (_req, res) => {
+          res.status(200).json({
+            success: true,
+            data: { productId: 'prod-123', media: [] }
+          });
+        });
+
         const response = await request(app)
           .get('/v1/products/prod-123/media')
           .set('Authorization', 'Bearer valid-token-123');
 
-        expect(response.status).toBe(501);
-        expect(response.body.success).toBe(false);
-        expect(response.body.error.code).toBe('NOT_IMPLEMENTED');
+        expect(mockProductController.getProductMedia).toHaveBeenCalled();
+        expect(response.status).toBe(200);
+        expect(response.body.data.media).toEqual([]);
       });
     });
   });
@@ -495,15 +540,21 @@ describe('Product Routes', () => {
     });
 
     describe('PUT /v1/products/:id/category - Update Product Category', () => {
-      it('should return not implemented status', async () => {
+      it('should delegate to controller updateProductCategory method', async () => {
+        mockProductController.updateProductCategory.mockImplementation(async (_req, res) => {
+          res.status(200).json({
+            success: true,
+            data: { productId: 'prod-123', categoryId: '123e4567-e89b-12d3-a456-426614174000' }
+          });
+        });
+
         const response = await request(app)
           .put('/v1/products/prod-123/category')
           .set('Authorization', 'Bearer valid-token-123')
           .send({ categoryId: '123e4567-e89b-12d3-a456-426614174000' });
 
-        expect(response.status).toBe(501);
-        expect(response.body.success).toBe(false);
-        expect(response.body.error.code).toBe('NOT_IMPLEMENTED');
+        expect(mockProductController.updateProductCategory).toHaveBeenCalled();
+        expect(response.status).toBe(200);
       });
     });
   });

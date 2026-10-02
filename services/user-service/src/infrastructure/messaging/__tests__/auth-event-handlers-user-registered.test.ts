@@ -149,15 +149,17 @@ describe('Property 1: Bug Condition — UserRegistered.v1 Creates User_User Reco
         where: { id: FULL_PAYLOAD.userId },
         create: expect.objectContaining({
           id: FULL_PAYLOAD.userId,
-          // email and phoneNumber must be PII-encrypted (not plaintext)
-          email: `enc:${FULL_PAYLOAD.email}`,
+          // STORAGE POLICY: email/phone are identifiers, not credentials, and
+          // are stored plain + normalized. Lookup goes through the HMAC
+          // `user_UserIndex` table, so `piiService.encrypt()` is not applied.
+          email: FULL_PAYLOAD.email,
           publicCode: FULL_PAYLOAD.publicCode,
           passwordHash: '',
           role: User_UserRole.BUYER,
           status: User_UserStatus.PENDING_VERIFICATION,
           firstName: FULL_PAYLOAD.profile.firstName,
           lastName: FULL_PAYLOAD.profile.lastName,
-          phoneNumber: `enc:${FULL_PAYLOAD.profile.phoneNumber}`
+          phoneNumber: FULL_PAYLOAD.profile.phoneNumber
         })
       })
     );

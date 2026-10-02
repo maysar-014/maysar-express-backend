@@ -1,206 +1,104 @@
 /**
  * Enterprise ID Generator Service
- * Generates professional, branded identifiers for Maysar entities
+ * Generates professional, branded identifiers for Maysar entities.
+ *
+ * Every identifier follows the human-readable contract defined once in
+ * `shared/ids/human-readable-ids.ts`:
+ *
+ *   Order number              ORD-YYYYMMDD-NLNL   e.g. ORD-20260927-3C8B
+ *   Shipment tracking number  TRK-NLNLNL          e.g. TRK-3C8B2D
+ *   Transaction id            TXN-YYYYMMDD-NLNL   e.g. TXN-20260927-3C8B
+ *
+ * `N` is a digit from 2-9 and `L` a letter from A-Z without I, L and O
+ * (0/1/O/I/L are excluded so a value cannot be mis-read as another value).
+ *
+ * Separation rule: the ORDER NUMBER identifies the whole order for its entire
+ * lifecycle and is never used as a shipment identifier — one order can contain
+ * several shipments and each shipment carries its own TRK- tracking number.
  */
 
+import {
+  extractIdentifierDate,
+  isOrderNumber,
+  isShipmentTrackingNumber,
+  isTransactionId,
+  makeOrderNumber,
+  makeShipmentTrackingNumber,
+  makeTransactionId,
+} from '@shared/ids/human-readable-ids';
+
 export class IdGeneratorService {
-  private static readonly MAYSAR_PREFIX = 'MSR';
-  private static readonly PUBLIC_PREFIX = 'MYS';
-  private static readonly COUNTRY_CODE = 'TZ';
-  private static readonly ORDER_PREFIX = 'ORD';
-  private static readonly SEPARATOR = '-';
+  /** Prefix of the order number (`ORD-YYYYMMDD-NLNL`). */
+  static readonly ORDER_PREFIX = 'ORD';
+
+  /** Prefix of an independent shipment tracking number (`TRK-NLNLNL`). */
+  static readonly SHIPMENT_TRACKING_PREFIX = 'TRK';
+
+  /** Prefix of a transaction id (`TXN-YYYYMMDD-NLNL`). */
+  static readonly TRANSACTION_PREFIX = 'TXN';
 
   /**
-   * Generates a professional Maysar Order ID
-   * Format: MSR-ORD-YYYYMMDD-TIMESTAMP-RANDOM
-   * Example: MSR-ORD-20260113-173418-4A7B
+   * Generates an order number.
+   * Format: ORD-YYYYMMDD-NLNL
+   * Example: ORD-20260927-3C8B
    */
-  static generateOrderId(): string {
-    const now = new Date();
-    const timestamp = this.formatTimestamp(now);
-    const randomSuffix = this.generateRandomSuffix(4);
-
-    return [
-      this.MAYSAR_PREFIX,
-      this.ORDER_PREFIX,
-      timestamp,
-      randomSuffix
-    ].join(this.SEPARATOR);
+  static generateOrderId(date: Date = new Date()): string {
+    return makeOrderNumber(date);
   }
 
   /**
-   * Generates a shorter order ID for display purposes
-   * Format: MSR-ORD-TIMESTAMP
-   * Example: MSR-ORD-1734184A7B
+   * Generates an independent shipment tracking number.
+   * Format: TRK-NLNLNL
+   * Example: TRK-3C8B2D
    */
-  static generateShortOrderId(): string {
-    const timestamp = Date.now().toString(36).toUpperCase();
-    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-
-    return [
-      this.MAYSAR_PREFIX,
-      this.ORDER_PREFIX,
-      timestamp + randomSuffix
-    ].join(this.SEPARATOR);
+  static generateShipmentTrackingNumber(): string {
+    return makeShipmentTrackingNumber();
   }
 
   /**
-   * Generates a transaction ID for payments
-   * Format: MSR-TXN-TIMESTAMP-RANDOM
-   * Example: MSR-TXN-20260113-173418-9C2D
+   * Generates a transaction id for payments.
+   * Format: TXN-YYYYMMDD-NLNL
+   * Example: TXN-20260927-3C8B
    */
-  static generateTransactionId(): string {
-    const now = new Date();
-    const timestamp = this.formatTimestamp(now);
-    const randomSuffix = this.generateRandomSuffix(4);
-
-    return [
-      this.MAYSAR_PREFIX,
-      'TXN',
-      timestamp,
-      randomSuffix
-    ].join(this.SEPARATOR);
+  static generateTransactionId(date: Date = new Date()): string {
+    return makeTransactionId(date);
   }
 
   /**
-   * Generates a delivery tracking ID
-   * Format: MSR-TRK-TIMESTAMP-RANDOM
-   * Example: MSR-TRK-20260113-173418-7F1E
-   */
-  static generateTrackingId(): string {
-    const now = new Date();
-    const timestamp = this.formatTimestamp(now);
-    const randomSuffix = this.generateRandomSuffix(4);
-
-    return [
-      this.MAYSAR_PREFIX,
-      'TRK',
-      timestamp,
-      randomSuffix
-    ].join(this.SEPARATOR);
-  }
-
-  /**
-   * Generates a public order tracking number
-   * Format: MYS-TZ-ORD-YYYYMMDD-XLXL
-   * Example: MYS-TZ-ORD-20260316-3A7B
-   */
-  static generateOrderTrackingNumber(date: Date = new Date(), countryCode: string = IdGeneratorService.COUNTRY_CODE): string {
-    const dateStamp = this.formatDate(date);
-    const randomSequence = this.generateNumberLetterSequence();
-
-    return [
-      this.PUBLIC_PREFIX,
-      countryCode.toUpperCase(),
-      this.ORDER_PREFIX,
-      dateStamp,
-      randomSequence
-    ].join(this.SEPARATOR);
-  }
-
-  /**
-   * Validates if a string is a valid Maysar Order ID
+   * Validates an order number (`ORD-YYYYMMDD-NLNL`).
    */
   static isValidOrderId(id: string): boolean {
-    const pattern = /^MSR-ORD-\d{8}-\d{6}-[A-F0-9]{4}$/;
-    return pattern.test(id);
+    return isOrderNumber(id);
   }
 
   /**
-   * Validates if a string is a valid Maysar Transaction ID
+   * Validates a shipment tracking number (`TRK-NLNLNL`).
+   */
+  static isValidShipmentTrackingNumber(value: string): boolean {
+    return isShipmentTrackingNumber(value);
+  }
+
+  /**
+   * Validates a transaction id (`TXN-YYYYMMDD-NLNL`).
    */
   static isValidTransactionId(id: string): boolean {
-    const pattern = /^MSR-TXN-\d{8}-\d{6}-[A-F0-9]{4}$/;
-    return pattern.test(id);
+    return isTransactionId(id);
   }
 
   /**
-   * Validates if a string is a valid Maysar Tracking ID
-   */
-  static isValidTrackingId(id: string): boolean {
-    const pattern = /^MSR-TRK-\d{8}-\d{6}-[A-F0-9]{4}$/;
-    return pattern.test(id);
-  }
-
-  /**
-   * Validates if a string is a valid public order tracking number
-   */
-  static isValidOrderTrackingNumber(value: string): boolean {
-    const pattern = /^MYS-TZ-ORD-\d{8}-\d[A-Z]\d[A-Z]$/;
-    return pattern.test(value);
-  }
-
-  /**
-   * Extracts timestamp from a Maysar ID
+   * Extracts the calendar date encoded in an order number or transaction id.
+   * Returns `null` when the value is not a valid identifier.
    */
   static extractTimestamp(id: string): Date | null {
-    const parts = id.split(this.SEPARATOR);
-    if (parts.length >= 4 && parts[0] === this.MAYSAR_PREFIX) {
-      const dateStr = parts[2]; // YYYYMMDD
-      const timeStr = parts[3]; // HHMMSS
-
-      if (dateStr.length === 8 && timeStr.length === 6) {
-        const year = dateStr.substring(0, 4);
-        const month = dateStr.substring(4, 6);
-        const day = dateStr.substring(6, 8);
-        const hour = timeStr.substring(0, 2);
-        const minute = timeStr.substring(2, 4);
-        const second = timeStr.substring(4, 6);
-
-        return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}Z`);
-      }
-    }
-    return null;
-  }
-
-  // Private helper methods
-
-  private static formatTimestamp(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
-
-    return `${year}${month}${day}-${hours}${minutes}${seconds}`;
-  }
-
-  private static formatDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}${month}${day}`;
-  }
-
-  private static generateNumberLetterSequence(): string {
-    return `${this.randomDigit()}${this.randomLetter()}${this.randomDigit()}${this.randomLetter()}`;
-  }
-
-  private static randomDigit(): string {
-    return Math.floor(Math.random() * 10).toString();
-  }
-
-  private static randomLetter(): string {
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    return letters.charAt(Math.floor(Math.random() * letters.length));
-  }
-
-  private static generateRandomSuffix(length: number): string {
-    const chars = '0123456789ABCDEF';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
+    return extractIdentifierDate(id);
   }
 
   /**
-   * Generates a batch of order IDs for bulk operations
+   * Generates a batch of order numbers for bulk operations.
    */
   static generateOrderIds(count: number): string[] {
     const ids: string[] = [];
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < count; i += 1) {
       ids.push(this.generateOrderId());
     }
     return ids;

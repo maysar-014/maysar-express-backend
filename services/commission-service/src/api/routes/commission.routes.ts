@@ -45,7 +45,7 @@ const commissionController = new CommissionController(
 );
 
 /**
- * POST /api/commissions/calculate
+ * POST /api/commission/calculate
  * Calculate commission for an order
  */
 router.post('/calculate', validateCalculateCommission, async (req, res) => {
@@ -53,7 +53,7 @@ router.post('/calculate', validateCalculateCommission, async (req, res) => {
 });
 
 /**
- * PUT /api/commissions/:id/approve
+ * PUT /api/commission/:id/approve
  * Approve a commission
  */
 router.put('/:id/approve', validateApproveCommission, async (req, res) => {
@@ -61,7 +61,7 @@ router.put('/:id/approve', validateApproveCommission, async (req, res) => {
 });
 
 /**
- * GET /api/commissions/sellers/:sellerId
+ * GET /api/commission/sellers/:sellerId
  * Get commissions for a seller
  * MUST come before /:id to avoid "sellers" being matched as a commission ID
  */
@@ -70,7 +70,7 @@ router.get('/sellers/:sellerId', validateSellerId, validateCommissionQuery, asyn
 });
 
 /**
- * GET /api/commissions/sellers/:sellerId/summary
+ * GET /api/commission/sellers/:sellerId/summary
  * Get commission summary for a seller
  * MUST come before /:id to avoid "sellers" being matched as a commission ID
  */
@@ -79,7 +79,7 @@ router.get('/sellers/:sellerId/summary', validateSellerId, async (req, res) => {
 });
 
 /**
- * GET /api/commissions/:id
+ * GET /api/commission/:id
  * Get commission by ID
  * MUST come after /sellers/* routes
  */

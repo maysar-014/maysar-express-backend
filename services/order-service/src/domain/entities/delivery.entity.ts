@@ -1,4 +1,5 @@
 import { getModelPrefix, makeId } from '@shared/ids/id';
+import { makeShipmentTrackingNumber } from '@shared/ids/human-readable-ids';
 
 export enum DeliveryStatus {
   PENDING = 'pending',
@@ -30,6 +31,7 @@ export class Delivery {
   public actualPickupTime?: Date;
   public estimatedDeliveryTime?: Date;
   public actualDeliveryTime?: Date;
+  /** Independent shipment tracking number (TRK-NLNLNL) - never the order number. */
   public trackingNumber: string;
   public deliveryInstructions?: string;
   public failureReason?: string;
@@ -44,7 +46,7 @@ export class Delivery {
     this.status = DeliveryStatus.PENDING;
     this.pickupAddress = data.pickupAddress;
     this.deliveryAddress = data.deliveryAddress;
-    this.trackingNumber = this.generateTrackingNumber();
+    this.trackingNumber = data.trackingNumber || makeShipmentTrackingNumber();
     this.deliveryInstructions = data.deliveryInstructions;
     this.retryCount = 0;
     this.createdAt = new Date();
@@ -88,10 +90,4 @@ export class Delivery {
     return makeId(getModelPrefix('Logistics_Delivery'));
   }
 
-  private generateTrackingNumber(): string {
-    const prefix = 'MYS';
-    const timestamp = Date.now().toString().slice(-8);
-    const random = Math.random().toString(36).substr(2, 4).toUpperCase();
-    return `${prefix}${timestamp}${random}`;
-  }
 }

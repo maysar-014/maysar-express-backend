@@ -45,7 +45,7 @@ describe('TrackingController', () => {
   it('getTrackingHistory returns filtered and paginated history', async () => {
     const controller = new TrackingController();
     const req = {
-      params: { trackingNumber: 'del-1' },
+      params: { identifier: 'TRK-3C8B2D' },
       query: {
         startDate: '2026-03-08T10:05:00.000Z',
         endDate: '2026-03-08T10:20:00.000Z',
@@ -91,13 +91,13 @@ describe('TrackingController', () => {
 
     await controller.getTrackingHistory(req, res);
 
-    expect(trackingRepository.findByDeliveryId).toHaveBeenCalledWith('del-1');
-    expect(deliveryRepository.findById).toHaveBeenCalledWith('del-1');
+    expect(trackingRepository.findByDeliveryId).toHaveBeenCalledWith('TRK-3C8B2D');
+    expect(deliveryRepository.findById).toHaveBeenCalledWith('TRK-3C8B2D');
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: true,
         data: expect.objectContaining({
-          trackingNumber: 'del-1',
+          trackingNumber: 'TRK-3C8B2D',
           status: 'in_transit',
           currentLocation: 'Mid',
           history: [expect.objectContaining({ location: 'Mid' })],
@@ -110,7 +110,7 @@ describe('TrackingController', () => {
   it('getTrackingHistory handles repository failures', async () => {
     const controller = new TrackingController();
     const req = {
-      params: { trackingNumber: 'del-err' },
+      params: { identifier: 'TRK-7X2M3P' },
       query: {}
     } as unknown as Request;
     const res = createResponse();
@@ -124,6 +124,62 @@ describe('TrackingController', () => {
       success: false,
       error: 'query failed'
     });
+  });
+
+  it('resolves an ORDER NUMBER to the order plus all of its shipments', async () => {
+    const controller = new TrackingController();
+    const req = {
+      params: { identifier: 'ORD-20260927-3C8B' },
+      query: {}
+    } as unknown as Request;
+    const res = createResponse();
+
+    (globalThis as any).prisma = {
+      order_Order: { findFirst: jest.fn().mockResolvedValue({ id: 'ORD-20260927-3C8B', status: 'CONFIRMED' }) },
+      logistics_Shipment: {
+        findMany: jest.fn().mockResolvedValue([
+          { id: 'SHP-1', trackingNumber: 'TRK-3C8B2D', status: 'PLANNED', sellerId: 'usr_s1', createdAt: new Date() },
+          { id: 'SHP-2', trackingNumber: 'TRK-7X2M3P', status: 'CREATED', sellerId: 'usr_s2', createdAt: new Date() }
+        ])
+      }
+    };
+
+    try {
+      await controller.getTrackingHistory(req, res);
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          data: expect.objectContaining({
+            lookupType: 'ORDER',
+            identifier: 'ORD-20260927-3C8B',
+            order: expect.objectContaining({ id: 'ORD-20260927-3C8B' }),
+            shipments: [
+              expect.objectContaining({ trackingNumber: 'TRK-3C8B2D' }),
+              expect.objectContaining({ trackingNumber: 'TRK-7X2M3P' })
+            ]
+          })
+        })
+      );
+    } finally {
+      delete (globalThis as any).prisma;
+    }
+  });
+
+  it('rejects an identifier that is neither an order number nor a tracking number', async () => {
+    const controller = new TrackingController();
+    const req = { params: { identifier: 'del-1' }, query: {} } as unknown as Request;
+    const res = createResponse();
+
+    await controller.getTrackingHistory(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: false,
+        error: expect.objectContaining({ code: 'INVALID_TRACKING_IDENTIFIER' })
+      })
+    );
   });
 
   it('storeLocationUpdate returns success payload and defaults', async () => {

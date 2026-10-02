@@ -1,0 +1,58 @@
+{
+  "$comment": [
+    "BLG-001 manifest. `fields` defaults to every public entity field.",
+    "notPersisted / notReadBack MUST carry a reason - a bare name fails the audit,",
+    "so an exception is always a deliberate, recorded decision rather than a way",
+    "to silence the gate. Reasons citing BLG-020 are GENUINE open gaps in the",
+    "live repository (see the backlog); reasons citing ANALYZER are known static",
+    "analysis limitations of field-persistence-audit.cjs."
+  ],
+  "schema": "prisma/schema.prisma",
+  "models": [
+    {
+      "prismaModel": "Order_Order",
+      "entity": "services/order-service/src/domain/entities/order.entity.ts",
+      "repository": "services/order-service/src/infrastructure/database/prisma-order.repository.ts",
+      "fieldMap": {
+        "cancelReason": "cancellationReason"
+      },
+      "notPersisted": {
+        "enablerId": "BLG-020: written only by the dead OrderRepositoryImpl; the live PrismaOrderRepository never persists it. Unverified user impact - needs a functional test.",
+        "enablerCode": "BLG-020: as enablerId - only the dead repository writes it.",
+        "version": "BLG-020: optimistic-lock column; the live repository never increments or reads it, so the lock is inert. Only the dead repository writes it.",
+        "codReputationScore": "BLG-020: only the dead repository writes it.",
+        "codEligibilityChecked": "BLG-020: only the dead repository writes it.",
+        "codDeliveryOtp": "BLG-020: only the dead repository writes it. HIGHEST RISK in this set - a COD delivery OTP that is never persisted cannot survive the next read, so COD delivery confirmation is likely broken. Needs a functional test before that is asserted.",
+        "codOtpExpiresAt": "BLG-020: as codDeliveryOtp - OTP expiry is never persisted.",
+        "codDeliveryConfirmedAt": "BLG-020: only the dead repository writes it.",
+        "codDeliveryConfirmedBy": "BLG-020: only the dead repository writes it.",
+        "codProofGpsLat": "BLG-020: COD proof-of-delivery GPS is only written by the dead repository.",
+        "codProofGpsLng": "BLG-020: as codProofGpsLat.",
+        "codProofTimestamp": "BLG-020: as codProofGpsLat.",
+        "codCommitmentFee": "Written by BuyerConfirmCheckoutUseCase via a direct prisma.order_Order.update, not through save(). Intentional - the commitment is set at checkout, not at placement.",
+        "codCommitmentPaid": "As codCommitmentFee - set by the checkout use case via a direct update.",
+        "codCommitmentHoldId": "As codCommitmentFee - set by the checkout use case via a direct update.",
+        "deliveryCodeUsedAt": "Set by the delivery-confirmation path via a direct update, not through save().",
+        "cancelReason": "Renamed to cancellationReason in the repository; see fieldMap."
+      },
+      "notReadBack": {
+        "enablerId": "BLG-020: not mapped on read - unreachable through the repository even if another writer sets it.",
+        "enablerCode": "BLG-020: as enablerId.",
+        "version": "BLG-020: as enablerId - the optimistic-lock value is never read back.",
+        "codReputationScore": "BLG-020: as enablerId.",
+        "codEligibilityChecked": "BLG-020: as enablerId.",
+        "codDeliveryOtp": "BLG-020: as enablerId. HIGHEST RISK - the OTP cannot be read back for verification.",
+        "codOtpExpiresAt": "BLG-020: as codDeliveryOtp.",
+        "codDeliveryConfirmedAt": "BLG-020: as enablerId.",
+        "codDeliveryConfirmedBy": "BLG-020: as enablerId.",
+        "codProofGpsLat": "BLG-020: as enablerId.",
+        "codProofGpsLng": "BLG-020: as enablerId.",
+        "codProofTimestamp": "BLG-020: as enablerId.",
+        "status": "ANALYZER: the mapper assigns status through an expression the static pass cannot attribute; it IS mapped. Refine the analyzer rather than keep this exception.",
+        "createdAt": "ANALYZER: set by imperative post-assignment `(order as any).createdAt = ...` after the returned object literal.",
+        "updatedAt": "ANALYZER: as createdAt.",
+        "cancelReason": "Renamed to cancellationReason in the mapper; see fieldMap."
+      }
+    }
+  ]
+}

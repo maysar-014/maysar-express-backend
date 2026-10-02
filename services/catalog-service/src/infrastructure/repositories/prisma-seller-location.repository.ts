@@ -79,6 +79,61 @@ export class PrismaSellerLocationRepository implements ISellerLocationRepository
     return row ? this.toDomain(row) : null;
   }
 
+  /**
+   * Seller-scoped lookup used by CreateProductUseCase for a supplier location id
+   * that does not carry the `sloc_` prefix (the legacy BusinessAddress path).
+   *
+   * This method was declared by the use case but never existed on this class, so
+   * the call threw `findByIdForSeller is not a function`, was swallowed by the
+   * surrounding try/catch, and surfaced as the generic
+   * "Seller location lookup failed" — a dead validation branch.
+   *
+   * The `sellerId` predicate is load-bearing: it is the ownership check that
+   * stops a seller from attaching another seller's saved location to a product.
+   * Resolving by `id` alone would be an IDOR, so this deliberately is not
+   * implemented in terms of `findById`. Inactive locations are excluded to match
+   * the `sloc_` branch. Returns null when the location is missing, owned by
+   * another seller, or inactive — callers must treat null as "not found for
+   * this seller" rather than retrying without the seller filter.
+   *
+   * The returned shape and displayName composition intentionally mirror the
+   * `sloc_` branch of CreateProductUseCase so both paths produce identical
+   * product location strings.
+   */
+  async findByIdForSeller(
+    locationId: string,
+    sellerId: string,
+  ): Promise<{
+    id: string;
+    sellerId: string;
+    businessId: string;
+    city: string;
+    region: string;
+    country: string;
+    displayName: string;
+    isPrimary: boolean;
+  } | null> {
+    const row = await this.prisma.catalog_SellerLocation.findFirst({
+      where: { id: locationId, sellerId, isActive: true },
+      select: {
+        id: true, sellerId: true, name: true, street: true,
+        ward: true, district: true, region: true, country: true, isPrimary: true,
+      },
+    });
+    if (!row) return null;
+
+    return {
+      id: row.id,
+      sellerId: row.sellerId,
+      businessId: row.sellerId,
+      city: row.district ?? row.region ?? '',
+      region: row.region ?? '',
+      country: row.country ?? 'Tanzania',
+      displayName: [row.street, row.ward, row.district, row.region].filter(Boolean).join(', '),
+      isPrimary: row.isPrimary,
+    };
+  }
+
   async clearPrimaryForSeller(sellerId: string): Promise<void> {
     await this.prisma.catalog_SellerLocation.updateMany({
       where: { sellerId, isPrimary: true },

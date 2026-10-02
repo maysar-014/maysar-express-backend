@@ -37,6 +37,45 @@ const payoutInitiateBodySchema = Joi.object({
 const payoutCancelBodySchema = Joi.object({
     reason: safeVisibleString.optional()
 }).unknown(false);
+const payoutUserParamsSchema = Joi.object({
+    userId: joiId().required()
+}).unknown(false);
+
+/**
+ * Ownership guard for user-scoped payout reads: a caller may read their own
+ * payout history; admin/system callers may read any user's history. This
+ * mirrors the wallet-service `authorizeWalletAccess` rule so the payout
+ * history cannot be enumerated across users (IDOR).
+ */
+const requireSelfOrAdmin = (req: any, res: any, next: any): void => {
+    const user = req.user;
+    if (!user || !user.userId) {
+        res.status(401).json({
+            success: false,
+            error: { code: 'UNAUTHORIZED', message: 'Authentication required' }
+        });
+        return;
+    }
+
+    const roles = [...(Array.isArray(user.roles) ? user.roles : []), user.role]
+        .filter(Boolean)
+        .map((role: unknown) => String(role).trim().toLowerCase());
+
+    if (roles.includes('admin') || roles.includes('system')) {
+        next();
+        return;
+    }
+
+    if (user.userId === req.params.userId) {
+        next();
+        return;
+    }
+
+    res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'You can only view your own payout history' }
+    });
+};
 
 export function createPayoutRoutes(controller: PayoutController): Router {
     const router = Router();
@@ -49,6 +88,12 @@ export function createPayoutRoutes(controller: PayoutController): Router {
         asyncHandler(controller.initiate.bind(controller))
     );
     router.get('/', asyncHandler(controller.list.bind(controller)));
+    router.get(
+        '/user/:userId',
+        requireSelfOrAdmin,
+        validateJoiRequest({ params: payoutUserParamsSchema }),
+        asyncHandler(controller.listByUser.bind(controller))
+    );
     router.get('/:id', validateJoiRequest({ params: payoutIdParamsSchema }), asyncHandler(controller.getPayout.bind(controller)));
     router.post(
         '/:id/cancel',

@@ -22,6 +22,7 @@ export class PrismaShipmentRepository implements ShipmentRepository {
       create: {
         id: data.id,
         orderId: data.orderId,
+        trackingNumber: data.trackingNumber,
         sellerId: data.sellerId,
         originLat: data.origin.getLatitude(),
         originLng: data.origin.getLongitude(),
@@ -64,6 +65,13 @@ export class PrismaShipmentRepository implements ShipmentRepository {
     return (rows ?? []).map((r: any) => this.rowToEntity(r));
   }
 
+  async findByTrackingNumber(trackingNumber: string): Promise<Shipment | null> {
+    const row = await this.prisma?.logistics_Shipment?.findUnique?.({
+      where: { trackingNumber },
+    });
+    return row ? this.rowToEntity(row) : null;
+  }
+
   async findByDeliveryJobId(deliveryJobId: string): Promise<Shipment[]> {
     const rows = await this.prisma?.logistics_Shipment?.findMany?.({
       where: { deliveryJobId },
@@ -91,6 +99,7 @@ export class PrismaShipmentRepository implements ShipmentRepository {
     const data: ShipmentData = {
       id: row.id,
       orderId: row.orderId,
+      trackingNumber: row.trackingNumber ?? undefined,
       sellerId: row.sellerId,
       origin: GeoPoint.create(Number(row.originLat), Number(row.originLng), row.originAddress ?? ''),
       destination: GeoPoint.create(Number(row.destinationLat), Number(row.destinationLng), row.destinationAddress ?? ''),

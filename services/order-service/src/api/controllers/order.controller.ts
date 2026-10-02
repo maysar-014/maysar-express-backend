@@ -1,14 +1,15 @@
 import { Request, Response } from 'express';
 import { PlaceOrderUseCase, PlaceOrderRequest } from '../../application/use-cases/place-order.use-case';
 import { CheckCODEligibilityUseCase, CheckCODEligibilityInput } from '../../application/use-cases/check-cod-eligibility.use-case';
+import { OrderCancellationConsentUseCase } from '../../application/use-cases/order-cancellation-consent.use-case';
 import { CODCommitmentService } from '../../domain/services/cod-commitment.service';
 import { OrderRepository } from '../../domain/repositories/order.repository';
 import { PrismaOrderRepository } from '../../infrastructure/database/prisma-order.repository';
 import { OrderStatus } from '../../domain/entities/order.entity';
-import { IdGeneratorService } from '../../infrastructure/services/id-generator.service';
 import { CancellationPolicy, CancellationRequester } from '../../domain/policies/cancellation.policy';
 import { logger } from '../../infrastructure/monitoring/logger';
 import { eventBus } from '@shared/events/eventBus';
+import { isOrderNumber, isShipmentTrackingNumber, isTrackingLookupIdentifier } from '@shared/ids/human-readable-ids';
 
 export class OrderController {
   private orderRepository: OrderRepository;
@@ -156,6 +157,16 @@ export class OrderController {
       res.status(403).json({
         error: 'ORDER_CANNOT_BE_CANCELLED',
         message: decision.reason || 'Order cannot be cancelled at this stage',
+        // A paid order needs seller consent. Point the caller at the workflow
+        // that implements it, instead of leaving `requiresSellerConsent` as a
+        // dead end the caller cannot act on.
+        ...(decision.requiresSellerConsent
+          ? {
+              requiresSellerConsent: true,
+              nextAction: 'REQUEST_CANCELLATION',
+              cancellationRequestEndpoint: `/api/order/orders/${id}/cancel-request`,
+            }
+          : {}),
         requestId: req.headers['x-request-id'] as string
       });
       return;
@@ -176,7 +187,12 @@ export class OrderController {
       const currency = String((existingOrder as any).totalAmount?.currency ?? (existingOrder as any).currency ?? 'TZS');
       if (buyerId && totalAmount > 0) {
         // Only issue a refund if a wallet debit was actually recorded for this order.
-        // Orders created with deferPayment=true never debited the wallet, so skip the credit.
+        // Orders that never reached checkout never debited the wallet, so skip the credit.
+        //
+        // The lookup matches on `referenceId` first and falls back to the ledger
+        // description, because debits recorded before referenceId was persisted
+        // (and debits from any other writer) carry a NULL reference. Matching only
+        // on referenceId would silently keep those customers' money.
         let walletWasDebited = true;
         try {
           const g = globalThis as unknown as { prisma?: any };
@@ -184,7 +200,7 @@ export class OrderController {
             where: {
               userId: buyerId,
               type: 'DEBIT',
-              referenceId: id
+              OR: [{ referenceId: id }, { description: { contains: id } }],
             },
             select: { id: true }
           });
@@ -221,14 +237,32 @@ export class OrderController {
     existingOrder.cancelledAt = new Date();
     await this.orderRepository.update(existingOrder);
 
+    // Cancel the logistics shipment for this order.
+    // Shipments are created at order placement (via `__createOrderShipments`),
+    // but nothing previously mirrored order cancellation back to logistics, so a
+    // cancelled order left a live CREATED shipment that dispatch could still pick
+    // up. Cancelling an order whose goods were never to move must not leave a
+    // deliverable parcel behind. Non-fatal: the order is already cancelled and a
+    // stale shipment is recoverable, whereas failing here would strand the buyer.
+    await this.cancelShipmentsForOrder(id).catch((shipErr: any) => {
+      logger.warn(`[Logistics] Failed to cancel shipments for order ${id}: ${shipErr?.message ?? shipErr}`);
+    });
+
     // Release/forfeit COD commitment hold
     const holdId = (existingOrder as any).codCommitmentHoldId;
 
     if (holdId && this.codCommitmentService) {
+      // The hold belongs to the buyer, and the wallet's release/capture routes are
+      // owner-scoped, so the buyer's id must be threaded through.
+      const holdOwnerId = (existingOrder as any).buyerId;
       if (!wasDispatched) {
         // Cancelled before dispatch — release hold back to buyer
         try {
-          await this.codCommitmentService.releaseCommitment(holdId);
+          await this.codCommitmentService.releaseCommitment(
+            holdId,
+            holdOwnerId,
+            `COD commitment released — order ${id} cancelled before dispatch`
+          );
           logger.info(`[COD] Commitment hold released for cancelled order ${id}, holdId=${holdId}`);
         } catch (holdErr: any) {
           logger.warn(`[COD] Failed to release commitment hold for order ${id}: ${holdErr.message}`);
@@ -236,7 +270,11 @@ export class OrderController {
       } else {
         // Cancelled after dispatch — forfeit hold as penalty
         try {
-          await this.codCommitmentService.forfeitCommitment(holdId);
+          await this.codCommitmentService.forfeitCommitment(
+            holdId,
+            holdOwnerId,
+            `COD commitment forfeited — order ${id} cancelled after dispatch`
+          );
           logger.info(`[COD] Commitment hold forfeited (post-dispatch cancellation) for order ${id}, holdId=${holdId}`);
         } catch (holdErr: any) {
           logger.warn(`[COD] Failed to forfeit commitment hold for order ${id}: ${holdErr.message}`);
@@ -258,11 +296,20 @@ export class OrderController {
       const response = await this.placeOrderUseCase.execute(request);
       res.status(201).json({
         id: response.orderId,
-        trackingNumber: response.trackingNumber,
         deliveryCode: response.deliveryCode,
         buyerId: request.buyerId,
         sellerId: request.sellerId,
         status: response.status,
+        // Seller-verification contract. The use case computes and returns these,
+        // but they were not forwarded, so a client had to re-GET the order to
+        // learn the deadline it had just been given.
+        verificationDeadlineAt: response.verificationDeadlineAt,
+        verificationDeadlineRemainingSeconds: Math.max(
+          0,
+          Math.round((new Date(response.verificationDeadlineAt).getTime() - Date.now()) / 1000)
+        ),
+        nextAction: response.nextAction,
+        checkoutAvailable: false,
         totalAmount: {
           amount: request.items.reduce((sum, item) => {
             const price = typeof item.price === 'number' ? item.price : item.price.amount;
@@ -280,7 +327,14 @@ export class OrderController {
             description: (request.deliveryFee ?? 0) === 0
               ? 'Commitment fee — covers free delivery cost'
               : 'Delivery fee — secured before packaging',
-            ...(response.commitmentPaymentUrl && { paymentUrl: response.commitmentPaymentUrl }),
+            // No `paymentUrl` is emitted here. PlaceOrderUseCase always returns
+            // `commitmentFee: 0` and `commitmentPaymentMethod: undefined` because
+            // all payment is deferred to BuyerConfirmCheckoutUseCase, so the
+            // `commitmentFee > 0` branch above is unreachable at order placement.
+            // The previous `response.commitmentPaymentUrl` reference was therefore
+            // dead: the field is not on PlaceOrderResponse and could never be
+            // populated. The commitment payment URL is produced by
+            // BuyerConfirmCheckoutUseCase — see its response for `paymentUrl`.
           } : null,
           // Numeric convenience field for consumers that need a simple amount check
           commitmentFeeAmount: response.commitmentFee,
@@ -368,7 +422,11 @@ export class OrderController {
       // Capture the COD commitment hold to settle the delivery fee
       if ((order as any).codCommitmentHoldId && this.codCommitmentService) {
         try {
-          await this.codCommitmentService.captureCommitment((order as any).codCommitmentHoldId);
+          await this.codCommitmentService.captureCommitment(
+            (order as any).codCommitmentHoldId,
+            (order as any).buyerId,
+            `COD delivery confirmed for order ${id}`
+          );
           logger.info(`[COD] Commitment hold captured for order ${id}, holdId=${(order as any).codCommitmentHoldId}`);
         } catch (holdErr: any) {
           // Log but don't fail the delivery confirmation — hold may have already been captured
@@ -402,67 +460,6 @@ export class OrderController {
     try {
       const { id } = req.params;
       let order = await this.orderRepository.findById(id);
-
-      // If the ID is a checkout order ID (chk_ord_...) or checkout session ID (chk_ses_...),
-      // look up the corresponding MSR-ORD-... order via the checkout tables.
-      if (!order && (id.startsWith('chk_ord_') || id.startsWith('chk_ses_'))) {
-        try {
-          // Use the global Prisma singleton — safe in the monolith, no re-init risk
-          const g = globalThis as unknown as { prisma?: any };
-          const prisma = g.prisma;
-          if (!prisma) throw new Error('Prisma not ready');
-
-          let userId: string | null = null;
-
-          if (id.startsWith('chk_ord_')) {
-            const checkoutOrder = await prisma.checkout_Order?.findUnique?.({ where: { id } });
-            // First: check if realOrderId was stored during synchronous order placement
-            const storedRealOrderId = (checkoutOrder?.metadata as any)?.realOrderId;
-            if (storedRealOrderId) {
-              const realOrder = await this.orderRepository.findById(storedRealOrderId);
-              if (realOrder) { order = realOrder; }
-            }
-            if (!order) {
-              userId = checkoutOrder?.userId ?? null;
-            }
-          } else {
-            const checkoutOrder = await prisma.checkout_Order?.findFirst?.({ where: { checkoutSessionId: id } });
-            userId = checkoutOrder?.userId ?? null;
-            if (!userId) {
-              const session = await prisma.checkout_CheckoutSession?.findUnique?.({ where: { id } });
-              userId = session?.userId ?? null;
-            }
-          }
-
-          if (!order && userId) {
-            const buyerOrders = await this.orderRepository.findByBuyerId(userId);
-            // Sort by createdAt descending to get most recent first.
-            const sorted = [...buyerOrders].sort((a, b) => {
-              const aTime = ((a as any).createdAt instanceof Date ? (a as any).createdAt : new Date((a as any).createdAt ?? 0)).getTime();
-              const bTime = ((b as any).createdAt instanceof Date ? (b as any).createdAt : new Date((b as any).createdAt ?? 0)).getTime();
-              return bTime - aTime;
-            });
-            // Priority 1: cancellable (pending/confirmed) — ideal for cancel/advance operations
-            // Priority 2: active non-terminal (processing, assigned, shipped, in_transit)
-            // Priority 3: terminal (delivered, cancelled) — last resort
-            const cancellableStatuses = ['pending', 'confirmed'];
-            const activeStatuses = ['processing', 'assigned', 'shipped', 'in_transit'];
-            const terminalStatuses = ['cancelled', 'delivered'];
-            const cancellable = sorted.find(o => cancellableStatuses.includes(String((o as any).status).toLowerCase()));
-            if (cancellable) { order = cancellable; }
-            else {
-              const active = sorted.find(o => activeStatuses.includes(String((o as any).status).toLowerCase()));
-              if (active) { order = active; }
-              else {
-                // Only fall back to terminal orders if nothing else is available
-                order = sorted[0] ?? null;
-              }
-            }
-          }
-        } catch (_lookupErr) {
-          // Silently fall through — return 404 below
-        }
-      }
 
       if (!order) {
         res.status(404).json({
@@ -541,39 +538,78 @@ export class OrderController {
     }
   }
 
-  async getOrderByTrackingNumber(req: Request, res: Response): Promise<void> {
+  /**
+   * Tracking lookup - accepts EITHER identifier:
+   *
+   *  - an ORDER NUMBER (`ORD-YYYYMMDD-NLNL`) resolves to the order plus every
+   *    shipment created for it, so the customer can pick which shipment to follow;
+   *  - a SHIPMENT TRACKING NUMBER (`TRK-NLNLNL`) resolves directly to that one
+   *    shipment, with its parent order for context.
+   *
+   * Order numbers and shipment tracking numbers are separate namespaces: the
+   * order number stays with the order for its whole lifecycle and is never used
+   * as a shipment identifier (one order may contain several shipments).
+   */
+  async getTrackingLookup(req: Request, res: Response): Promise<void> {
     try {
-      const { trackingNumber } = req.params;
+      const { identifier } = req.params;
 
-      if (!IdGeneratorService.isValidOrderTrackingNumber(trackingNumber)) {
+      if (!isTrackingLookupIdentifier(identifier)) {
         res.status(400).json({
-          error: 'INVALID_TRACKING_NUMBER',
-          message: 'Tracking number format is invalid',
+          error: 'INVALID_TRACKING_IDENTIFIER',
+          message: 'Provide an order number (ORD-YYYYMMDD-NLNL) or a shipment tracking number (TRK-NLNLNL)',
           requestId: req.headers['x-request-id'] as string
         });
         return;
       }
 
-      const order = await this.orderRepository.findByTrackingNumber(trackingNumber);
+      const prisma = (globalThis as unknown as { prisma?: any }).prisma;
+      const lookupType = isOrderNumber(identifier) ? 'ORDER' : 'SHIPMENT';
 
-      if (!order) {
+      let order: Awaited<ReturnType<OrderRepository['findById']>> = null;
+      let shipments: any[] = [];
+      let resolvedShipmentId: string | undefined;
+
+      if (lookupType === 'ORDER') {
+        order = await this.orderRepository.findById(identifier);
+        if (order && prisma?.logistics_Shipment?.findMany) {
+          shipments = await prisma.logistics_Shipment.findMany({
+            where: { orderId: identifier },
+            orderBy: { createdAt: 'asc' }
+          });
+        }
+      } else if (prisma?.logistics_Shipment?.findFirst) {
+        const shipment = await prisma.logistics_Shipment.findFirst({
+          where: { trackingNumber: identifier }
+        });
+        if (shipment) {
+          shipments = [shipment];
+          resolvedShipmentId = shipment.id;
+          order = await this.orderRepository.findById(shipment.orderId);
+        }
+      }
+
+      if (!order && shipments.length === 0) {
         res.status(404).json({
-          error: 'ORDER_NOT_FOUND',
-          message: `Order with tracking number ${trackingNumber} not found`,
+          error: 'TRACKING_NOT_FOUND',
+          message: `No order or shipment matches ${identifier}`,
           requestId: req.headers['x-request-id'] as string
         });
         return;
       }
 
       res.status(200).json({
-        ...order,
-        status: this.toPublicOrderStatus(order.status),
-        internalStatus: order.status
+        ...(order
+          ? { ...order, status: this.toPublicOrderStatus(order.status), internalStatus: order.status }
+          : { order: null }),
+        lookupType,
+        resolvedShipmentId,
+        shipments
       });
     } catch (error: any) {
       res.status(500).json({
         error: 'INTERNAL_ERROR',
-        message: 'Failed to retrieve order by tracking number',
+        message: 'Failed to resolve tracking identifier',
         requestId: req.headers['x-request-id'] as string
       });
     }
@@ -711,6 +747,35 @@ export class OrderController {
     }
   }
 
+  /**
+   * Marks every not-yet-terminal shipment for an order as CANCELLED.
+   *
+   * Only shipments that have not started moving are cancelled: once a shipment
+   * is assigned or in transit the parcel is physically in the network, so
+   * overwriting its status would erase the truth and could suppress a delivery
+   * that a courier is still completing.
+   */
+  private async cancelShipmentsForOrder(orderId: string): Promise<number> {
+    const g = globalThis as unknown as { prisma?: any };
+    const delegate = g.prisma?.logistics_Shipment;
+    if (!delegate?.updateMany) return 0;
+
+    const cancellable = ['CREATED', 'PENDING', 'PENDING_ASSIGNMENT', 'UNASSIGNED'];
+    const result = await delegate.updateMany({
+      where: { orderId, status: { in: cancellable } },
+      data: {
+        status: 'CANCELLED',
+        failureReason: 'ORDER_CANCELLED',
+        updatedAt: new Date(),
+      },
+    });
+
+    if (result?.count) {
+      logger.info(`[Logistics] Cancelled ${result.count} shipment(s) for order ${orderId}`);
+    }
+    return result?.count ?? 0;
+  }
+
   async cancelOrder(req: Request, res: Response): Promise<void> {
     try {
       await this.cancelOrderInternal(req, res, req.body?.reason);
@@ -721,6 +786,169 @@ export class OrderController {
         requestId: req.headers['x-request-id'] as string
       });
     }
+  }
+
+  /**
+   * Builds the consent use case over the shared Prisma client. Kept in one place
+   * so the request/decision columns cannot drift between the three endpoints.
+   */
+  private buildCancellationConsentUseCase(): OrderCancellationConsentUseCase | null {
+    const prisma = (globalThis as unknown as { prisma?: any }).prisma;
+    if (!prisma) return null;
+
+    return new OrderCancellationConsentUseCase({
+      findOrder: async (id: string) =>
+        prisma.order_Order.findUnique({
+          where: { id },
+          select: {
+            id: true, buyerId: true, sellerId: true,
+            status: true, cancelRequestStatus: true,
+          },
+        }) ?? null,
+      openRequest: async (id: string, requestedBy: string) => {
+        await prisma.order_Order.update({
+          where: { id },
+          data: {
+            cancelRequestStatus: 'PENDING_SELLER',
+            cancelRequestedAt: new Date(),
+            cancelRequestedBy: requestedBy,
+            cancelDecidedAt: null,
+            cancelDecisionReason: null,
+          },
+        });
+      },
+      decide: async (id: string, status: string, reason: string) => {
+        await prisma.order_Order.update({
+          where: { id },
+          data: {
+            cancelRequestStatus: status,
+            cancelDecidedAt: new Date(),
+            cancelDecisionReason: reason,
+          },
+        });
+      },
+    });
+  }
+
+  private actorUserId(req: Request): string | null {
+    return (req as any).user?.userId ?? (req as any).user?.id ?? null;
+  }
+
+  /** Step 1: buyer (or seller) requests cancellation of a paid order. */
+  async requestOrderCancellation(req: Request, res: Response): Promise<void> {
+    const useCase = this.buildCancellationConsentUseCase();
+    if (!useCase) {
+      res.status(503).json({ error: 'SERVICE_UNAVAILABLE', message: 'Order store unavailable' });
+      return;
+    }
+    const actorUserId = this.actorUserId(req);
+    if (!actorUserId) {
+      res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required' });
+      return;
+    }
+
+    const { id } = req.params;
+    const result = await useCase.request({ orderId: id, actorUserId });
+
+    switch (result.outcome) {
+      case 'not-found':
+        res.status(404).json({ error: 'ORDER_NOT_FOUND', message: `Order ${id} not found` });
+        return;
+      case 'forbidden':
+        res.status(403).json({ error: 'FORBIDDEN', message: result.message });
+        return;
+      case 'invalid-state':
+        res.status(409).json({ error: 'INVALID_ORDER_STATE', message: result.message });
+        return;
+      case 'already-cancelled':
+        res.status(200).json({ success: true, orderId: id, status: 'CANCELLED', alreadyCancelled: true });
+        return;
+      case 'already-requested':
+        res.status(200).json({
+          success: true, orderId: id,
+          cancelRequestStatus: 'PENDING_SELLER', alreadyRequested: true,
+          message: 'A cancellation request is already awaiting seller decision',
+        });
+        return;
+      default:
+        res.status(202).json({
+          success: true, orderId: id,
+          cancelRequestStatus: 'PENDING_SELLER', message: result.message,
+        });
+    }
+  }
+
+  /**
+   * Step 2a: seller approves. Delegates to the existing cancellation path so the
+   * wallet refund and COD hold release behave identically to any other cancel.
+   */
+  async approveOrderCancellation(req: Request, res: Response): Promise<void> {
+    const useCase = this.buildCancellationConsentUseCase();
+    if (!useCase) {
+      res.status(503).json({ error: 'SERVICE_UNAVAILABLE', message: 'Order store unavailable' });
+      return;
+    }
+    const actorUserId = this.actorUserId(req);
+    const { id } = req.params;
+
+    const result = await useCase.approve({
+      orderId: id,
+      actorUserId: actorUserId ?? '',
+      reason: req.body?.reason,
+    });
+
+    if (result.outcome === 'not-found') {
+      res.status(404).json({ error: 'ORDER_NOT_FOUND', message: `Order ${id} not found` });
+      return;
+    }
+    if (result.outcome === 'forbidden') {
+      res.status(403).json({ error: 'FORBIDDEN', message: result.reason });
+      return;
+    }
+    if (result.outcome === 'no-request') {
+      res.status(409).json({ error: 'NO_PENDING_REQUEST', message: result.reason });
+      return;
+    }
+
+    await this.cancelOrderInternal(req, res, result.reason);
+  }
+
+  /** Step 2b: seller declines. The order is left completely untouched. */
+  async declineOrderCancellation(req: Request, res: Response): Promise<void> {
+    const useCase = this.buildCancellationConsentUseCase();
+    if (!useCase) {
+      res.status(503).json({ error: 'SERVICE_UNAVAILABLE', message: 'Order store unavailable' });
+      return;
+    }
+    const actorUserId = this.actorUserId(req);
+    const { id } = req.params;
+
+    const result = await useCase.decline({
+      orderId: id,
+      actorUserId: actorUserId ?? '',
+      reason: req.body?.reason,
+    });
+
+    if (result.outcome === 'not-found') {
+      res.status(404).json({ error: 'ORDER_NOT_FOUND', message: `Order ${id} not found` });
+      return;
+    }
+    if (result.outcome === 'forbidden') {
+      res.status(403).json({ error: 'FORBIDDEN', message: result.reason });
+      return;
+    }
+    if (result.outcome === 'no-request') {
+      res.status(409).json({ error: 'NO_PENDING_REQUEST', message: result.reason });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      orderId: id,
+      status: result.order?.status,
+      cancelRequestStatus: 'DECLINED',
+      reason: result.reason,
+    });
   }
 
   async updateOrderStatus(req: Request, res: Response): Promise<void> {
@@ -854,6 +1082,17 @@ export class OrderController {
             res.status(403).json({
               error: 'INVALID_TRANSITION',
               message: 'Order must be processing to be shipped',
+              requestId: req.headers['x-request-id'] as string
+            });
+            return;
+          }
+          // `trackingNumber` here is a SHIPMENT tracking number (TRK-NLNLNL) supplied by
+          // staff for the shipment being dispatched. An order number is never accepted
+          // as a shipment identifier.
+          if (trackingNumber !== undefined && trackingNumber !== null && !isShipmentTrackingNumber(trackingNumber)) {
+            res.status(400).json({
+              error: 'INVALID_TRACKING_NUMBER',
+              message: 'A shipment tracking number must match TRK-NLNLNL (e.g. TRK-3C8B2D). Order numbers are not shipment identifiers.',
               requestId: req.headers['x-request-id'] as string
             });
             return;

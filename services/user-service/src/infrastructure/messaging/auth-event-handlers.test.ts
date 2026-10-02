@@ -84,7 +84,7 @@ describe('AuthEventHandlers', () => {
 
   // ── UserRegistered.v1 — PII fix tests ──────────────────────────────────────
 
-  it('[5.1] UserRegistered.v1: stores ENCRYPTED email, not plaintext', async () => {
+  it('[5.1] UserRegistered.v1: stores the PLAIN normalized email, never ciphertext', async () => {
     const handlers = new AuthEventHandlers(makePiiService());
     handlers.setupSubscriptions();
 
@@ -101,11 +101,55 @@ describe('AuthEventHandlers', () => {
     });
 
     const upsertCall = (prisma.user_User.upsert as jest.Mock).mock.calls[0][0];
-    // Must be the mock-encrypted value (prefixed with 'encrypted:')
-    // Real PiiEncryptionService produces iv:authTag:ciphertext — no '@'
-    expect(upsertCall.create.email).toBe('encrypted:test@example.com');
-    // Must NOT be the raw plaintext email (real encryption never starts with the address)
-    expect(upsertCall.create.email).not.toBe('test@example.com');
+    // STORAGE POLICY: email is an identifier, not a credential, and is stored
+    // plain + normalized. The deterministic HMAC hash in `user_UserIndex` is
+    // the lookup mechanism; `piiService.encrypt()` must never be applied here.
+    expect(upsertCall.create.email).toBe('test@example.com');
+    // Regression guard: the value must never carry the cipher output, which is
+    // `iv:authTag:ciphertext` hex - it contains no '@'.
+    expect(upsertCall.create.email).toContain('@');
+    expect(String(upsertCall.create.email)).not.toMatch(/^[0-9a-f]{24}:[0-9a-f]{32}:/i);
+  });
+
+  it('[5.1b] UserRegistered.v1: stores the PLAIN normalized phone, never ciphertext', async () => {
+    const handlers = new AuthEventHandlers(makePiiService());
+    handlers.setupSubscriptions();
+
+    const [, , , , userRegistered] = mockSubscribe.mock.calls.map(c => c[1]);
+
+    await userRegistered({
+      data: {
+        userId: 'user-pii-2',
+        publicCode: 'USR-101',
+        email: 'test@example.com',
+        role: 'buyer',
+        profile: { phoneNumber: '+255700000001' }
+      }
+    });
+
+    const upsertCall = (prisma.user_User.upsert as jest.Mock).mock.calls[0][0];
+    expect(upsertCall.create.phoneNumber).toBe('+255700000001');
+    expect(String(upsertCall.create.phoneNumber)).not.toMatch(/^[0-9a-f]{24}:[0-9a-f]{32}:/i);
+  });
+
+  it('[5.1c] UserRegistered.v1: lowercases the email so uniqueness is case-insensitive', async () => {
+    const handlers = new AuthEventHandlers(makePiiService());
+    handlers.setupSubscriptions();
+
+    const [, , , , userRegistered] = mockSubscribe.mock.calls.map(c => c[1]);
+
+    await userRegistered({
+      data: {
+        userId: 'user-pii-3',
+        publicCode: 'USR-102',
+        email: '  MiXeD@Example.COM ',
+        role: 'buyer',
+        profile: {}
+      }
+    });
+
+    const upsertCall = (prisma.user_User.upsert as jest.Mock).mock.calls[0][0];
+    expect(upsertCall.create.email).toBe('mixed@example.com');
   });
 
   it('[5.2] UserRegistered.v1: creates email user_UserIndex entry for new user', async () => {
@@ -317,12 +361,13 @@ describe('AuthEventHandlers', () => {
     });
 
     /**
-     * C.8 — Create branch PII fields
+     * C.8 — Create branch identity fields
      *
      * findUnique returns null; event has email = 'test@example.com'.
-     * The create branch must store encrypted email and empty passwordHash.
+     * The create branch must store the plain normalized email and an empty
+     * passwordHash (the credential itself is never carried in the event).
      */
-    it('C.8 — create.email is encrypted and create.passwordHash is empty string for new record', async () => {
+    it('C.8 — create.email is plain/normalized and create.passwordHash is empty string for new record', async () => {
       // Arrange: no existing record
       (prisma.user_User.findUnique as jest.Mock).mockResolvedValue(null);
 
@@ -342,9 +387,10 @@ describe('AuthEventHandlers', () => {
         }
       });
 
-      // Assert: PII encryption applied and passwordHash is empty
+      // Assert: identity stored plain (never ciphertext) and passwordHash empty
       const upsertCall = (prisma.user_User.upsert as jest.Mock).mock.calls[0][0];
-      expect(upsertCall.create.email).toBe('encrypted:test@example.com');
+      expect(upsertCall.create.email).toBe('test@example.com');
+      expect(String(upsertCall.create.email)).not.toMatch(/^[0-9a-f]{24}:[0-9a-f]{32}:/i);
       expect(upsertCall.create.passwordHash).toBe('');
     });
 

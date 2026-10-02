@@ -54,6 +54,8 @@
 | **Admin** | analytics | [analytics/user-flow/admin-flows.md](./analytics/user-flow/admin-flows.md) | [analytics/frontend-guide/admin-guide.md](./analytics/frontend-guide/admin-guide.md) |
 | **Admin** | support | [support/user-flow/admin-flows.md](./support/user-flow/admin-flows.md) | [support/frontend-guide/admin-guide.md](./support/frontend-guide/admin-guide.md) |
 | **Support Agent** | support | [support/user-flow/support-agent-flows.md](./support/user-flow/support-agent-flows.md) | [support/frontend-guide/support-agent-guide.md](./support/frontend-guide/support-agent-guide.md) |
+| **Buyer (Request)** | request | [request/user-flow/buyer-flows.md](./request/user-flow/buyer-flows.md) | [request/frontend-guide/buyer-guide.md](./request/frontend-guide/buyer-guide.md) |
+| **Provider/Ops (Request)** | request | [request/user-flow/provider-flows.md](./request/user-flow/provider-flows.md) | [request/frontend-guide/provider-guide.md](./request/frontend-guide/provider-guide.md) |
 
 ---
 

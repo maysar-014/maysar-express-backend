@@ -1,7 +1,7 @@
 ﻿# Seller Guide — Catalog Service
 
 > Mirrors: docs/FLOWS/catalog/user-flow/seller-flows.md
-> Verification status: Mixed (product create/publish Verified; buy-box anomaly flag deletion FAILING — 500 in September 2026 sweep)
+> Verification status: Mixed (product create/publish Verified; buy-box anomaly flag deletion fixed — accurate 404 on unknown flag id, DEF-004)
 > Last updated: September 2026
 
 ## Overview
@@ -148,14 +148,15 @@ Minimum required: 60
 
 ---
 
-## Known Gap — Not Yet Verified
+## ✅ Resolved — Buy-Box Anomaly Flag Deletion (DEF-004)
 
-> ⚠️ **Known Gap — Failing:** `DELETE /api/catalog/v1/admin/buy-box/anomaly-flags/{flagId}` → **500 FAILING** (September 2026 sweep). Admin buy-box anomaly flag deletion is currently non-functional.
+> `DELETE /api/catalog/v1/admin/buy-box/anomaly-flags/{flagId}` now returns `200 {success:true}` when a flag is cleared, `404 {success:false, error:{code:"ANOMALY_FLAG_NOT_FOUND"}}` when the flag id does not exist (previously an unhandled `500`), and `403 {code:"INSUFFICIENT_PERMISSIONS"}` when the caller lacks the operator/admin capability.
 >
-> **Impact on seller UI:** If a product listing is flagged by the buy-box fraud detector (e.g., for sudden price drops below cost or coordinated price manipulation), the flag cannot be cleared by admins until this endpoint is fixed.
+> **Impact on seller UI:** None — flag removal stays an admin-only operation. Seller-facing anomaly flags remain read-only.
 >
-> **Recommended UI treatment:** Show anomaly flags as **read-only**. Disable any delete or clear action with a tooltip: "Currently unavailable." Do not hide the flag — sellers should be aware their product is flagged.
+> **Admin UI treatment:**
+> - Keep the clear/delete action enabled for operators and admins.
+> - On `404`, refresh the anomaly flag list (the flag was already cleared or never existed).
+> - On `403`, hide the action and show "You do not have permission to perform this action."
 >
-> **Seller-facing message if they ask about a flag:** "Your listing has been flagged for review. Please contact platform support to request manual flag review. Flag removal is temporarily unavailable through the platform."
->
-> **Tracked in:** `docs/FLOWS/_verification/analysis-report.md`
+> **Tracked in:** `docs/FLOWS/_verification/defect-register.md` (DEF-004)

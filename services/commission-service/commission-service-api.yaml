@@ -690,7 +690,7 @@ components:
               message: "Validation error"
               details: ["orderId must be a valid UUID"]
               timestamp: "2026-01-16T23:00:00Z"
-              path: "/api/commissions/calculate"
+              path: "/api/commission/calculate"
               method: "POST"
 
     ForbiddenError:
@@ -704,7 +704,7 @@ components:
             error:
               message: "Insufficient permissions to approve commissions"
               timestamp: "2026-01-16T23:00:00Z"
-              path: "/api/commissions/123/approve"
+              path: "/api/commission/123/approve"
               method: "PUT"
 
     NotFoundError:
@@ -718,7 +718,7 @@ components:
             error:
               message: "Commission not found"
               timestamp: "2026-01-16T23:00:00Z"
-              path: "/api/commissions/123"
+              path: "/api/commission/123"
               method: "GET"
 
     ServerError:
@@ -732,7 +732,7 @@ components:
             error:
               message: "Internal server error"
               timestamp: "2026-01-16T23:00:00Z"
-              path: "/api/commissions/calculate"
+              path: "/api/commission/calculate"
               method: "POST"
 
 tags:

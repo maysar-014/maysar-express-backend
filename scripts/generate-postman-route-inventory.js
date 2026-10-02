@@ -8,7 +8,7 @@ const collectionPath = path.join(repoRoot, 'postman', 'Maysar-Platform-E2E.postm
 const unmountedReportPath = path.join(repoRoot, 'reports', 'unmounted-routes.json');
 
 const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'options', 'head'];
-const ROUTER_RECEIVER_PATTERN = '(?:[A-Za-z0-9_]*router|[A-Za-z0-9_]*Router|this\\.router)';
+const ROUTER_RECEIVER_PATTERN = '(?:[A-Za-z0-9_]*router|[A-Za-z0-9_]*Router|[A-Za-z0-9_]*Routes?|this\\.router)';
 
 const manualModuleFileMappings = {
   // Modules that mount an app created in a non-routes file
@@ -362,16 +362,95 @@ function extractInlineRoutes(indexContent, moduleBase) {
   return routes;
 }
 
+/**
+ * Local route factories mounted inside the same file (e.g.
+ * `router.use('/cart', createCartRoutes(...))`). Routes declared inside such a
+ * factory belong under the internal mount prefix - without this the cart surface
+ * was attributed to `/api/checkout/items` instead of `/api/checkout/cart/items`,
+ * which is how a documented-but-unreachable path (DEF-005) was generated.
+ */
+function findLocalFactoryMounts(content) {
+  const declared = new Set();
+  const functionDeclRegex = /(?:export\s+)?function\s+([A-Za-z0-9_]+)\s*\(/g;
+  const assignedDeclRegex = /(?:export\s+)?(?:const|let|var)\s+([A-Za-z0-9_]+)\s*=\s*(?:async\s*)?\(/g;
+  let declMatch;
+  while ((declMatch = functionDeclRegex.exec(content)) !== null) {
+    declared.add(declMatch[1]);
+  }
+  while ((declMatch = assignedDeclRegex.exec(content)) !== null) {
+    declared.add(declMatch[1]);
+  }
+
+  const internalMounts = new Map();
+  const useRegex = /\.use\(\s*['"`]([^'"`]+)['"`]\s*,\s*([A-Za-z0-9_]+)\s*\(/g;
+  let useMatch;
+  while ((useMatch = useRegex.exec(content)) !== null) {
+    const prefix = useMatch[1];
+    const factory = useMatch[2];
+    if (declared.has(factory)) {
+      internalMounts.set(factory, prefix);
+    }
+  }
+
+  return internalMounts;
+}
+
+function matchClosingBrace(content, openIndex) {
+  let depth = 0;
+  for (let index = openIndex; index < content.length; index += 1) {
+    const char = content[index];
+    if (char === '{') depth += 1;
+    else if (char === '}') {
+      depth -= 1;
+      if (depth === 0) return index;
+    }
+  }
+  return -1;
+}
+
+function findFactoryBodyRanges(content, factory, internalPrefix) {
+  const ranges = [];
+  const patterns = [
+    new RegExp(`(?:export\\s+)?function\\s+${factory}\\s*\\(`, 'g'),
+    new RegExp(`(?:const|let|var)\\s+${factory}\\s*=`, 'g'),
+  ];
+
+  patterns.forEach(pattern => {
+    let match;
+    while ((match = pattern.exec(content)) !== null) {
+      const declarationIndex = match.index;
+      const bodyStart = content.indexOf('{', declarationIndex);
+      if (bodyStart === -1) continue;
+      const bodyEnd = matchClosingBrace(content, bodyStart);
+      if (bodyEnd !== -1) {
+        ranges.push({ start: declarationIndex, end: bodyEnd, internalPrefix });
+      }
+    }
+  });
+
+  return ranges;
+}
+
 function extractRoutesFromFile(filePath, prefixes) {
   const content = readFile(filePath);
   const routes = [];
   const templateValues = extractRouteTemplateValues(content);
+  const internalMounts = findLocalFactoryMounts(content);
+  const nestedRanges = [];
+  internalMounts.forEach((internalPrefix, factory) => {
+    nestedRanges.push(...findFactoryBodyRanges(content, factory, internalPrefix));
+  });
+
   const methodRegex = new RegExp(`\\b${ROUTER_RECEIVER_PATTERN}\\.(${HTTP_METHODS.join('|')})\\(\\s*['"\`]([^'"\`]+)['"\`]`, 'g');
   let match;
   while ((match = methodRegex.exec(content)) !== null) {
     const method = match[1].toUpperCase();
     const routePath = resolveRoutePath(match[2], templateValues);
-    prefixes.forEach(prefix => {
+    const enclosing = nestedRanges.find(range => match.index > range.start && match.index < range.end);
+    const effectivePrefixes = enclosing
+      ? prefixes.map(prefix => joinPaths(prefix, enclosing.internalPrefix))
+      : prefixes;
+    effectivePrefixes.forEach(prefix => {
       routes.push({ method, path: joinPaths(prefix, routePath) });
     });
   }

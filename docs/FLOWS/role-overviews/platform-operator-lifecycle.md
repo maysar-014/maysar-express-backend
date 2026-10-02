@@ -193,11 +193,15 @@ Platform operators have access to the full analytics suite for operational and b
 
 ## Known Gaps
 
-### ⚠️ `/api/governance/*` — Route-Level 404 (Missing)
+### ℹ️ `/api/governance/*` — Removed From The Platform (DEF-007)
 
-**Sweep result:** All routes under `/api/governance/*` return route-level 404 — the governance feature is **not live**.
+The governance route surface does not exist in this platform. The governance-service module was deleted
+(commit `cfcfd08b`), and its retainer artifacts were removed with it: all `/api/governance/*` paths and
+`Governance*` schemas are gone from `openapi.yaml` and `api-contract.yaml`, the CI `governance-audit`
+job and the `governance:*` npm scripts are deleted, and `reports/governance/` is gone.
 
-**Impact:** Any platform governance workflow that would use these routes cannot be implemented. Do not surface governance features or document them as operational capabilities.
+**Impact:** no admin or compliance workflow may reference governance endpoints. Platform administration
+runs through the service endpoints listed above.
 
 ---
 

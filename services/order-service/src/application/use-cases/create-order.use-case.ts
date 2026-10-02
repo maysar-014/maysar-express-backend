@@ -1,4 +1,3 @@
-import { getModelPrefix, makeId } from '@shared/ids/id';
 import { IdGeneratorService } from '../../infrastructure/services/id-generator.service';
 import { assertMinimumBasketValue } from '@shared/business/minimum-basket-value';
 
@@ -16,8 +15,7 @@ export class CreateOrderUseCase {
     assertMinimumBasketValue(dto.total);
 
     const order = {
-            id: makeId(getModelPrefix('Order_Order')),
-            trackingNumber: IdGeneratorService.generateOrderTrackingNumber(),
+            id: IdGeneratorService.generateOrderId(),
             ...dto,
             status: 'PENDING'
         };

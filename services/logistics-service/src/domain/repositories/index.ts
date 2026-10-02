@@ -58,6 +58,11 @@ export interface Delivery {
     buyerId?: string;
     sellerId?: string;
     codCommitmentHoldId?: string;
+    /// Id of the in-flight COD initiation saga for this delivery. Verification
+    /// arrives on a later HTTP request and cannot re-derive it, so it is
+    /// persisted to let verification continue the saga rather than start a new
+    /// one (which would re-mint the OTP). See BLG-024.
+    codSagaId?: string;
 
     createdAt: Date;
     updatedAt: Date;

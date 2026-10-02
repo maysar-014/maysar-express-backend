@@ -23,6 +23,7 @@
 
 import { GeoPoint } from '../value-objects/geopoint.value-object';
 import { makeId } from '../../../../../shared/ids/id';
+import { makeShipmentTrackingNumber } from '../../../../../shared/ids/human-readable-ids';
 
 export type ShipmentStatus =
   | 'CREATED'
@@ -63,7 +64,10 @@ export interface DeliveryWindow {
 
 export interface ShipmentData {
   id: string;
+  /** Order this shipment belongs to - the order number (ORD-YYYYMMDD-NLNL). */
   orderId: string;
+  /** Independent shipment tracking number (TRK-NLNLNL); never the order number. */
+  trackingNumber?: string;
   sellerId: string;
   origin: GeoPoint;
   destination: GeoPoint;
@@ -123,7 +127,10 @@ export class Shipment {
     if (data.status !== 'FAILED' && data.failureReason) {
       throw new Error('Shipment invariant violation: failureReason can only be set when status is FAILED');
     }
-    this.data = { ...data };
+    // Every shipment owns an independent tracking number. Rows/entities created
+    // before this contract existed get one on hydration; nothing ever reuses the
+    // order number as a shipment identifier.
+    this.data = { ...data, trackingNumber: data.trackingNumber || makeShipmentTrackingNumber() };
   }
 
   static create(params: {
@@ -163,6 +170,7 @@ export class Shipment {
   // ── Getters ───────────────────────────────────────────────────────────────
   get id(): string { return this.data.id; }
   get orderId(): string { return this.data.orderId; }
+  get trackingNumber(): string { return this.data.trackingNumber as string; }
   get sellerId(): string { return this.data.sellerId; }
   get origin(): GeoPoint { return this.data.origin; }
   get destination(): GeoPoint { return this.data.destination; }
@@ -225,6 +233,12 @@ export class Shipment {
     }
     this.transitionTo('FAILED');
     this.data.failureReason = reason;
+    this.data.updatedAt = new Date();
+  }
+
+  /** Re-issues this shipment's own tracking number (collision retry only). */
+  reassignTrackingNumber(): void {
+    this.data.trackingNumber = makeShipmentTrackingNumber();
     this.data.updatedAt = new Date();
   }
 

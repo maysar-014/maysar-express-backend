@@ -12,6 +12,7 @@ import { createMaintenanceRoutes } from './maintenance.routes';
 import healthRoutes from './health.routes';
 import { validateJoiRequest } from '@shared/middleware/joi-request-validation';
 import { GLOBAL_MINIMUM_BASKET_VALUE_TZS } from '@shared/business/minimum-basket-value';
+import { joiOrderNumber, joiTrackingLookupIdentifier } from '@shared/ids/human-readable-ids';
 
 const SAFE_VISIBLE_STRING_PATTERN = /^(?=.*\S)[^\u0000-\u001F\u007F-\u009F]+$/u;
 const safeVisibleString = Joi.string().min(1).pattern(SAFE_VISIBLE_STRING_PATTERN);
@@ -113,11 +114,22 @@ const disputeResolveBodySchema = Joi.object({
 }).unknown(true);
 
 const cancelOrderParamsSchema = Joi.object({
-  id: safeVisibleString.required(),
+  id: joiOrderNumber().required(),
 }).unknown(false);
 
 const cancelOrderBodySchema = Joi.object({
   reason: safeVisibleString.optional(),
+}).unknown(false);
+
+// Tracking lookup accepts either an order number (ORD-YYYYMMDD-NLNL) or a shipment
+// tracking number (TRK-NLNLNL) - the two namespaces are deliberately separate.
+const trackingLookupParamsSchema = Joi.object({
+  identifier: joiTrackingLookupIdentifier().required(),
+}).unknown(false);
+
+// Every order-scoped path parameter is exactly an order number (ORD-YYYYMMDD-NLNL).
+const orderIdParamsSchema = Joi.object({
+  id: joiOrderNumber().required(),
 }).unknown(false);
 
 const router = Router();
@@ -265,16 +277,35 @@ export const setupOrderRoutes = (orderController: OrderController, codDisputeCon
   router.get('/orders/analytics/stats', orderAnalyticsCache, asyncHandler((req, res) => orderController.getOrderAnalytics(req, res)));
 
   // Get single order by tracking number
-  router.get('/orders/tracking/:trackingNumber', orderDetailCache, asyncHandler((req, res) => orderController.getOrderByTrackingNumber(req, res)));
+  // Tracking lookup - order number OR shipment tracking number (dual-mode).
+  router.get(
+    '/orders/tracking/:identifier',
+    orderDetailCache,
+    validateJoiRequest({ params: trackingLookupParamsSchema }),
+    asyncHandler((req, res) => orderController.getTrackingLookup(req, res))
+  );
 
-  // Get single order by ID
-  router.get('/orders/:id', orderDetailCache, asyncHandler((req, res) => orderController.getOrder(req, res)));
+  // Get single order by order number
+  router.get(
+    '/orders/:id',
+    orderDetailCache,
+    validateJoiRequest({ params: orderIdParamsSchema }),
+    asyncHandler((req, res) => orderController.getOrder(req, res))
+  );
 
   // Update order
-  router.put('/orders/:id', asyncHandler((req, res) => orderController.updateOrder(req, res)));
+  router.put(
+    '/orders/:id',
+    validateJoiRequest({ params: orderIdParamsSchema }),
+    asyncHandler((req, res) => orderController.updateOrder(req, res))
+  );
 
   // Update order status
-  router.post('/orders/:id/status', asyncHandler((req, res) => orderController.updateOrderStatus(req, res)));
+  router.post(
+    '/orders/:id/status',
+    validateJoiRequest({ params: orderIdParamsSchema }),
+    asyncHandler((req, res) => orderController.updateOrderStatus(req, res))
+  );
 
   // Cancel order as an explicit business action
   router.post(
@@ -283,8 +314,33 @@ export const setupOrderRoutes = (orderController: OrderController, codDisputeCon
     asyncHandler((req, res) => orderController.cancelOrder(req, res))
   );
 
+  // ── Seller-consent cancellation workflow ───────────────────────────────────
+  // CancellationPolicy requires seller consent to cancel an already-PAID order.
+  // These endpoints implement that consent; without them the policy's
+  // `requiresSellerConsent` was unreachable. Mounted before `/orders/:id` so the
+  // literal paths are not captured as an order id.
+  router.post(
+    '/orders/:id/cancel-request',
+    validateJoiRequest({ params: cancelOrderParamsSchema }),
+    asyncHandler((req, res) => orderController.requestOrderCancellation(req, res))
+  );
+  router.post(
+    '/orders/:id/cancel-request/approve',
+    validateJoiRequest({ params: cancelOrderParamsSchema, body: cancelOrderBodySchema }),
+    asyncHandler((req, res) => orderController.approveOrderCancellation(req, res))
+  );
+  router.post(
+    '/orders/:id/cancel-request/decline',
+    validateJoiRequest({ params: cancelOrderParamsSchema, body: cancelOrderBodySchema }),
+    asyncHandler((req, res) => orderController.declineOrderCancellation(req, res))
+  );
+
   // Cancel/delete order
-  router.delete('/orders/:id', asyncHandler((req, res) => orderController.deleteOrder(req, res)));
+  router.delete(
+    '/orders/:id',
+    validateJoiRequest({ params: orderIdParamsSchema }),
+    asyncHandler((req, res) => orderController.deleteOrder(req, res))
+  );
 
   // COD Dispute routes
   router.post(

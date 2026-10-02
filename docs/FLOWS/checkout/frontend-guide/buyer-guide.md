@@ -1,21 +1,21 @@
 ﻿# Buyer Guide — Checkout Service
 
 > Mirrors: docs/FLOWS/checkout/user-flow/buyer-flows.md
-> Verification status: Partially Verified (confirm flow and session status Verified at data-level; legacy cart endpoints return 405)
+> Verification status: Partially Verified (confirm flow and session status Verified at data-level; cart surface contract-verified at the canonical `/api/checkout/cart/*` paths — live re-verification pending)
 > Last updated: September 2026
 
 ## Overview
 
-This guide is for frontend developers implementing the checkout UI for buyers. It covers two operational flows: confirming a checkout session to place an order, and checking the current status of a checkout session. All other cart-manipulation endpoints (`POST /api/checkout/items`, `PATCH /api/checkout/items`, etc.) return **405 Method Not Allowed** and are not implemented — see the conflict note below.
+This guide is for frontend developers implementing the checkout UI for buyers. It covers two operational flows: confirming a checkout session to place an order, and checking the current status of a checkout session. Cart manipulation is served under the canonical `/api/checkout/cart/*` prefix — see the conflict note below for the legacy paths that must not be called.
 
-> ⚠️ **405 Conflict Note — Non-operational endpoints:** The following endpoints are **not operational** and must not be called:
+> ⚠️ **405 Conflict Note — legacy paths (DEF-005):** The following endpoints were never mounted and must not be called (September 2026 live sweep: **405 Method Not Allowed** for each):
 > - `POST /api/checkout/items`
 > - `PATCH /api/checkout/items`
 > - `DELETE /api/checkout/items`
 > - `POST /api/checkout/merge`
 > - `DELETE /api/checkout/{cartId}`
 >
-> These return **405 Method Not Allowed**. Only `POST /api/checkout/{id}/confirm` and `GET /api/checkout/{cartId}` are working. Do not build UI flows around the non-operational endpoints.
+> Use the canonical cart surface instead — it is mounted and contract-tested: `POST|PATCH|DELETE /api/checkout/cart/items`, `POST /api/checkout/cart/merge`, `GET /api/checkout/cart/current`, `GET|DELETE /api/checkout/cart/{cartId}`. Checkout confirmation (`POST /api/checkout/{id}/confirm`) and session status (`GET /api/checkout/{id}`) work as documented below.
 
 ---
 
@@ -53,7 +53,7 @@ This guide is for frontend developers implementing the checkout UI for buyers. I
 
 > ⚠️ **CRITICAL — Idempotency:** Disable the confirm button **immediately after the first tap**. Do not re-enable it until a terminal response (success or error) is received. The server handles double-submit safely (same `orderId` returned), but the UI must prevent duplicate submissions.
 >
-> Do not treat a network timeout as a failure. The order may have already been created. Always check session status (`GET /api/checkout/{cartId}`) before showing a failure message or prompting the user to retry. If the session is `CONFIRMED`, the order was created successfully — navigate to the order detail using `orderId`.
+> Do not treat a network timeout as a failure. The order may have already been created. Always check session status (`GET /api/checkout/{id}`) before showing a failure message or prompting the user to retry. If the session is `CONFIRMED`, the order was created successfully — navigate to the order detail using `orderId`.
 
 > ⚠️ **CRITICAL — shippingCost:** Never pass a `shippingCost` value in the confirm request body. The server reads the shipping cost from the validated quote record. Any client-supplied shipping cost is ignored. The value to display to the user comes from `shippingCostTzs` in the quote response (obtained earlier in the flow via the logistics service).
 
@@ -101,7 +101,7 @@ This guide is for frontend developers implementing the checkout UI for buyers. I
 **Check session status:**
 - What the user sees: Usually triggered automatically after a timeout or navigation event; can be a "Check order status" action on an uncertain result screen
 - What they click/tap: Auto-triggered, or "Check order status" button
-- API call: `GET /api/checkout/{cartId}`
+- API call: `GET /api/checkout/{id}`
 - Auth: Bearer JWT
 - Success response: `200 { sessionId, status, buyerId, expiresAt, orderId? }`
 - Handling:

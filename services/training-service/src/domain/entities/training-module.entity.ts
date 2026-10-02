@@ -51,6 +51,22 @@ export class TrainingModule {
     get isPublic(): boolean { return this.props.isPublic; }
     get difficulty(): DifficultyLevel { return this.props.difficulty; }
 
+    /**
+     * Expose the current props so callers can rebuild the aggregate.
+     *
+     * `PrismaTrainingModuleRepository.update` relies on this for its in-memory
+     * fallback path (`TrainingModule.create({ ...existing.toJSON(), ...data })`).
+     * Without it, the optional call `existing.toJSON?.()` silently evaluated to
+     * `undefined`, the spread collapsed to `{}`, and a *partial* update silently
+     * reset every field the caller did not supply — a data-loss bug rather than
+     * a compile error. Returns a shallow copy so callers cannot mutate internal
+     * state, matching the convention used by the other 25+ entities that expose
+     * `toJSON()`.
+     */
+    toJSON(): TrainingModuleProps {
+        return { ...this.props };
+    }
+
     public hasPrerequisites(): boolean {
         return this.props.prerequisites.length > 0;
     }

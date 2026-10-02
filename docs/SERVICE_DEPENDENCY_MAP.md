@@ -432,7 +432,7 @@ Every service in the platform depends on these shared modules. They are not list
 
 ---
 
-### COMMISSION-SERVICE (`/api/commissions`)
+### COMMISSION-SERVICE (`/api/commission`)
 
 **Depends on:** None (no inter-service imports, HTTP clients, or event subscriptions found in production code)
 

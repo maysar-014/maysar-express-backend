@@ -3,7 +3,8 @@
     "webhookNotConfigured": "Webhook handling not configured",
     "invalidSignature": "Invalid signature",
     "missingParameters": "Missing required parameters",
-    "notFound": "Payment not found"
+    "notFound": "Payment not found",
+    "orderNotFound": "No payment found for the specified order"
   },
   "status": {
     "PENDING": "Pending",

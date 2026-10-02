@@ -1,6 +1,7 @@
 ﻿// @ts-nocheck
 import { Request, Response } from 'express';
 import { DependencyContainer } from '../../infrastructure/container';
+import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
 
 export class CODController {
     private container: DependencyContainer;
@@ -49,18 +50,32 @@ export class CODController {
             const { deliveryId } = req.params;
             const { otp, location } = req.body;
 
-            if (!otp) {
+            // The courier's position is mandatory evidence. It previously defaulted
+            // to {lat: 0, lng: 0} when absent, which is a real coordinate off the
+            // coast of Africa: it silently fabricated delivery proof and, because
+            // the proximity gate ran against it, quietly failed every legitimate
+            // verification too.
+            if (!otp || !location?.lat || !location?.lng) {
                 res.status(400).json({
                     success: false,
-                    error: 'Missing required verification data (otp)'
+                    error: 'Missing required verification data (otp, lat, lng)'
                 });
                 return;
             }
 
-            // Location is optional — default to a placeholder if not provided
-            const verifyLocation = (location?.lat && location?.lng)
-                ? { lat: parseFloat(location.lat), lng: parseFloat(location.lng) }
-                : { lat: 0, lng: 0 };
+            // A real GeoPoint is required, not a bare `{ lat, lng }` object. The
+            // settlement saga compares the courier's position against the delivery
+            // address with `currentPos.distanceTo(deliveryPos)`, and a plain object
+            // has no `distanceTo` method - so the proximity check threw a TypeError,
+            // the saga compensated from index -1 (nothing to undo) and the delivery
+            // silently stayed `in_transit` while this endpoint still replied 200.
+            // The previous `as any` cast hid the type error, made invisible by the
+            // `@ts-nocheck` at the top of this file.
+            const verifyLocation = GeoPoint.create(
+                parseFloat(location.lat),
+                parseFloat(location.lng),
+                location.address || 'Courier reported position'
+            );
 
             console.log(`[COD] Verifying delivery ${deliveryId} with OTP ${otp}`);
 
@@ -68,7 +83,7 @@ export class CODController {
             await verifyCODDeliveryUseCase.execute({
                 deliveryId,
                 otp,
-                location: verifyLocation as any
+                location: verifyLocation
             });
 
             res.status(200).json({

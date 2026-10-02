@@ -56,15 +56,15 @@ Special bonuses:
 
 ## 4. HTTP Surface
 
-Mounted at `/api/commissions` (module name `commissions-service` → strip `-service` → `/api/commissions`).
+Mounted at `/api/commission`. The module is named `commission-service`; the bootstrap derives the mount path from that name (`resolveModuleMountPath` in `src/core/module-registry.ts` → name minus `-service`, under `/api`).
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | `/api/commissions/calculate` | JWT (admin/system) | Calculate commission |
-| PUT  | `/api/commissions/:id/approve` | JWT (admin/ops) | Approve commission |
-| GET  | `/api/commissions/sellers/:sellerId` | JWT | List seller commissions |
-| GET  | `/api/commissions/sellers/:sellerId/summary` | JWT | Seller summary |
-| GET  | `/api/commissions/:id` | JWT | Get single commission |
+| POST | `/api/commission/calculate` | JWT (admin/system) | Calculate commission |
+| PUT  | `/api/commission/:id/approve` | JWT (admin/ops) | Approve commission |
+| GET  | `/api/commission/sellers/:sellerId` | JWT | List seller commissions |
+| GET  | `/api/commission/sellers/:sellerId/summary` | JWT | Seller summary |
+| GET  | `/api/commission/:id` | JWT | Get single commission |
 
 ---
 
@@ -72,7 +72,7 @@ Mounted at `/api/commissions` (module name `commissions-service` → strip `-ser
 
 ### Seller commission view
 
-`GET /api/commissions/sellers/:sellerId/summary`
+`GET /api/commission/sellers/:sellerId/summary`
 
 ```jsonc
 {
@@ -110,4 +110,4 @@ Enabler commission data is accessed via the commission frontend guide endpoints 
 
 ## System Maintenance Routes
 
-The commission service does not currently expose outbox maintenance routes (no `maintenance.routes.ts` file in `services/commission-service/`). If added in future, the standard pattern applies: mount at `/api/commissions/system/maintenance` behind `requireRoleOrService(['admin','system'])` and `x-service-key`.
+The commission service does not currently expose outbox maintenance routes (no `maintenance.routes.ts` file in `services/commission-service/`). If added in future, the standard pattern applies: mount at `/api/commission/system/maintenance` behind `requireRoleOrService(['admin','system'])` and `x-service-key`.

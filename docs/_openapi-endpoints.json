@@ -3480,9 +3480,9 @@
   ]
  },
  {
-  "path": "/api/checkout/{cartId}",
+  "path": "/api/checkout/cart/{cartId}",
   "method": "GET",
-  "operationId": "get_api_checkout_cartId",
+  "operationId": "get_api_checkout_cart_cartId",
   "summary": "GET {cartId}",
   "tags": [
    "Checkout"
@@ -3493,9 +3493,9 @@
   ]
  },
  {
-  "path": "/api/checkout/{cartId}",
+  "path": "/api/checkout/cart/{cartId}",
   "method": "DELETE",
-  "operationId": "delete_api_checkout_cartId",
+  "operationId": "delete_api_checkout_cart_cartId",
   "summary": "DELETE {cartId}",
   "tags": [
    "Checkout"
@@ -3542,10 +3542,10 @@
   ]
  },
  {
-  "path": "/api/checkout/current",
+  "path": "/api/checkout/cart/current",
   "method": "GET",
-  "operationId": "get_api_checkout_current",
-  "summary": "GET current",
+  "operationId": "get_api_checkout_cart_current",
+  "summary": "GET cart current",
   "tags": [
    "Checkout"
   ],
@@ -3601,10 +3601,10 @@
   "params": []
  },
  {
-  "path": "/api/checkout/items",
+  "path": "/api/checkout/cart/items",
   "method": "POST",
-  "operationId": "post_api_checkout_items",
-  "summary": "POST items",
+  "operationId": "post_api_checkout_cart_items",
+  "summary": "POST cart items",
   "tags": [
    "Checkout"
   ],
@@ -3612,10 +3612,10 @@
   "params": []
  },
  {
-  "path": "/api/checkout/items",
+  "path": "/api/checkout/cart/items",
   "method": "PATCH",
-  "operationId": "patch_api_checkout_items",
-  "summary": "PATCH items",
+  "operationId": "patch_api_checkout_cart_items",
+  "summary": "PATCH cart items",
   "tags": [
    "Checkout"
   ],
@@ -3623,10 +3623,10 @@
   "params": []
  },
  {
-  "path": "/api/checkout/items",
+  "path": "/api/checkout/cart/items",
   "method": "DELETE",
-  "operationId": "delete_api_checkout_items",
-  "summary": "DELETE items",
+  "operationId": "delete_api_checkout_cart_items",
+  "summary": "DELETE cart items",
   "tags": [
    "Checkout"
   ],
@@ -3634,10 +3634,10 @@
   "params": []
  },
  {
-  "path": "/api/checkout/merge",
+  "path": "/api/checkout/cart/merge",
   "method": "POST",
-  "operationId": "post_api_checkout_merge",
-  "summary": "POST merge",
+  "operationId": "post_api_checkout_cart_merge",
+  "summary": "POST cart merge",
   "tags": [
    "Checkout"
   ],
@@ -4658,99 +4658,6 @@
   "params": []
  },
  {
-  "path": "/api/governance/constitution",
-  "method": "GET",
-  "operationId": "get_api_governance_constitution",
-  "summary": "Get the active governance constitution",
-  "tags": [
-   "Governance"
-  ],
-  "security": null,
-  "params": []
- },
- {
-  "path": "/api/governance/dashboard",
-  "method": "GET",
-  "operationId": "get_api_governance_dashboard",
-  "summary": "Get the governance dashboard payload",
-  "tags": [
-   "Governance"
-  ],
-  "security": null,
-  "params": []
- },
- {
-  "path": "/api/governance/reports/latest",
-  "method": "GET",
-  "operationId": "get_api_governance_reports_latest",
-  "summary": "Get the latest governance report",
-  "tags": [
-   "Governance"
-  ],
-  "security": null,
-  "params": []
- },
- {
-  "path": "/api/governance/runs",
-  "method": "GET",
-  "operationId": "get_api_governance_runs",
-  "summary": "List governance runs",
-  "tags": [
-   "Governance"
-  ],
-  "security": null,
-  "params": []
- },
- {
-  "path": "/api/governance/runs",
-  "method": "POST",
-  "operationId": "post_api_governance_runs",
-  "summary": "Start a governance audit run",
-  "tags": [
-   "Governance"
-  ],
-  "security": null,
-  "params": []
- },
- {
-  "path": "/api/governance/runs/{runId}",
-  "method": "GET",
-  "operationId": "get_api_governance_runs_runId",
-  "summary": "Get a governance run",
-  "tags": [
-   "Governance"
-  ],
-  "security": null,
-  "params": [
-   "runId"
-  ]
- },
- {
-  "path": "/api/governance/runs/{runId}/evidence/{gateId}",
-  "method": "GET",
-  "operationId": "get_api_governance_runs_runId_evidence_gateId",
-  "summary": "Get evidence for a governance gate",
-  "tags": [
-   "Governance"
-  ],
-  "security": null,
-  "params": [
-   "runId",
-   "gateId"
-  ]
- },
- {
-  "path": "/api/governance/summary",
-  "method": "GET",
-  "operationId": "get_api_governance_summary",
-  "summary": "Get the latest governance summary",
-  "tags": [
-   "Governance"
-  ],
-  "security": null,
-  "params": []
- },
- {
   "path": "/api/inventory/analytics/stock-levels",
   "method": "GET",
   "operationId": "get_api_inventory_analytics_stock_levels",
@@ -5659,7 +5566,7 @@
   "params": []
  },
  {
-  "path": "/api/logistics/api/v1/tracking/{trackingNumber}",
+  "path": "/api/logistics/api/v1/tracking/{identifier}",
   "method": "GET",
   "operationId": null,
   "summary": "Get tracking history",
@@ -5672,8 +5579,8 @@
    }
   ],
   "params": [
-   "trackingNumber",
-   "trackingNumber"
+   "identifier",
+   "identifier"
   ]
  },
  {
@@ -6187,10 +6094,10 @@
   ]
  },
  {
-  "path": "/api/notification/sms/webhook/africastalking",
+  "path": "/api/notification/sms/webhook/meseji",
   "method": "POST",
   "operationId": null,
-  "summary": "Africa's Talking delivery webhook",
+  "summary": "Meseji delivery webhook",
   "tags": [
    "Notifications"
   ],
@@ -6595,7 +6502,7 @@
   ]
  },
  {
-  "path": "/api/order/orders/tracking/{trackingNumber}",
+  "path": "/api/order/orders/tracking/{identifier}",
   "method": "GET",
   "operationId": null,
   "summary": "Get order by tracking number",
@@ -6608,8 +6515,8 @@
    }
   ],
   "params": [
-   "trackingNumber",
-   "trackingNumber"
+   "identifier",
+   "identifier"
   ]
  },
  {
@@ -6774,7 +6681,7 @@
   ]
  },
  {
-  "path": "/api/payment/payments/webhooks/paymentGateway",
+  "path": "/api/payment/payments/webhooks/payment-gateway",
   "method": "POST",
   "operationId": null,
   "summary": "PaymentGateway webhook",
@@ -6818,10 +6725,10 @@
   "params": []
  },
  {
-  "path": "/api/payment/webhooks/paymentGateway",
+  "path": "/api/payment/webhooks/payment-gateway",
   "method": "POST",
   "operationId": null,
-  "summary": "POST /api/payment/webhooks/paymentGateway",
+  "summary": "POST /api/payment/webhooks/payment-gateway",
   "tags": [
    "Payments"
   ],
