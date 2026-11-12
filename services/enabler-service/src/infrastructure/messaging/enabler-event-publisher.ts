@@ -1,5 +1,6 @@
 import prisma from '../database/prisma-client';
 import { getModelPrefix, makeId } from '@shared/ids/id';
+import { appLogger } from '@shared/logger/logger';
 
 export class EnablerEventPublisher {
 
@@ -19,6 +20,6 @@ export class EnablerEventPublisher {
             }
         });
 
-        console.log(`[EnablerService] Published event ${eventName} to outbox`);
+        appLogger.debug(`[EnablerService] Published event ${eventName} to outbox`);
     }
 }

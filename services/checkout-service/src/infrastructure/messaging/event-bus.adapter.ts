@@ -1,7 +1,16 @@
 /**
  * Event Bus Adapter
- * Handles event publishing and subscription
+ *
+ * Delegates to the shared in-memory eventBus singleton so events published
+ * by the checkout service (e.g. OrderCreated) reach all cross-service
+ * subscribers — payment saga, notification service, etc.
+ *
+ * Previously this was a standalone in-memory bus with its own subscribers,
+ * which meant checkout events never reached the payment saga or notification
+ * service. Now it forwards publish/subscribe calls to the shared singleton.
  */
+
+import { eventBus as sharedEventBus } from '@shared-events/eventBus';
 
 export interface EventEnvelope {
   eventId: string;
@@ -13,7 +22,6 @@ export interface EventEnvelope {
 export type EventHandler = (event: EventEnvelope) => Promise<void>;
 
 export class EventBusAdapter {
-  private subscribers: Map<string, EventHandler[]> = new Map();
   private eventHistory: EventEnvelope[] = [];
 
   async publish(eventType: string, payload: any): Promise<void> {
@@ -26,17 +34,21 @@ export class EventBusAdapter {
 
     this.eventHistory.push(envelope);
 
-    const handlers = this.subscribers.get(eventType) || [];
-    await Promise.all(handlers.map(handler => handler(envelope).catch(err => {
-      console.error(`Error handling ${eventType}:`, err);
-    })));
+    // Forward to the shared eventBus so cross-service subscribers receive it
+    await sharedEventBus.publish(eventType, payload);
   }
 
   async subscribe(eventType: string, handler: EventHandler): Promise<void> {
-    if (!this.subscribers.has(eventType)) {
-      this.subscribers.set(eventType, []);
-    }
-    this.subscribers.get(eventType)!.push(handler);
+    // Delegate to shared eventBus
+    await sharedEventBus.subscribe(eventType, async (envelope: any) => {
+      const data = envelope?.data ?? envelope?.payload ?? envelope;
+      await handler({
+        eventId: envelope?.eventId ?? `${eventType}-${Date.now()}`,
+        eventType,
+        payload: data,
+        timestamp: envelope?.timestamp ?? new Date(),
+      });
+    });
   }
 
   getEventHistory(): EventEnvelope[] {

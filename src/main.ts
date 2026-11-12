@@ -12,12 +12,12 @@ import { createLogger } from '../shared/logger/logger';
 import { serializeError } from '../shared/logger/error-utils';
 import { initializeEventRegistry } from '../shared/events/registry';
 
+type RequestHandler = (req: IncomingMessage, res: ServerResponse) => void;
+
 const bootstrapLogger = createLogger('Bootstrap', 'core');
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || '0.0.0.0';
 const baseUrl = host === '0.0.0.0' ? `http://localhost:${port}` : `http://${host}:${port}`;
-
-type RequestHandler = (req: IncomingMessage, res: ServerResponse) => void;
 
 const writeJson = (res: ServerResponse, statusCode: number, payload: Record<string, unknown>) => {
     const body = JSON.stringify(payload);
@@ -57,15 +57,12 @@ let currentHandler: RequestHandler = (req, res) => {
 
 const server = createServer((req, res) => currentHandler(req, res));
 
-console.log('[BOOTSTRAP] main.ts loaded');
-
 async function bootstrap() {
     try {
         server.listen(port, host, () => {
             bootstrapLogger.info(`Bootstrap shell listening at ${baseUrl}`);
         });
 
-        console.log('[BOOTSTRAP] validateEnv start');
         validateEnv();
         bootstrapLogger.info('Starting Maysar Express Backend Monolith...');
 
@@ -125,34 +122,36 @@ async function bootstrap() {
 
         const shutdown = async () => {
             bootstrapLogger.info('Received shutdown signal');
+            const shutdownTimeout = setTimeout(() => {
+                bootstrapLogger.warn('Shutdown timeout exceeded, forcing exit');
+                process.exit(1);
+            }, 30000);
             server.close(() => {
                 bootstrapLogger.info('HTTP server closed');
+                clearTimeout(shutdownTimeout);
+                process.exit(0);
             });
             await moduleRegistry.shutdownAll();
-            process.exit(0);
         };
 
         process.on('SIGTERM', shutdown);
         process.on('SIGINT', shutdown);
 
-        const keepAliveOnCrash = process.env.NODE_ENV !== 'production';
-
         process.on('unhandledRejection', (reason) => {
             const serializedReason = serializeError(reason);
-            console.error('[FATAL] Unhandled Promise Rejection:', serializedReason);
-            bootstrapLogger.error('Unhandled Promise Rejection', serializedReason);
-            if (!keepAliveOnCrash) {
-                void shutdown();
-            }
+            // Log the rejection but do NOT shut down — background jobs (outbox processors,
+            // analytics schedulers, sweepers) can produce non-fatal rejections that should
+            // never take the HTTP server offline. Only structured shutdown signals (SIGTERM,
+            // SIGINT) and uncaughtException should trigger a graceful shutdown.
+            console.error('[WARN] Unhandled Promise Rejection (non-fatal):', serializedReason);
+            bootstrapLogger.warn('Unhandled Promise Rejection (non-fatal)', serializedReason);
         });
 
         process.on('uncaughtException', (error) => {
             const serializedError = serializeError(error);
             console.error('[FATAL] Uncaught Exception:', serializedError);
             bootstrapLogger.error('Uncaught Exception', serializedError);
-            if (!keepAliveOnCrash) {
-                void shutdown();
-            }
+            void shutdown();
         });
     } catch (error) {
         console.error('[FATAL] Failed to bootstrap application:', serializeError(error));

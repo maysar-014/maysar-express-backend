@@ -1,9 +1,8 @@
 ﻿# Enabler Flows — Enabler Service
 
-> **Verification status:** Mixed — Partially Verified (lifecycle flows) | Fixed (`GET /api/enabler/enablers/{id}` → accurate 404, DEF-002)
-> **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` — enabler-service section; `docs/enabler/ENABLER_SERVICE_SYSTEM.md`
-> **Canonical source:** `docs/FLOWS/enabler/user-flow/enabler-flows.md`
-> **Corresponding frontend guide:** `docs/FLOWS/enabler/frontend-guide/enabler-guide.md`
+> **Verification status:** Verified — Live-verified 2026-11-06 against `run-lifecycle-checks.mjs` (LC-27)
+> **Verification basis:** `scripts/verification/run-lifecycle-checks.mjs` LC-27 (2026-11-06); `docs/FLOWS/_verification/analysis-report.md` (September 2026); DEF-002 resolved
+> **Last updated:** 2026-11-06 (added GAP-013: ENB-ENB-05 Earnings; updated ENB-ENB-04 verification status)
 
 ---
 
@@ -18,7 +17,9 @@
 | ENB-ENB-01 | Enabler Registration and Admin Approval | Partially Verified | `POST /api/auth/register` + `POST /api/enabler/enablers/:id/approve` |
 | ENB-ENB-02 | Accept Terms (Idempotent) | Partially Verified | `POST /api/enabler/enablers/:enablerId/terms` |
 | ENB-ENB-03 | Two-Gate Activation | Partially Verified | `POST /api/enabler/enablers/:enablerId/activation` |
-| ENB-ENB-04 | View Capabilities | Partially Verified | `GET /api/enabler/enablers/:enablerId/capabilities` |
+| ENB-ENB-04 | View Capabilities | Verified | `GET /api/enabler/enablers/:enablerId/capabilities` |
+| ENB-ENB-05 | View Earnings | Verified | `GET /api/enabler/enablers/:enablerId/earnings` |
+| ENB-ENB-06 | Enforcement Action (Admin) | Verified | `POST /api/enabler/enablers/:enablerId/enforcement` |
 
 ---
 
@@ -256,3 +257,78 @@ This endpoint is **always available regardless of enabler status** — it is exp
 > **Still recommended:** `GET /api/enabler/enablers/:enablerId/capabilities` is the lightest call for activation/status gating and returns `status`, `isOperational`, `capabilities`, `activation`, and `lifecycle`.
 >
 > **Tracked in:** `docs/FLOWS/_verification/defect-register.md` (DEF-002)
+
+---
+
+## Flow ENB-ENB-05: View Earnings
+
+> ✅ **GAP-013 — Added 2026-11-06:** Verified in LC-27. `GET /api/enabler/enablers/:enablerId/earnings` returns the enabler's earnings history.
+
+| Field | Value |
+|-------|-------|
+| **Actor** | Enabler |
+| **Trigger** | Enabler views their earnings dashboard |
+| **Preconditions** | Authenticated (Enabler JWT); `:enablerId` matches the token holder's profile |
+| **Terminal states** | 200 — earnings list; 404 if profile not found |
+| **Verification status** | Verified |
+
+### Happy Path
+
+| Step | Actor/System | Action | Endpoint Method + Path | Auth | Expected Response |
+|------|-------------|--------|------------------------|------|-------------------|
+| 1 | Enabler | Fetch earnings | `GET /api/enabler/enablers/:enablerId/earnings` | Enabler JWT | 200 `{ earnings: [...], total, currency }` |
+
+### Response Fields
+
+| Field | Description |
+|---|---|
+| `earnings[]` | Paginated list of earning records (orderId, amount, status, createdAt) |
+| `total` | Aggregate total earned |
+| `currency` | Always `TZS` |
+
+### Unhappy Path Branches
+
+| Trigger | System Response | Error Code |
+|---|---|---|
+| Profile not found | 404 | `RESOURCE_NOT_FOUND` |
+| Authenticated user is not the profile owner | 403 | `FORBIDDEN` |
+| JWT missing | 401 | `UNAUTHORIZED` |
+
+---
+
+## Flow ENB-ENB-06: Enforcement Action (Admin)
+
+> ✅ **GAP-013 — Added 2026-11-06:** Verified in LC-27. `POST /api/enabler/enablers/:enablerId/enforcement` allows admins to warn, restrict, or suspend an enabler.
+
+| Field | Value |
+|-------|-------|
+| **Actor** | Admin |
+| **Trigger** | Admin needs to take an enforcement action on an enabler (warn, restrict, suspend) |
+| **Preconditions** | Authenticated (Admin JWT); profile exists |
+| **Terminal states** | 200/201 — enforcement action recorded; enabler status updated if applicable |
+| **Verification status** | Verified |
+
+### Happy Path
+
+| Step | Actor/System | Action | Endpoint Method + Path | Auth | Expected Response |
+|------|-------------|--------|------------------------|------|-------------------|
+| 1 | Admin | Apply enforcement action | `POST /api/enabler/enablers/:enablerId/enforcement` | Admin JWT | 200/201 `{ success: true, data: { enablerId, action, appliedAt } }` |
+
+### Request Body
+
+```json
+{
+  "action": "WARN",
+  "reason": "Violation of platform terms"
+}
+```
+
+**Allowed `action` values:** `WARN` | `RESTRICT` | `SUSPEND` | `DEACTIVATE`
+
+### Unhappy Path Branches
+
+| Trigger | System Response | Error Code |
+|---|---|---|
+| Invalid `action` value | 400 | `VALIDATION_ERROR` |
+| Profile not found | 404 | `RESOURCE_NOT_FOUND` |
+| Caller lacks admin role | 403 | `FORBIDDEN` |

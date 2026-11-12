@@ -1,8 +1,8 @@
 # Provider (Ops) Flows — Request Service
 
-> **Verification status:** Verified (103/103 tests pass)
-> **Verification basis:** `services/request-service` test suite (September 2026); `docs/requests/REQUEST_SERVICE_SYSTEM.md`
-> **Last updated:** September 2026
+> **Verification status:** Verified — Live-verified 2026-11-06 against `run-lifecycle-checks.mjs` (LC-12, LC-13)
+> **Verification basis:** `scripts/verification/run-lifecycle-checks.mjs` LC-12/LC-13 (2026-11-06); `services/request-service` test suite (September 2026)
+> **Last updated:** 2026-11-06 (corrected: MSS-005 sourcing endpoint paths updated to match live routes)
 
 ## Overview
 
@@ -62,9 +62,21 @@ Request body: `{ "decision": "FULFILLABLE" }` or `{ "decision": "UNFULFILLABLE",
 
 ## Flow 4: Register Supplier (Phase 2)
 
-**Action:** `POST /api/request/provider/suppliers`
+**Action:** `POST /api/request/provider/requests/suppliers`
+
+> ⚠️ **MSS-005 corrected 2026-11-06:** Live route is `/api/request/provider/requests/suppliers` (with the `requests/` segment), NOT `/api/request/provider/suppliers`. Calling the old path returns 404.
 
 Adds a third-party supplier to the registry. Suppliers have no auth account and are never customer-facing.
+
+**Request body:**
+```json
+{
+  "name": "Supplier Name",
+  "contact": { "phone": "+255700000000" }
+}
+```
+
+Returns: `{ id: "sup_...", name: "..." }`
 
 **Important:** Suppliers (`source: KNOWN | DISCOVERED`) are Maysar-internal only — buyers never see supplier names or details.
 
@@ -72,7 +84,9 @@ Adds a third-party supplier to the registry. Suppliers have no auth account and 
 
 ## Flow 5: Set Item Source (Phase 2)
 
-**Action:** `POST /api/request/provider/requests/:requestId/items/:itemId/source`
+**Action:** `POST /api/request/provider/requests/items/:itemId/sources`
+
+> ⚠️ **MSS-005 corrected 2026-11-06:** Live route is `.../items/:itemId/sources` (plural), NOT `.../items/:itemId/source` (singular). Also: the `:requestId` segment is NOT in the path — items are addressed directly by `itemId`.
 
 Attaches a source to a request item. Source types:
 - `CATALOG_PRODUCT` — from Maysar catalog
@@ -81,6 +95,17 @@ Attaches a source to a request item. Source types:
 - `MAYSAR_INVENTORY` — from Maysar stock (`supplierId` = null)
 
 **Sourcing gate:** `PublishQuoteUseCase` will refuse to publish until every item has a source with `availability === 'CONFIRMED'`.
+
+**To confirm a source after attaching it:**
+`POST /api/request/provider/requests/sources/:sourceId/confirm`
+
+```json
+{
+  "availableUntil": "2026-12-01T00:00:00Z"
+}
+```
+
+This transitions the source from `PENDING` → `CONFIRMED`. Until all item sources are confirmed, `POST /api/request/provider/requests/quotes/:quoteId/publish` returns 422 `SOURCING_INCOMPLETE`.
 
 ---
 
@@ -111,7 +136,9 @@ Returns: `{ quoteId: "RQO-...", status: "DRAFT" }`
 
 ## Flow 7: Publish Quote (Sourcing Gate)
 
-**Action:** `POST /api/request/provider/quotes/:quoteId/publish`
+**Action:** `POST /api/request/provider/requests/quotes/:quoteId/publish`
+
+> ⚠️ **MSS-005 corrected 2026-11-06:** Live route is `/api/request/provider/requests/quotes/:quoteId/publish` (with `requests/` prefix), NOT `/api/request/provider/quotes/:quoteId/publish`.
 
 **Sourcing gate:** every item in the quote must have a `CONFIRMED` source before publish succeeds. If any item lacks a confirmed source, publish returns 422.
 

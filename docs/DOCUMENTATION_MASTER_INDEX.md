@@ -23,7 +23,7 @@ This index is the single entry point for all Maysar platform documentation. Ever
 | Request | [REQUEST_SERVICE_SYSTEM.md](requests/REQUEST_SERVICE_SYSTEM.md) | [REQUEST_SERVICE_FRONTEND_GUIDE.md](requests/REQUEST_SERVICE_FRONTEND_GUIDE.md) | `/api/request` |
 | Chat | [CHAT_SYSTEM.md](chat-system/CHAT_SYSTEM.md) | [CHAT_SERVICE_FRONTEND_GUIDE.md](chat/CHAT_SERVICE_FRONTEND_GUIDE.md) | `/api/chat/v1` |
 | Notification | [NOTIFICATION_SERVICE_SYSTEM.md](notification/NOTIFICATION_SERVICE_SYSTEM.md) | [NOTIFICATION_SERVICE_FRONTEND_GUIDE.md](notification/NOTIFICATION_SERVICE_FRONTEND_GUIDE.md) | `/api/notification` |
-| Enabler | [ENABLER_SERVICE_SYSTEM.md](enabler/ENABLER_SERVICE_SYSTEM.md) | [ENABLER_SERVICE_FRONTEND_GUIDE.md](enabler/ENABLER_SERVICE_FRONTEND_GUIDE.md) | `/api/enabler` |
+| Enabler | [ENABLER_SERVICE_SYSTEM.md](services/enabler-service/README.md) | [ENABLER_SERVICE_FRONTEND_GUIDE.md](enabler/frontend-guide/enabler-guide.md) | `/api/enabler` |
 | Commission | [COMMISSION_SERVICE_SYSTEM.md](commission/COMMISSION_SERVICE_SYSTEM.md) | [COMMISSION_SERVICE_FRONTEND_GUIDE.md](commission/COMMISSION_SERVICE_FRONTEND_GUIDE.md) | `/api/commission` |
 | Payout | [PAYOUT_SERVICE_SYSTEM.md](payout/PAYOUT_SERVICE_SYSTEM.md) | [PAYOUT_SERVICE_FRONTEND_GUIDE.md](payout/PAYOUT_SERVICE_FRONTEND_GUIDE.md) | `/api/payout` |
 | Analytics | [ANALYTICS_SERVICE_SYSTEM.md](analytics/ANALYTICS_SERVICE_SYSTEM.md) | [ANALYTICS_SERVICE_FRONTEND_GUIDE.md](analytics/ANALYTICS_SERVICE_FRONTEND_GUIDE.md) | `/api/analytics` |

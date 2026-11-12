@@ -438,6 +438,7 @@ export class OrderController {
         orderId: id,
         buyerId: (order as any).buyerId,
         sellerId: (order as any).sellerId,
+        enablerId: (order as any).enablerId,
         paymentMethod: (order as any).paymentMethod,
         totalAmount: (order as any).totalAmount,
         isCOD: String((order as any).paymentMethod ?? '').toUpperCase() === 'COD'

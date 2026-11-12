@@ -72,6 +72,43 @@ describe('PrismaUserRepository (partial)', () => {
     expect(updated.id).toBe('u1');
   });
 
+  test('findByIds returns User[] for every row found and ignores unknown IDs', async () => {
+    const { prisma, userData } = makePrismaMock();
+    const mockPiiService = { encrypt: jest.fn((v) => v), decrypt: jest.fn((v) => v), hash: jest.fn((v) => v) } as any;
+    const repo = new PrismaUserRepository(prisma as any, mockPiiService);
+
+    // Two rows returned for three requested IDs — one is unknown
+    const secondUser = { ...userData, id: 'u2', firstName: 'X', lastName: 'Y' };
+    (prisma.user_User.findMany as jest.Mock).mockResolvedValue([userData, secondUser]);
+
+    const result = await repo.findByIds(['u1', 'u2', 'unknown-id']);
+    expect(result).toHaveLength(2);
+    expect(result.map((u: any) => u.id).sort()).toEqual(['u1', 'u2']);
+    // The unknown ID is simply absent from the result — caller maps it to null
+    expect(result.find((u: any) => u.id === 'unknown-id')).toBeUndefined();
+  });
+
+  test('findByIds returns empty array when ids is empty', async () => {
+    const { prisma } = makePrismaMock();
+    const mockPiiService = { encrypt: jest.fn((v) => v), decrypt: jest.fn((v) => v), hash: jest.fn((v) => v) } as any;
+    const repo = new PrismaUserRepository(prisma as any, mockPiiService);
+
+    const result = await repo.findByIds([]);
+    expect(result).toEqual([]);
+    expect(prisma.user_User.findMany).not.toHaveBeenCalled();
+  });
+
+  test('findByIds returns empty array when user_User table is missing', async () => {
+    const { prisma } = makePrismaMock();
+    const mockPiiService = { encrypt: jest.fn((v) => v), decrypt: jest.fn((v) => v), hash: jest.fn((v) => v) } as any;
+    const repo = new PrismaUserRepository(prisma as any, mockPiiService);
+
+    (prisma.user_User.findMany as jest.Mock).mockRejectedValue(new Error('Table user_User does not exist'));
+
+    const result = await repo.findByIds(['u1', 'u2']);
+    expect(result).toEqual([]);
+  });
+
   test('emailExists, phoneExists, search, findAll and count', async () => {
     const { prisma } = makePrismaMock();
     const mockPiiService = { encrypt: jest.fn((v) => v), decrypt: jest.fn((v) => v), hash: jest.fn((v) => v) } as any;

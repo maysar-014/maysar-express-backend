@@ -37,6 +37,13 @@ export interface ProductRepository {
   findById(id: string): Promise<DomainRecord | null>;
 
   /**
+   * Find a published product by its URL slug.
+   * @param slug URL-safe product slug
+   * @returns Promise resolving to product or null
+   */
+  findBySlug(slug: string): Promise<DomainRecord | null>;
+
+  /**
    * Find products by seller
    * @param sellerId Seller identifier
    * @returns Promise resolving to array of products
@@ -712,4 +719,91 @@ export interface ValueObjectFactory {
    * @returns Address value object
    */
   createAddress(data: DomainRecord): DomainRecord;
+}
+
+// ============================================================================
+// CONFIGURATION DEFINITION REPOSITORY INTERFACE
+// ============================================================================
+
+/**
+ * Configuration Definition Repository Interface
+ * Defines contract for ConfigurationDefinition persistence operations.
+ * Part of MUVA Phase 1 Foundation — ENH-006.
+ */
+export interface ConfigurationDefinitionRepository {
+  /**
+   * Save a ConfigurationDefinition entity
+   * @param definition The configuration definition to save
+   * @returns Promise resolving to the saved definition
+   */
+  saveConfigurationDefinition(definition: DomainRecord): Promise<DomainRecord>;
+
+  /**
+   * Find a ConfigurationDefinition by its unique identifier
+   * @param id Configuration definition identifier
+   * @returns Promise resolving to definition or null
+   */
+  findConfigurationDefinitionById(id: string): Promise<DomainRecord | null>;
+
+  /**
+   * Find a ConfigurationDefinition by its associated product identifier
+   * @param productId Product identifier
+   * @returns Promise resolving to definition or null
+   */
+  findConfigurationDefinitionByProductId(productId: string): Promise<DomainRecord | null>;
+
+  /**
+   * Find a ConfigurationDefinition by its ConfigurationFingerprint value
+   * @param fingerprint 64-character hex fingerprint string
+   * @returns Promise resolving to definition or null
+   */
+  findConfigurationDefinitionByFingerprint(fingerprint: string): Promise<DomainRecord | null>;
+
+  /**
+   * Find all active ConfigurationCombination instances for a given definition
+   * @param configurationDefinitionId Configuration definition identifier
+   * @returns Promise resolving to array of active combinations
+   */
+  findActiveCombinations(configurationDefinitionId: string): Promise<DomainRecord[]>;
+}
+
+// ============================================================================
+// SELLER OFFER REPOSITORY INTERFACE
+// ============================================================================
+
+/**
+ * Seller Offer Repository Interface
+ * ENH-001: Contract for SellerOffer persistence — separates seller commercial
+ * terms from canonical product identity.
+ */
+export interface SellerOfferRepository {
+  /**
+   * Save a SellerOffer entity
+   */
+  saveSellerOffer(offer: DomainRecord): Promise<DomainRecord>;
+
+  /**
+   * Find a SellerOffer by its unique identifier
+   */
+  findSellerOfferById(id: string): Promise<DomainRecord | null>;
+
+  /**
+   * Find all SellerOffers for a given product
+   */
+  findSellerOffersByProductId(productId: string): Promise<DomainRecord[]>;
+
+  /**
+   * Find all SellerOffers for a given seller
+   */
+  findSellerOffersBySellerId(sellerId: string): Promise<DomainRecord[]>;
+
+  /**
+   * Find active SellerOffers for a given product
+   */
+  findActiveSellerOffers(productId: string): Promise<DomainRecord[]>;
+
+  /**
+   * Find a SellerOffer by product and seller (unique pair)
+   */
+  findSellerOfferByProductAndSeller(productId: string, sellerId: string): Promise<DomainRecord | null>;
 }

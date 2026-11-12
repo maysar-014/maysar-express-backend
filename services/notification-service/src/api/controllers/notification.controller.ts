@@ -99,12 +99,14 @@ export class NotificationController {
 
   async listNotifications(req: Request, res: Response): Promise<void> {
     try {
+      const authUser = (req as any).user;
       const criteria = {
-        userId: req.query.userId as string | undefined,
+        userId: (req.query.userId as string | undefined) || authUser?.userId,
         status: req.query.status as any,
         channel: req.query.channel as string | undefined,
         page: req.query.page ? parseInt(String(req.query.page), 10) : undefined,
-        limit: req.query.limit ? parseInt(String(req.query.limit), 10) : undefined
+        limit: req.query.limit ? parseInt(String(req.query.limit), 10) : undefined,
+        isRead: req.query.isRead !== undefined ? req.query.isRead === 'true' : undefined,
       } as any;
       const result = await this.getHistoryUseCase.execute(criteria);
       res.status(200).json({

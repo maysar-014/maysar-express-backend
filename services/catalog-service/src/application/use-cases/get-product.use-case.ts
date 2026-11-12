@@ -7,9 +7,11 @@
 import {
   ProductRepository,
   MediaRepository,
-  SearchService
+  SearchService,
+  DomainRecord
 } from '../../domain/interfaces';
 import { ProductReviewRepository } from '../../domain/repositories/product-review.repository.interface';
+import { classifyStockStatus } from '@shared/inventory/classifyStockStatus';
 type ProductRecord = {
   id?: string;
   sellerId?: string;
@@ -122,6 +124,16 @@ export interface ProductDetails {
   createdAt: Date;
   updatedAt: Date;
   qualityScore?: number;
+  variants?: Array<{
+    id: string;
+    name: string;
+    sku?: string;
+    price: number;
+    status?: string;
+    inventoryQuantity?: number | null;
+    quantityReserved?: number | null;
+  }>;
+  variantId?: string | null;
 }
 
 export interface GetProductResponse {
@@ -153,8 +165,24 @@ export class GetProductUseCase {
         };
       }
 
-      // Retrieve product from repository
-      const product = await this.productRepository.findById(request.productId);
+      // Retrieve product from repository — transparent identifier resolution:
+      // try by system ID first, fall back to slug if the ID lookup returns null.
+      // If findById throws a format/validation error (e.g. Prisma P2023 for a
+      // malformed UUID), treat that as "not found by ID" and try the slug path.
+      let product: DomainRecord | null = null;
+      try {
+        product = await this.productRepository.findById(request.productId);
+      } catch {
+        // findById threw — identifier is likely not a valid system ID format.
+        // Fall through to the slug lookup below.
+      }
+      if (!product) {
+        try {
+          product = await this.productRepository.findBySlug(request.productId);
+        } catch {
+          // findBySlug also threw — treat as not found
+        }
+      }
       if (!product) {
         return {
           status: 'not_found',
@@ -196,12 +224,11 @@ export class GetProductUseCase {
       0
     );
 
-    // Determine stock status based on available quantity and reorder point
+    // RC-3 fix: use shared quantity-threshold classification so catalog and analytics agree
     let stockStatus: 'in_stock' | 'low_stock' | 'out_of_stock' = 'out_of_stock';
     if (totalAvailable > 0) {
-      // Use reorderPoint from product or first variant if available
       const reorderPoint = Number(rawProduct.reorderPoint ?? variants[0]?.reorderPoint ?? 0);
-      stockStatus = reorderPoint > 0 && totalAvailable <= reorderPoint ? 'low_stock' : 'in_stock';
+      stockStatus = classifyStockStatus(totalAvailable, reorderPoint);
     }
 
     const details: ProductDetails = {
@@ -230,7 +257,17 @@ export class GetProductUseCase {
       },
       createdAt: normalizedProduct.createdAt,
       updatedAt: normalizedProduct.updatedAt,
-      qualityScore: Number(rawProduct.qualityScore ?? 0)
+      qualityScore: Number(rawProduct.qualityScore ?? 0),
+      variants: variants.map((v: any) => ({
+        id: v.id,
+        name: v.name,
+        sku: v.sku,
+        price: Number(v.price ?? 0),
+        status: v.status,
+        inventoryQuantity: v.inventoryQuantity ?? v.stock ?? null,
+        quantityReserved: v.quantityReserved ?? null,
+      })),
+      variantId: variants[0]?.id ?? null,
     };
 
     // Enrich with review aggregate stats

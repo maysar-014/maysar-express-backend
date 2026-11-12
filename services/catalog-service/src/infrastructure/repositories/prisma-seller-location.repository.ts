@@ -7,9 +7,7 @@
 
 import { makeId } from '../../../../../shared/ids/id';
 import { SellerLocation, SellerLocationProps } from '../../domain/entities/seller-location.entity';
-import { ProductLocation, ProductLocationProps } from '../../domain/entities/product-location.entity';
 import { ISellerLocationRepository } from '../../domain/repositories/seller-location.repository.interface';
-import { haversineKm } from '../../../../../shared/geo/haversine';
 
 export class PrismaSellerLocationRepository implements ISellerLocationRepository {
   constructor(private readonly prisma: any) {}
@@ -25,12 +23,25 @@ export class PrismaSellerLocationRepository implements ISellerLocationRepository
         name: location.name,
         type: location.type,
         status: location.status,
+        fulfillmentCapabilities: location.fulfillmentCapabilities,
+        locationCode: location.locationCode ?? null,
+        contactName: location.contactName ?? null,
+        contactPhone: location.contactPhone ?? null,
+        staffCount: location.staffCount ?? null,
+        deliveryCoverageRadiusKm: location.deliveryCoverageRadiusKm ?? null,
         street: location.address.street,
         ward: location.address.ward ?? null,
         district: location.address.district ?? null,
         region: location.address.region,
         postalCode: location.address.postalCode ?? null,
         country: location.address.country,
+        countryId: location.address.countryId ?? null,
+        regionId: location.address.regionId ?? null,
+        districtId: location.address.districtId ?? null,
+        wardId: location.address.wardId ?? null,
+        streetId: location.address.streetId ?? null,
+        locality: location.address.locality ?? null,
+        directions: location.address.directions ?? null,
         latitude: location.latitude,
         longitude: location.longitude,
         isPrimary: location.isPrimary,
@@ -44,17 +55,50 @@ export class PrismaSellerLocationRepository implements ISellerLocationRepository
         name: location.name,
         type: location.type,
         status: location.status,
+        fulfillmentCapabilities: location.fulfillmentCapabilities,
+        locationCode: location.locationCode ?? null,
+        contactName: location.contactName ?? null,
+        contactPhone: location.contactPhone ?? null,
+        staffCount: location.staffCount ?? null,
+        deliveryCoverageRadiusKm: location.deliveryCoverageRadiusKm ?? null,
         street: location.address.street,
         ward: location.address.ward ?? null,
         district: location.address.district ?? null,
         region: location.address.region,
         postalCode: location.address.postalCode ?? null,
         country: location.address.country,
+        countryId: location.address.countryId ?? null,
+        regionId: location.address.regionId ?? null,
+        districtId: location.address.districtId ?? null,
+        wardId: location.address.wardId ?? null,
+        streetId: location.address.streetId ?? null,
+        locality: location.address.locality ?? null,
+        directions: location.address.directions ?? null,
         isPrimary: location.isPrimary,
         isActive: location.isActive,
         operatingHours: location.operatingHours ?? null,
         notes: location.notes ?? null,
         updatedAt: new Date(),
+      },
+    });
+
+    await this.prisma.inventory_Warehouse.upsert({
+      where: { sellerLocationId: location.id },
+      create: {
+        id: `invwh_${location.id}`,
+        code: `SL-${location.id}`.slice(0, 50),
+        name: location.name,
+        type: 'store',
+        status: location.isActive ? 'active' : 'inactive',
+        sellerId: location.sellerId,
+        sellerLocationId: location.id,
+        address: { ...location.address, latitude: location.latitude, longitude: location.longitude },
+      },
+      update: {
+        name: location.name,
+        status: location.isActive ? 'active' : 'inactive',
+        sellerId: location.sellerId,
+        address: { ...location.address, latitude: location.latitude, longitude: location.longitude },
       },
     });
   }
@@ -145,87 +189,132 @@ export class PrismaSellerLocationRepository implements ISellerLocationRepository
     await this.prisma.catalog_SellerLocation.delete({ where: { id } });
   }
 
-  // ── Product inventory ────────────────────────────────────────────────────
-
-  async saveProductLocation(pl: ProductLocation): Promise<void> {
-    await this.prisma.catalog_ProductLocation.upsert({
-      where: { productId_locationId: { productId: pl.productId, locationId: pl.locationId } },
-      create: {
-        id: pl.id,
-        productId: pl.productId,
-        locationId: pl.locationId,
-        sellerId: pl.sellerId,
-        quantityAvailable: pl.quantityAvailable,
-        quantityReserved: pl.quantityReserved,
-        isAvailable: pl.isAvailable,
-        createdAt: pl.createdAt,
-        updatedAt: pl.updatedAt,
-      },
-      update: {
-        quantityAvailable: pl.quantityAvailable,
-        quantityReserved: pl.quantityReserved,
-        isAvailable: pl.isAvailable,
-        updatedAt: new Date(),
-      },
+  // ── Geographic hierarchy (frontend-provided reference data) ──
+  async findRegions(countryId?: string): Promise<{ id: string; code: string; name: string }[]> {
+    const rows = await this.prisma.geography_Region.findMany({
+      where: countryId ? { countryId } : {},
+      select: { id: true, code: true, name: true },
+      orderBy: { name: 'asc' },
     });
+    return rows;
   }
 
-  async findProductLocation(productId: string, locationId: string): Promise<ProductLocation | null> {
-    const row = await this.prisma.catalog_ProductLocation.findUnique({
-      where: { productId_locationId: { productId, locationId } },
+  async findDistricts(regionId: string): Promise<{ id: string; code: string; name: string }[]> {
+    const rows = await this.prisma.geography_District.findMany({
+      where: { regionId },
+      select: { id: true, code: true, name: true },
+      orderBy: { name: 'asc' },
     });
-    return row ? this.toProductLocationDomain(row) : null;
+    return rows;
   }
 
-  async findProductLocations(productId: string): Promise<ProductLocation[]> {
-    const rows = await this.prisma.catalog_ProductLocation.findMany({
-      where: { productId },
-      include: { location: true },
-      orderBy: { createdAt: 'asc' },
+  async findWards(districtId: string): Promise<{ id: string; code: string; name: string }[]> {
+    const rows = await this.prisma.geography_Ward.findMany({
+      where: { districtId },
+      select: { id: true, code: true, name: true },
+      orderBy: { name: 'asc' },
     });
-    return rows.map((r: any) => this.toProductLocationDomain(r));
+    return rows;
   }
 
-  async findLocationProducts(locationId: string): Promise<ProductLocation[]> {
-    const rows = await this.prisma.catalog_ProductLocation.findMany({
-      where: { locationId },
-      orderBy: { createdAt: 'asc' },
+  async findStreets(wardId: string): Promise<{ id: string; code: string; name: string }[]> {
+    const rows = await this.prisma.geography_Street.findMany({
+      where: { wardId },
+      select: { id: true, code: true, name: true },
+      orderBy: { name: 'asc' },
     });
-    return rows.map((r: any) => this.toProductLocationDomain(r));
+    return rows;
   }
 
-  async deleteProductLocation(productId: string, locationId: string): Promise<void> {
-    await this.prisma.catalog_ProductLocation.delete({
-      where: { productId_locationId: { productId, locationId } },
+  async findRegionCode(regionId: string): Promise<string | null> {
+    const region = await this.prisma.geography_Region.findUnique({
+      where: { id: regionId },
+      select: { code: true },
     });
+    return region?.code ?? null;
   }
 
-  async findAvailableLocationsForProduct(
-    productId: string,
-    buyerLat: number,
-    buyerLng: number,
-  ): Promise<Array<ProductLocation & { distanceKm: number; location: SellerLocation }>> {
-    const rows = await this.prisma.catalog_ProductLocation.findMany({
-      where: {
-        productId,
-        isAvailable: true,
-        quantityAvailable: { gt: 0 },
-        location: { isActive: true, status: 'ACTIVE' },
-      },
-      include: { location: true },
-    });
+  async validateGeographyIds(ids: {
+    countryId?: string;
+    regionId?: string;
+    districtId?: string;
+    wardId?: string;
+    streetId?: string;
+  }): Promise<boolean> {
+    // Validate parent-child chain: if a child ID is provided, its parent must also be provided and valid
+    if (ids.streetId) {
+      const street = await this.prisma.geography_Street.findUnique({ where: { id: ids.streetId } });
+      if (!street) return false;
+      if (ids.wardId && ids.wardId !== street.wardId) return false;
+      // Ward is implicitly validated by street's wardId
+    }
+    if (ids.wardId) {
+      const ward = await this.prisma.geography_Ward.findUnique({ where: { id: ids.wardId } });
+      if (!ward) return false;
+      if (ids.districtId && ids.districtId !== ward.districtId) return false;
+    }
+    if (ids.districtId) {
+      const district = await this.prisma.geography_District.findUnique({ where: { id: ids.districtId } });
+      if (!district) return false;
+      if (ids.regionId && ids.regionId !== district.regionId) return false;
+    }
+    if (ids.regionId) {
+      const region = await this.prisma.geography_Region.findUnique({ where: { id: ids.regionId } });
+      if (!region) return false;
+      if (ids.countryId && ids.countryId !== region.countryId) return false;
+    }
+    if (ids.countryId) {
+      const country = await this.prisma.geography_Country.findUnique({ where: { id: ids.countryId } });
+      if (!country) return false;
+    }
+    return true;
+  }
 
-    return rows
-      .map((r: any) => {
-        const pl = this.toProductLocationDomain(r);
-        const loc = this.toDomain(r.location);
-        const distanceKm = haversineKm(buyerLat, buyerLng, loc.latitude, loc.longitude);
-        // Explicitly capture getter before spreading — plain object spread loses class getters
-        const netAvailable = pl.netAvailable;
-        return { ...pl, netAvailable, distanceKm, location: loc };
-      })
-      .filter((r: any) => r.netAvailable > 0)
-      .sort((a: any, b: any) => a.distanceKm - b.distanceKm);
+  async searchLocations(
+    sellerId: string,
+    opts: {
+      query?: string;
+      type?: string;
+      status?: string;
+      isActive?: boolean;
+      regionId?: string;
+      districtId?: string;
+      wardId?: string;
+      streetId?: string;
+      page: number;
+      pageSize: number;
+    },
+  ): Promise<{ locations: SellerLocation[]; total: number }> {
+    const where: any = { sellerId };
+    if (opts.query) {
+      where.OR = [
+        { name: { contains: opts.query, mode: 'insensitive' } },
+        { street: { contains: opts.query, mode: 'insensitive' } },
+        { ward: { contains: opts.query, mode: 'insensitive' } },
+        { district: { contains: opts.query, mode: 'insensitive' } },
+        { region: { contains: opts.query, mode: 'insensitive' } },
+        { locality: { contains: opts.query, mode: 'insensitive' } },
+      ];
+    }
+    if (opts.type) where.type = opts.type;
+    if (opts.status) where.status = opts.status;
+    if (opts.isActive !== undefined) where.isActive = opts.isActive;
+    if (opts.regionId) where.regionId = opts.regionId;
+    if (opts.districtId) where.districtId = opts.districtId;
+    if (opts.wardId) where.wardId = opts.wardId;
+    if (opts.streetId) where.streetId = opts.streetId;
+
+    const [rows, total] = await Promise.all([
+      this.prisma.catalog_SellerLocation.findMany({
+        where,
+        orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+        skip: (opts.page - 1) * opts.pageSize,
+        take: opts.pageSize,
+      }),
+      this.prisma.catalog_SellerLocation.count({ where }),
+    ]);
+
+    return { locations: rows.map((r: any) => this.toDomain(r)), total };
   }
 
   // ── Mappers ──────────────────────────────────────────────────────────────
@@ -244,27 +333,30 @@ export class PrismaSellerLocationRepository implements ISellerLocationRepository
         region: row.region,
         postalCode: row.postalCode ?? undefined,
         country: row.country,
+        countryId: row.countryId ?? undefined,
+        regionId: row.regionId ?? undefined,
+        districtId: row.districtId ?? undefined,
+        wardId: row.wardId ?? undefined,
+        streetId: row.streetId ?? undefined,
+        locality: row.locality ?? undefined,
+        directions: row.directions ?? undefined,
       },
+      fulfillmentCapabilities: Array.isArray(row.fulfillmentCapabilities)
+        ? row.fulfillmentCapabilities
+        : row.fulfillmentCapabilities
+          ? JSON.parse(row.fulfillmentCapabilities)
+          : [],
+      locationCode: row.locationCode ?? undefined,
+      contactName: row.contactName ?? undefined,
+      contactPhone: row.contactPhone ?? undefined,
+      staffCount: row.staffCount ?? undefined,
+      deliveryCoverageRadiusKm: row.deliveryCoverageRadiusKm != null ? Number(row.deliveryCoverageRadiusKm) : undefined,
       latitude: Number(row.latitude),
       longitude: Number(row.longitude),
       isPrimary: row.isPrimary,
       isActive: row.isActive,
       operatingHours: row.operatingHours ?? undefined,
       notes: row.notes ?? undefined,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-    });
-  }
-
-  private toProductLocationDomain(row: any): ProductLocation {
-    return new ProductLocation({
-      id: row.id,
-      productId: row.productId,
-      locationId: row.locationId,
-      sellerId: row.sellerId,
-      quantityAvailable: row.quantityAvailable,
-      quantityReserved: row.quantityReserved,
-      isAvailable: row.isAvailable,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     });

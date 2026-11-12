@@ -28,9 +28,16 @@ export const PaymentModule: Module = {
     _eventIdempotency = new EventIdempotency(process.env.REDIS_URL!, prisma);
 
     const container = PaymentContainer.getInstance();
-    container.sagaEventHandler.setupSubscriptions().catch((err: Error) => {
+    try {
+      await container.sagaEventHandler.setupSubscriptions();
+      // Check subscriber count on the exact eventBus instance the saga subscribed to
+      const countOnContainerBus = (container as any).eventBus?.getSubscriberCount?.('OrderCreated') ?? -1;
+      logger.info(`Payment saga subscriptions registered — OrderCreated on container.eventBus: ${countOnContainerBus}`);
+      console.log(`[payment-service] OrderCreated on container.eventBus: ${countOnContainerBus}`);
+    } catch (err: Error | any) {
       logger.error("Failed to setup saga subscriptions:", err);
-    });
+      console.error('[payment-service] SAGA SETUP FAILED:', err?.message);
+    }
     container.paymentEventHandlers.registerHandlers();
 
     // Startup payment-method configuration validation: every enabled method
@@ -50,10 +57,10 @@ export const PaymentModule: Module = {
       );
     }
 
-    const router = Router();
-
-    router.use("/health", healthRoutes);
-    router.get("/metrics", async (_req, res) => {
+    // Add all routes to the pre-declared router that app.ts already mounted.
+    const payRouter = PaymentModule.routes!;
+    payRouter.use("/health", healthRoutes);
+    payRouter.get("/metrics", async (_req, res) => {
       res.set("Content-Type", metricsRegistry.contentType);
       res.end(await metricsRegistry.metrics());
     });
@@ -64,11 +71,11 @@ export const PaymentModule: Module = {
         require("./src/api/routes/payment.routes").createPaymentRoutes;
       const createPaymentAdminRoutes =
         require("./src/api/routes/payment-admin.routes").createPaymentAdminRoutes;
-      router.use(
+      payRouter.use(
         "/payments/webhooks",
         createWebhookRoutes(container.webhookController),
       );
-      router.use(
+      payRouter.use(
         "/payments",
         requireAuth,
         createPaymentRoutes(
@@ -76,20 +83,17 @@ export const PaymentModule: Module = {
           container.paymentAdminController,
         ),
       );
-      router.use("/webhooks", createWebhookRoutes(container.webhookController));
-      // Authoritative method discovery for buyer apps — no hard-coded frontend list.
-      router.use(
+      payRouter.use("/webhooks", createWebhookRoutes(container.webhookController));
+      payRouter.use(
         "/payment-methods",
         createPaymentMethodsRoutes(container.paymentMethodsController),
       );
-      // Operations/admin view of every method's environment + configuration state.
-      router.use(
+      payRouter.use(
         "/admin/payment-methods",
         requireRoleOrService(["admin", "system"]),
         createPaymentMethodsAdminRoutes(container.paymentMethodsController),
       );
-      // Admin payment summary roster (block/flag are POST /payments/:id/*).
-      router.use(
+      payRouter.use(
         "/admin/payments",
         requireRoleOrService(["admin", "system"]),
         createPaymentAdminRoutes(container.paymentAdminController),
@@ -99,7 +103,7 @@ export const PaymentModule: Module = {
         "Failed to mount payment routes, falling back to degraded handler:",
         error,
       );
-      router.all("/payments/*", (_req, res) => {
+      payRouter.all("/payments/*", (_req, res) => {
         res.status(503).json({
           success: false,
           error: "Payment routes unavailable",
@@ -108,13 +112,11 @@ export const PaymentModule: Module = {
       });
     }
 
-    router.use(
+    payRouter.use(
       "/system/maintenance",
       requireRoleOrService(["admin", "system"]),
       createMaintenanceRoutes(),
     );
-
-    PaymentModule.routes = router;
   },
   routes: Router(),
   shutdown: async () => {

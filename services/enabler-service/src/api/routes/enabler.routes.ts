@@ -41,6 +41,9 @@ import { earningsQuerySchema } from '../validators/earnings.validator';
 import { acceptPromotionJobBodySchema, promotionJobsQuerySchema } from '../validators/promotion-job.validator';
 import { generateReferralBodySchema, referralQuerySchema, trackReferralEventBodySchema } from '../validators/referral.validator';
 import { EnablerLifecycleController } from '../controllers/enabler-lifecycle.controller';
+import { PromotedCatalogController } from '../controllers/promoted-catalog.controller';
+import { PromotedCatalogService } from '../../application/services/promoted-catalog.service';
+import { SellerPromotionProgramController } from '../controllers/seller-promotion-program.controller';
 import { authorizeEnablerIdentity } from '../middleware/enabler-lifecycle-authorization.middleware';
 import {
   acceptEnablerTermsBodySchema,
@@ -81,6 +84,32 @@ const enablerOrderCommissionParamsSchema = Joi.object({
 const promotionJobParamsSchema = Joi.object({
   enablerId: systemIdSchema.required(),
   jobId: systemIdSchema.required(),
+}).unknown(false);
+
+const promotedProductParamsSchema = Joi.object({
+  enablerId: systemIdSchema.required(),
+  productId: systemIdSchema.required(),
+}).unknown(false);
+
+const sellerPromotionParamsSchema = Joi.object({
+  sellerId: systemIdSchema.required(),
+}).unknown(false);
+const promotionOfferParamsSchema = Joi.object({
+  offerId: systemIdSchema.required(),
+}).unknown(false);
+const promotionDecisionParamsSchema = Joi.object({
+  sellerId: systemIdSchema.required(),
+  applicationId: systemIdSchema.required(),
+}).unknown(false);
+const savePromotionOfferBodySchema = Joi.object({
+  scopeType: Joi.string().valid('ALL_PRODUCTS', 'CATEGORY', 'PRODUCT').required(),
+  commissionPercent: Joi.number().greater(0).max(50).precision(4).required(),
+  requiredEnablerCount: Joi.number().integer().min(1).max(1000).required(),
+  productIds: Joi.array().items(systemIdSchema).unique().max(1000).optional(),
+  categoryIds: Joi.array().items(systemIdSchema).unique().max(1000).optional(),
+}).unknown(false);
+const promotionDecisionBodySchema = Joi.object({
+  decision: Joi.string().valid('APPROVE', 'REJECT', 'REVOKE').required(),
 }).unknown(false);
 
 const idParamsSchema = Joi.object({
@@ -190,8 +219,40 @@ const enablerLifecycleController = new EnablerLifecycleController(
   trainingGate,
   { requiredTermsVersion }
 );
+const promotedCatalogController = new PromotedCatalogController(new PromotedCatalogService());
+const sellerPromotionProgramController = new SellerPromotionProgramController();
 
 // Routes
+// Seller-authored promotion settings and enabler applications. These precede
+// the enabler identity guard below because the program owner is the seller.
+router.get(
+  '/seller/:sellerId/promotion-offer',
+  validateJoiRequest({ params: sellerPromotionParamsSchema }),
+  asyncHandler((req, res) => sellerPromotionProgramController.getSellerProgram(req, res))
+);
+router.put(
+  '/seller/:sellerId/promotion-offer',
+  validateJoiRequest({ params: sellerPromotionParamsSchema, body: savePromotionOfferBodySchema }),
+  asyncHandler((req, res) => sellerPromotionProgramController.saveOffer(req, res))
+);
+router.post(
+  '/seller/:sellerId/promotion-offer/close',
+  validateJoiRequest({ params: sellerPromotionParamsSchema }),
+  asyncHandler((req, res) => sellerPromotionProgramController.closeOffer(req, res))
+);
+router.post(
+  '/seller/:sellerId/promotion-applications/:applicationId/decision',
+  validateJoiRequest({ params: promotionDecisionParamsSchema, body: promotionDecisionBodySchema }),
+  asyncHandler((req, res) => sellerPromotionProgramController.decideApplication(req, res))
+);
+router.get('/promotion-offers', authorizeEnablerIdentity, asyncHandler((req, res) => sellerPromotionProgramController.browseOffers(req, res)));
+router.post(
+  '/promotion-offers/:offerId/apply',
+  validateJoiRequest({ params: promotionOfferParamsSchema }),
+  authorizeEnablerIdentity,
+  asyncHandler((req, res) => sellerPromotionProgramController.apply(req, res))
+);
+
 router.post(
   '/register',
   validateJoiRequest({ body: registerBodySchema }),
@@ -244,6 +305,14 @@ router.post(
 
 // Protected Routes
 router.use('/:enablerId', validateJoiRequest({ params: enablerIdParamsSchema }), authorizeEnabler);
+
+router.get('/:enablerId/catalog', asyncHandler((req, res) => promotedCatalogController.getMyCatalog(req, res)));
+router.get('/:enablerId/catalog/share-link', asyncHandler((req, res) => promotedCatalogController.getCatalogLink(req, res)));
+router.get(
+  '/:enablerId/products/:productId/share-link',
+  validateJoiRequest({ params: promotedProductParamsSchema }),
+  asyncHandler((req, res) => promotedCatalogController.getProductShareLink(req, res))
+);
 
 router.post(
   '/:enablerId/listings',

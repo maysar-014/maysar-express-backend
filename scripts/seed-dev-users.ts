@@ -367,6 +367,56 @@ async function main() {
       log('✓ COD trust score initialised (score: 0, tier: NEW_BUYER)');
     }
 
+    // ── 6. Seed enabler_Profile for enabler role ───────────────────────────
+    if (user.role === 'enabler') {
+      const enablerId = `enb_${userId.replace(/^usr_/, '')}`;
+      await (prisma as any).enabler_Profile.upsert({
+        where: { userId },
+        create: {
+          id: enablerId,
+          userId,
+          enablerCode: `ENB-${user.firstName.toUpperCase().slice(0, 6)}`,
+          enablerCodeShort: `E${user.firstName.toUpperCase().slice(0, 2)}`,
+          businessName: `${user.firstName} ${user.lastName} — Maysar Enabler`,
+          contactEmail: user.email,
+          contactPhone: user.phoneNumber,
+          businessDescription: 'Seeded enabler for lifecycle verification and development testing.',
+          status: 'ACTIVE',
+          verificationStatus: 'VERIFIED',
+          tier: 'STANDARD',
+          commissionRate: 0.05,
+          totalSales: 0,
+          totalOrders: 0,
+          conversionRate: 0,
+          totalCommissionEarned: 0,
+          approvedBy: CANONICAL_SEED_IDS.admin,
+          approvedAt: new Date(),
+          termsVersion: '1.0',
+          termsAcceptedAt: new Date(),
+          trainingStatus: 'completed',
+          trainingCompletedAt: new Date(),
+          activatedAt: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        update: {
+          status: 'ACTIVE',
+          verificationStatus: 'VERIFIED',
+          tier: 'STANDARD',
+          commissionRate: 0.05,
+          approvedBy: CANONICAL_SEED_IDS.admin,
+          approvedAt: new Date(),
+          termsVersion: '1.0',
+          termsAcceptedAt: new Date(),
+          trainingStatus: 'completed',
+          trainingCompletedAt: new Date(),
+          activatedAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+      log(`✓ enabler_Profile upserted (id: ${enablerId})`);
+    }
+
     seededUsers.push({ email: user.email, role: user.role, id: userId });
     log('✓ Done');
   }

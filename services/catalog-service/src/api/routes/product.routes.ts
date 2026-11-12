@@ -350,8 +350,16 @@ export function createProductRoutes(
   );
 
   /**
-   * Get Product by ID
-   * GET /v1/products/:id
+   * Get Product by ID or Slug (public — supports both system IDs and human-readable slugs)
+   * GET /v1/products/:identifier
+   *
+   * `:identifier` transparently accepts either:
+   * - A system product ID  (e.g. `prod_01ABCDEF...`)
+   * - A human-readable slug (e.g. `juma-mens-leather-sandals`)
+   *
+   * The controller resolves which one it is and returns the same product DTO.
+   * This mirrors the storefront pattern: `GET /api/catalog/sellers/:sellerId/storefront`
+   * accepts either a sellerId or a slug with no extra path segment.
    */
   router.get(`${apiPrefix}/products/:id`,
     ...commonMiddleware,

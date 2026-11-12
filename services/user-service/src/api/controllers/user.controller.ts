@@ -12,6 +12,7 @@ import { UpdateUserUseCase } from '@application/use-cases/update-user.use-case';
 import { VerifyEmailUseCase } from '@application/use-cases/verify-email.use-case';
 import { RequestPasswordResetUseCase } from '@application/use-cases/request-password-reset.use-case';
 import { ResetPasswordUseCase } from '@application/use-cases/reset-password.use-case';
+import { ResolveNamesUseCase } from '@application/use-cases/resolve-names.use-case';
 import { UserMapper } from '@application/mappers/user-mapper';
 import { UserAlreadyExistsError, UserValidationError } from '@domain/errors/user.errors';
 import { EmailService } from '@infrastructure/services/email.service';
@@ -38,7 +39,8 @@ export class UserController {
     private resetPasswordUseCase: ResetPasswordUseCase,
     private emailService: EmailService,
     private notificationClient: NotificationServiceClient,
-    private userRepository?: ContractAwareUserRepository
+    private userRepository?: ContractAwareUserRepository,
+    private resolveNamesUseCase?: ResolveNamesUseCase
   ) { }
 
   private statusFromUserResult(message?: string, fallback: number = 400): number {
@@ -165,6 +167,106 @@ export class UserController {
           }
         });
       }
+    }
+  }
+
+  /**
+   * POST /api/user/resolve-names
+   *
+   * Resolve a batch of user IDs to display-name DTOs in a single HTTP call.
+   * Returns a map of `{ [id]: { fullName, publicCode, role } | null }` — null
+   * for unresolved IDs so partial success is the norm for display use cases.
+   *
+   * The use case is optional (may not be wired in test environments), in
+   * which case we return 503 so the caller knows the feature is unavailable
+   * rather than receiving a silent 500.
+   */
+  async resolveNames(req: Request, res: Response): Promise<void> {
+    try {
+      if (!this.resolveNamesUseCase) {
+        res.status(503).json({
+          success: false,
+          error: {
+            code: 'SERVICE_UNAVAILABLE',
+            message: 'Name resolution is not available'
+          }
+        });
+        return;
+      }
+
+      const body = req.body;
+      if (!body || typeof body !== 'object' || Array.isArray(body)) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: "Request body must be a JSON object with an 'ids' array"
+          }
+        });
+        return;
+      }
+
+      const { ids } = body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: "'ids' must be a non-empty array of user ID strings"
+          }
+        });
+        return;
+      }
+
+      // Element-level validation: every entry must be a non-empty string.
+      for (const id of ids) {
+        if (typeof id !== 'string' || id.trim().length === 0) {
+          res.status(400).json({
+            success: false,
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: "Each ID in 'ids' must be a non-empty string"
+            }
+          });
+          return;
+        }
+      }
+
+      // Batch-size limit: enforced on the unique set so a caller cannot
+      // bypass it by padding the array with duplicates.
+      const uniqueIds = Array.from(new Set(ids.map((id: string) => id.trim())));
+      if (uniqueIds.length > 100) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'BATCH_SIZE_EXCEEDED',
+            message: 'A maximum of 100 IDs may be resolved per request'
+          }
+        });
+        return;
+      }
+
+      const resultMap = await this.resolveNamesUseCase.execute({ ids: uniqueIds });
+
+      // Convert the Map to a plain object for JSON serialization, preserving
+      // the first-occurrence key order from the use case.
+      const data: Record<string, { fullName: string; publicCode: string; role: string } | null> = {};
+      for (const [id, dto] of resultMap) {
+        data[id] = dto;
+      }
+
+      res.status(200).json({
+        success: true,
+        data
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'An unexpected error occurred while resolving names'
+        }
+      });
     }
   }
 

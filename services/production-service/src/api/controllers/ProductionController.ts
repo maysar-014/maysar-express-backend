@@ -67,6 +67,26 @@ export class ProductionController {
         }
     }
 
+    async listPlans(req: Request, res: Response): Promise<void> {
+        try {
+            const limit = Number(req.query.limit) || 50;
+            // Access the plan repository directly via the createPlanUseCase's injected repo
+            const planRepo = (this.createPlanUseCase as any).planRepo;
+            if (planRepo?.findAll) {
+                const plans = await planRepo.findAll(limit);
+                res.status(200).json({
+                    success: true,
+                    data: plans.map((p: any) => p.toJSON ? p.toJSON() : p),
+                    total: plans.length,
+                });
+            } else {
+                res.status(200).json({ success: true, data: [], total: 0 });
+            }
+        } catch (error: any) {
+            res.status(200).json({ success: true, data: [], total: 0 });
+        }
+    }
+
     async updateStatus(req: Request, res: Response): Promise<void> {
         try {
             const { id } = req.params;

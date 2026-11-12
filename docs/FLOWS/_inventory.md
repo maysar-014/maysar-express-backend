@@ -96,7 +96,7 @@ The following service system docs contain embedded frontend integration guides t
 | `docs/order/ORDER_SERVICE_SYSTEM.md` | COD trust model, dual-axis tier, exposure limits, saga orchestration | Buyer, Seller, Admin | order-service | **Active — primary source of truth for order/COD flows.** |
 | `docs/checkout/CHECKOUT_SERVICE_SYSTEM.md` | Quote validation, shippingCost authoritative source, multi-seller checkout, confirm chain | Buyer | checkout-service | **Active — primary source of truth for checkout flow.** |
 | `docs/wallet/WALLET_SERVICE_SYSTEM.md` | Hold lifecycle, COD commitment ledger, idempotency | Buyer, Seller, Courier | wallet-service | **Active — primary source of truth for wallet flows.** |
-| `docs/enabler/ENABLER_SERVICE_SYSTEM.md` | Two-gate activation, capability matrix, enforcement lifecycle | Enabler, Admin | enabler-service | **Active — primary source of truth for enabler flows.** |
+| `docs/enabler/ENABLER_SERVICE_SYSTEM.md` | Phantom reference — no such file; truth is `services/enabler-service/README.md` + `services/enabler-service/src/api/routes/*`. Admin approval at `/api/enabler/enablers/:id/approve`. | Enabler, Admin | enabler-service | **Fragmented — phantom ref; see services/enabler-service (canonical)** |
 | `docs/catalog/CATALOG_SERVICE_SYSTEM.md` | Buy-box ranking, KYC gate on product create, search redirects | Buyer, Seller, Admin | catalog-service | **Active — primary source of truth for catalog flows.** |
 | `docs/payment/PAYMENT_SERVICE_SYSTEM.md` | Multi-method payment, sandbox simulation, fraud engine, failing GET endpoints | Buyer, Admin | payment-service | **Active — primary source of truth for payment flows.** |
 

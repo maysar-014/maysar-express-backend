@@ -62,7 +62,7 @@ const authEventPublisher = new AuthEventPublisher(authOutboxRepository);
 export const AuthModule: Module = {
     name: 'auth-service',
     initialize: async () => {
-        console.log('Initializing auth-service module (fully merged)');
+        logger.info('Initializing auth-service module (fully merged)');
 
         // Initialize auth dependencies
         try {
@@ -155,19 +155,19 @@ export const AuthModule: Module = {
                 { path: '/api/v1/auth', router: apiV1AuthRouter }
             ];
 
-            console.log('Consolidated 2FA and Session routes mounted successfully');
+            logger.info('Consolidated 2FA and Session routes mounted successfully');
 
 
-            console.log('Auth-service routes mounted successfully');
+            logger.info('Auth-service routes mounted successfully');
             logger.info(`Auth Service starting on port ${port}...`);
         } catch (error) {
-            console.error('Failed to initialize auth-service:', error);
+            logger.error('Failed to initialize auth-service', { error: error instanceof Error ? error.message : String(error) });
             AuthModule.routes = Router();
         }
     },
     routes: Router(),
     shutdown: async () => {
-        console.log('Shutting down auth-service module');
+        logger.info('Shutting down auth-service module');
         // 2FA is merged into auth-service now, so there is no separate module teardown path.
     }
 };

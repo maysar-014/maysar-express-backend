@@ -1,9 +1,8 @@
 ﻿# Buyer Flows — Wallet Service
 
-> **Verification status:** Partially Verified
-> **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` (September 2026); `docs/wallet/WALLET_SERVICE_SYSTEM.md`
-> **Canonical source:** `docs/FLOWS/wallet/user-flow/buyer-flows.md`
-> **Corresponding frontend guide:** `docs/FLOWS/wallet/frontend-guide/buyer-guide.md`
+> **Verification status:** Verified — Live-verified 2026-11-06 against `run-lifecycle-checks.mjs` (LC-05)
+> **Verification basis:** `scripts/verification/run-lifecycle-checks.mjs` LC-05 (2026-11-06); `docs/FLOWS/_verification/analysis-report.md` (September 2026)
+> **Last updated:** 2026-11-06 (corrected: FLW-006 balance path; FLW-007 statement path)
 
 ## Overview
 
@@ -15,9 +14,9 @@ This document covers wallet-service flows from the buyer's perspective: checking
 
 | # | Flow Name | Verification Status | Primary Endpoint |
 |---|---|---|---|
-| 1 | Check Wallet Balance | Partially Verified | `GET /api/wallet/balance` |
+| 1 | Check Wallet Balance | Verified | `GET /api/wallet/wallets/:userId/balance` |
 | 2 | COD Commitment (Hold Lifecycle) | Partially Verified | Internal (wallet-service, event-driven) |
-| 3 | View Transaction History | Partially Verified | `GET /api/wallet/statement` |
+| 3 | View Transaction History | Verified | `GET /api/wallet/wallets/:userId/statement` |
 
 ---
 
@@ -30,7 +29,7 @@ This document covers wallet-service flows from the buyer's perspective: checking
 | Actor | Buyer |
 | Trigger | Buyer opens wallet screen or checkout summary |
 | Preconditions | Authenticated (Bearer JWT, any role with wallet) |
-| Terminal states (success) | 200 `{ balance, frozenAmount, availableBalance, currency }` |
+| Terminal states (success) | 200 `{ data: { balance, frozenAmount, availableBalance, currency } }` |
 | Terminal states (failure) | 401 if unauthenticated; 404 if wallet not yet initialized |
 | Verification status | Partially Verified |
 
@@ -38,10 +37,12 @@ This document covers wallet-service flows from the buyer's perspective: checking
 
 | Step | Actor/System | Action | Endpoint | Auth | Expected Response |
 |---|---|---|---|---|---|
-| 1 | Buyer | Requests current wallet balance | `GET /api/wallet/balance` | Bearer JWT (buyer role) | Request accepted |
+| 1 | Buyer | Requests current wallet balance | `GET /api/wallet/wallets/:userId/balance` | Bearer JWT (buyer role) | Request accepted |
 | 2 | wallet-service | Fetches wallet scoped to requesting user's `userId` | — | — | Wallet record retrieved |
 | 3 | wallet-service | Computes `availableBalance = balance − frozenAmount` | — | — | Available balance calculated |
-| 4 | Buyer | Receives balance response | — | — | 200 `{ balance, frozenAmount, availableBalance, currency: "TZS" }` |
+| 4 | Buyer | Receives balance response | — | — | 200 `{ data: { balance, frozenAmount, availableBalance, currency: "TZS" } }` |
+
+> ⚠️ **FLW-006 corrected 2026-11-06:** Previous path was `GET /api/wallet/balance` (returns 404). Correct path includes the `userId`: `GET /api/wallet/wallets/:userId/balance`. Response is wrapped in `data: { ... }` envelope.
 
 ### Balance Fields
 
@@ -150,9 +151,11 @@ The COD hold lifecycle is entirely event-driven. No buyer-initiated HTTP call tr
 
 | Step | Actor/System | Action | Endpoint | Auth | Expected Response |
 |---|---|---|---|---|---|
-| 1 | Buyer | Requests transaction history with optional date range | `GET /api/wallet/statement` | Bearer JWT (buyer role) | Request accepted |
+| 1 | Buyer | Requests transaction history with optional date range | `GET /api/wallet/wallets/:userId/statement` | Bearer JWT (buyer role) | Request accepted |
 | 2 | wallet-service | Fetches paginated transactions scoped to requesting user's wallet | — | — | Transactions retrieved |
-| 3 | Buyer | Receives list of wallet transactions | — | — | 200 `{ transactions: [...], total, page, limit }` |
+| 3 | Buyer | Receives list of wallet transactions | — | — | 200 `{ data: { transactions: [...], total, page, limit } }` |
+
+> ⚠️ **FLW-007 corrected 2026-11-06:** Previous path was `GET /api/wallet/statement` (returns 404). Correct path includes the `userId`: `GET /api/wallet/wallets/:userId/statement`.
 
 ### Query Parameters
 

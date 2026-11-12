@@ -4,57 +4,76 @@
  * Base path: /api/catalog/seller-locations
  *
  * Seller actions (requires auth + seller role):
- *   POST   /                             Create a location
+ *   POST   /                             Create a location (idempotent via Idempotency-Key header)
  *   GET    /                             List authenticated seller's locations
+ *   GET    /search                       Search / filter locations (geo, pagination)
+ *   GET    /search?export=csv            Export all matching locations to CSV
  *   GET    /:locationId                  Get one location
- *   PUT    /:locationId                  Update location (name, hours, address, isPrimary)
+ *   GET    /:locationId/metrics          Location summary metrics
+ *   GET    /:locationId/detail           Location detail panel
+ *   GET    /:locationId/report/pdf       Download location detail as PDF
+ *   PUT    /:locationId                  Update location (idempotent via Idempotency-Key header)
  *   PATCH  /:locationId/deactivate       Soft-deactivate (seller self-service)
  *   PATCH  /:locationId/activate         Re-activate
  *
  * Admin-only actions (requires admin role):
  *   DELETE /:locationId                  Hard-delete a location (admin only)
  *
- * Product inventory at a location:
- *   PUT    /:locationId/products/:productId       Attach product / set stock
- *   PATCH  /:locationId/products/:productId/stock Adjust stock (delta)
- *   DELETE /:locationId/products/:productId       Detach product
+ * Geographic hierarchy (reference data from frontend):
+ *   GET    /geography/regions
+ *   GET    /geography/districts
+ *   GET    /geography/wards
+ *   GET    /geography/streets
+ *   GET    /geography/validate
  *
- * Stock transfers:
- *   POST   /transfers                    Transfer stock between locations
- *
- * Product view:
- *   GET    /products/:productId          All locations for a product (seller-scoped)
- *
- * Internal (service-to-service):
- *   POST   /internal/select-fulfillment  Select optimal location for checkout
+ * NOTE: Physical stock, transfers, stock-outs, and reconciliation are owned by
+ * inventory-service (see /api/inventory/* endpoints). Catalog owns only the
+ * business/location metadata and provisions an owned Inventory warehouse per
+ * location.
  */
 
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
 import { requireAuth, requireRole } from '@shared/middleware/auth-context.middleware';
+import { IdempotencyMiddleware } from '@shared/middleware/idempotency';
+import { resolveRedisUrl } from '@shared/redis/ioredis-client';
 import { SellerLocationController } from '../controllers/seller-location.controller';
+import { GeographyController } from '../controllers/geography.controller';
 import { ManageSellerLocationsUseCase } from '../../application/use-cases/manage-seller-locations.use-case';
-import { ManageProductInventoryUseCase } from '../../application/use-cases/manage-product-inventory.use-case';
-import { SelectFulfillmentLocationUseCase } from '../../application/use-cases/select-fulfillment-location.use-case';
 import { PrismaSellerLocationRepository } from '../../infrastructure/repositories/prisma-seller-location.repository';
-import { ValidationError, ForbiddenError } from '../../../../../shared/errors/api-errors';
 
 export function createSellerLocationRoutes(prisma: any): Router {
   const router = Router();
 
   const repo = new PrismaSellerLocationRepository(prisma);
   const locationUseCase = new ManageSellerLocationsUseCase(repo);
-  const inventoryUseCase = new ManageProductInventoryUseCase(repo);
-  const fulfillmentUseCase = new SelectFulfillmentLocationUseCase(repo);
-  const ctrl = new SellerLocationController(locationUseCase, inventoryUseCase);
+  const ctrl = new SellerLocationController(locationUseCase);
+  const geoCtrl = new GeographyController(repo);
+
+  // ── Idempotency for location mutations (POST /, PUT /:locationId) ────────
+  // Retrying a create/update with the same Idempotency-Key returns the cached
+  // response instead of creating a duplicate location.
+  const idempotencyMiddleware = new IdempotencyMiddleware(resolveRedisUrl(process.env.REDIS_URL ?? 'redis://redis:6379'), {
+    keyPrefix: 'catalog:seller-location:',
+    headerName: 'idempotency-key',
+    ttlSeconds: 24 * 60 * 60, // 24 hours
+  });
 
   // All routes require authentication
   router.use(requireAuth);
 
+  // ── Geographic hierarchy (reference data from frontend) ───────────────────
+  router.get('/geography/regions',           (req, res, next) => geoCtrl.listRegions(req, res, next));
+  router.get('/geography/districts',         (req, res, next) => geoCtrl.listDistricts(req, res, next));
+  router.get('/geography/wards',             (req, res, next) => geoCtrl.listWards(req, res, next));
+  router.get('/geography/streets',           (req, res, next) => geoCtrl.listStreets(req, res, next));
+  router.get('/geography/validate',          (req, res, next) => geoCtrl.validateGeography(req, res, next));
+
   // ── Location CRUD (seller) ────────────────────────────────────────────────
-  router.post('/',             (req, res, next) => ctrl.createLocation(req, res, next));
+  // Idempotency enforced on create/update so retries never duplicate locations
+  router.post('/',             idempotencyMiddleware.middleware(), (req, res, next) => ctrl.createLocation(req, res, next));
   router.get('/',              (req, res, next) => ctrl.listLocations(req, res, next));
   router.get('/:locationId',   (req, res, next) => ctrl.getLocation(req, res, next));
-  router.put('/:locationId',   (req, res, next) => ctrl.updateLocation(req, res, next));
+  router.put('/:locationId',   idempotencyMiddleware.middleware(), (req, res, next) => ctrl.updateLocation(req, res, next));
 
   // Seller self-service: soft deactivate / reactivate (does NOT delete data)
   router.patch('/:locationId/deactivate', (req, res, next) => ctrl.deactivateLocation(req, res, next));
@@ -67,42 +86,18 @@ export function createSellerLocationRoutes(prisma: any): Router {
     (req, res, next) => ctrl.deleteLocation(req, res, next),
   );
 
-  // ── Product inventory ─────────────────────────────────────────────────────
-  router.put(   '/:locationId/products/:productId',       (req, res, next) => ctrl.attachProduct(req, res, next));
-  router.patch( '/:locationId/products/:productId/stock', (req, res, next) => ctrl.adjustStock(req, res, next));
-  router.delete('/:locationId/products/:productId',       (req, res, next) => ctrl.detachProduct(req, res, next));
+  // ── Location summary metrics ──────────────────────────────────────────────
+  router.get('/:locationId/metrics', (req, res, next) => ctrl.getLocationMetrics(req, res, next));
 
-  // ── Stock transfers ───────────────────────────────────────────────────────
-  router.post('/transfers', (req, res, next) => ctrl.transferStock(req, res, next));
+  // ── Location detail panel ─────────────────────────────────────────────────
+  router.get('/:locationId/detail', (req, res, next) => ctrl.getLocationDetail(req, res, next));
 
-  // ── Product view ──────────────────────────────────────────────────────────
-  router.get('/products/:productId', (req, res, next) => ctrl.getProductLocations(req, res, next));
+  // ── Location report (PDF) ─────────────────────────────────────────────────
+  router.get('/:locationId/report/pdf', (req, res, next) => ctrl.getLocationReportPdf(req, res, next));
 
-  // ── Internal fulfillment selection (service-to-service) ──────────────────
-  router.post('/internal/select-fulfillment', async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { checkoutId, buyerLat, buyerLng, products } = req.body;
-      if (!checkoutId) throw new ValidationError('checkoutId is required');
-      if (buyerLat === undefined || buyerLng === undefined) throw new ValidationError('buyerLat and buyerLng are required');
-      if (!Array.isArray(products) || products.length === 0) throw new ValidationError('products must be a non-empty array');
-
-      const result = await fulfillmentUseCase.execute({
-        checkoutId,
-        buyerLat: Number(buyerLat),
-        buyerLng: Number(buyerLng),
-        products,
-      });
-      res.json({
-        success: true,
-        data: {
-          byProduct: Object.fromEntries(result.byProduct),
-          bySellerOrder: Object.fromEntries(result.bySellerOrder),
-        },
-      });
-    } catch (err) {
-      next(err);
-    }
-  });
+  // ── Location search ───────────────────────────────────────────────────────
+  // ?export=csv returns a CSV attachment of all matching locations + stock
+  router.get('/search', (req, res, next) => ctrl.searchLocations(req, res, next));
 
   return router;
 }

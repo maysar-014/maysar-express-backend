@@ -1,4 +1,6 @@
 
+import { MatchAuditRecord } from './match-audit-record.value-object';
+
 export enum MatchLevel {
     EXACT = 'EXACT',
     STRONG = 'STRONG',
@@ -21,6 +23,7 @@ export interface MatchResultProps {
     matchedProductId?: string;
     criteria: MatchCriteria;
     requiresConfirmation: boolean;
+    auditRecord?: MatchAuditRecord;
 }
 
 export class MatchResult {
@@ -29,6 +32,7 @@ export class MatchResult {
     public readonly matchedProductId?: string;
     public readonly criteria: MatchCriteria;
     public readonly requiresConfirmation: boolean;
+    public readonly auditRecord?: MatchAuditRecord;
 
     constructor(props: MatchResultProps) {
         this.level = props.level;
@@ -36,6 +40,7 @@ export class MatchResult {
         this.matchedProductId = props.matchedProductId;
         this.criteria = props.criteria;
         this.requiresConfirmation = props.requiresConfirmation;
+        this.auditRecord = props.auditRecord;
     }
 
     isExactMatch(): boolean {
@@ -58,12 +63,13 @@ export class MatchResult {
         return this.isExactMatch() || this.isStrongMatch();
     }
 
-    static noMatch(): MatchResult {
+    static noMatch(auditRecord?: MatchAuditRecord): MatchResult {
         return new MatchResult({
             level: MatchLevel.NO_MATCH,
             score: 0,
             criteria: {},
-            requiresConfirmation: false
+            requiresConfirmation: false,
+            auditRecord,
         });
     }
 }

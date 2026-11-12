@@ -26,10 +26,10 @@ All training routes are mounted under `/api/training`. Note: the actual route pr
 
 | Flow ID | Flow Name | Status | Primary Endpoint |
 |---------|-----------|--------|-----------------|
-| TRN-ENB-01 | Browse Training Modules | Partially Verified | `GET /api/training/api/v1/modules` |
-| TRN-ENB-02 | Start and Complete a Module | Partially Verified | `POST /api/training/api/v1/modules/:moduleId/start` + `/complete` |
-| TRN-ENB-03 | Submit Assessment | Partially Verified | `POST /api/training/api/v1/assessments/:assessmentId/submit` |
-| TRN-ENB-04 | Check Certification Status | Partially Verified | `GET /api/training/api/v1/modules/:id` + `GET /api/training/certification` |
+| TRN-ENB-01 | Browse Training Modules | Verified | `GET /api/training/api/v1/modules?role=ENABLER` |
+| TRN-ENB-02 | Start Training Session | Verified | `POST /api/training/api/v1/training/start` |
+| TRN-ENB-03 | Complete Training Module | Verified | `POST /api/training/api/v1/training/:trainingRecordId/complete` |
+| TRN-ENB-04 | Check Training Progress | Verified | `GET /api/training/api/v1/training/progress/:learnerId` |
 
 ---
 
@@ -108,76 +108,78 @@ All training routes are mounted under `/api/training`. Note: the actual route pr
 
 | Field | Value |
 |-------|-------|
-| **Actor** | Enabler |
-| **Trigger** | Enabler works through a training module |
-| **Preconditions** | Enabler JWT. Module exists and has status `NOT_STARTED` or `IN_PROGRESS`. |
-| **Terminal states** | Module status `COMPLETED`; overall `trainingStatus` progresses toward `'completed'` as all mandatory modules finish |
-| **Verification status** | Partially Verified |
+## Flow TRN-ENB-02: Start Training Session
 
-### Happy Path
-
-| Step | Actor/System | Action | Endpoint Method + Path | Auth | Expected Response |
-|------|-------------|--------|------------------------|------|-------------------|
-| 1 | Enabler | Start the module | `POST /api/training/api/v1/modules/:moduleId/start` | Enabler JWT | 200 `{ data: { moduleId, status: "IN_PROGRESS", startedAt } }` |
-| 2 | Enabler | Mark module complete | `POST /api/training/api/v1/modules/:moduleId/complete` | Enabler JWT | 200 `{ data: { moduleId, status: "COMPLETED", completedAt } }` |
-
-### Service Interaction Chain
-
-`StartModuleUseCase` creates or updates the learner's progress record for the module, setting status to `IN_PROGRESS` and writing `startedAt`. It also returns the module content payload so the frontend can render the learning material without a second request.
-
-`CompleteModuleUseCase` marks the progress record `COMPLETED` and then checks whether all mandatory modules for the role are now complete and unexpired. If they are, the mirrored `trainingStatus` on the enabler profile advances toward `'completed'`. However, completion of modules alone does not emit `training.certification_passed` — that event is only emitted by a passed assessment (see Flow TRN-ENB-03). If a module has no associated assessment, the aggregate gate check in `EnablerTrainingGateService` determines whether the training requirement is fully satisfied.
-
-### Unhappy Path Branches
-
-| Trigger | System Response | Error Code | Terminal State |
-|---------|----------------|------------|----------------|
-| `:moduleId` does not exist | 404 not found | — | No state change |
-| Module already `COMPLETED` | 200 idempotent return or 409 conflict (implementation-dependent) | — | No state change |
-| Module record has expired | 409 — requires re-completion | — | Module must be retaken |
-| No JWT or expired token | 401 unauthorized | — | No state change |
-
----
-
-## Flow TRN-ENB-03: Submit Assessment
+> ✅ **Corrected 2026-11-06:** The start endpoint is NOT path-based (`/modules/:id/start`). It is a single POST to `/training/start` with the module ID in the body.
 
 | Field | Value |
 |-------|-------|
-| **Actor** | Enabler |
-| **Trigger** | Enabler submits answers for a training module's assessment |
-| **Preconditions** | Enabler JWT. The assessment must belong to a module the enabler has started. Attempt limit not exhausted. |
-| **Terminal states** | **Pass:** `training.certification_passed` event emitted; Gate 2 of enabler activation satisfied. **Fail:** `training.certification_failed` emitted; retry available after cooldown. |
-| **Verification status** | Partially Verified |
+| **Actor** | Enabler or Courier |
+| **Trigger** | Learner begins a training module |
+| **Preconditions** | JWT. Module exists. |
+| **Terminal states** | Training record created with status `IN_PROGRESS`; `trainingRecordId` returned |
+| **Verification status** | Verified |
 
 ### Happy Path
 
 | Step | Actor/System | Action | Endpoint Method + Path | Auth | Expected Response |
 |------|-------------|--------|------------------------|------|-------------------|
-| 1 | Enabler | Submit assessment answers | `POST /api/training/api/v1/assessments/:assessmentId/submit` | Enabler JWT | 200 `{ data: { passed: true, score: 87, passingScore: 70, certificationId, passedAt, attemptsRemaining } }` |
+| 1 | Enabler | Start training session | `POST /api/training/api/v1/training/start` | Enabler JWT | 200/201 `{ trainingRecordId, status: "IN_PROGRESS" }` |
 
 **Request body:**
-```jsonc
+```json
 {
-  "answers": [
-    { "questionId": "q1", "selectedOption": "B" },
-    { "questionId": "q2", "selectedOption": "A" }
-  ]
+  "learnerId": "usr_01...",
+  "learnerRole": "ENABLER",
+  "moduleId": "mod_01..."
 }
 ```
 
-### Service Interaction Chain
-
-`SubmitAssessmentUseCase` scores the submitted answers against the stored correct answers, calculates a percentage `score`, and compares it to the `passingScore` threshold configured for the assessment.
-
-**On pass:** certification status transitions to `PASSED`; `training.certification_passed` is published with `{ userId, role: 'ENABLER', certificationId, passedAt }`. This event is consumed by enabler-service, which mirrors `trainingStatus → 'completed'` on the enabler profile. Gate 2 of `POST /enablers/:id/activation` is now satisfied.
-
-**On fail:** `training.certification_failed` is published with `{ userId, role, attemptCount, maxAttempts }`. The response body includes `score`, `passingScore`, `passed: false`, `feedback[]`, and `attemptsRemaining`. A cooldown period is enforced before the next attempt is allowed.
+> ⚠️ The response returns `trainingRecordId` at the top level (not nested in `data`). This ID is used for the complete call.
 
 ### Unhappy Path Branches
 
-| Trigger | System Response | Error Code | Terminal State |
-|---------|----------------|------------|----------------|
-| Score below passing threshold | 200 with `passed: false`, score, feedback, `attemptsRemaining` | — | `training.certification_failed` emitted; retry after cooldown |
-| `attemptsRemaining === 0` | 403 — max attempts exhausted; support contact CTA | — | Assessment locked; support required |
+| Trigger | System Response | Error Code |
+|---|---|---|
+| Invalid `moduleId` | 400/404 | `VALIDATION_ERROR` or `NOT_FOUND` |
+| JWT missing | 401 | `UNAUTHORIZED` |
+
+---
+
+## Flow TRN-ENB-03: Complete Training Module
+
+> ✅ **Corrected 2026-11-06:** The completion endpoint uses `trainingRecordId` (from the start response), NOT `moduleId` or `assessmentId`.
+
+| Field | Value |
+|-------|-------|
+| **Actor** | Enabler or Courier |
+| **Trigger** | Learner submits module completion with score |
+| **Preconditions** | JWT. `trainingRecordId` from a previous start call. |
+| **Terminal states** | Training record updated to `COMPLETED`; certification check triggered |
+| **Verification status** | Verified |
+
+### Happy Path
+
+| Step | Actor/System | Action | Endpoint Method + Path | Auth | Expected Response |
+|------|-------------|--------|------------------------|------|-------------------|
+| 1 | Enabler | Submit module completion | `POST /api/training/api/v1/training/:trainingRecordId/complete` | Enabler JWT | 200/201 — training record updated |
+
+**Request body:**
+```json
+{
+  "score": 85,
+  "answers": []
+}
+```
+
+**Service Interaction Chain:** On completion, training-service checks whether all mandatory modules for the role are now complete. If so, `training.certification_passed` is published with `{ userId, role: 'ENABLER', certificationId, passedAt }`. enabler-service consumes this to satisfy Gate 2 of activation.
+
+### Unhappy Path Branches
+
+| Trigger | System Response | Error Code |
+|---|---|---|
+| `trainingRecordId` not found | 404 | `NOT_FOUND` |
+| Score below passing threshold | 200/400 — implementation-dependent | — |
 | Cooldown period active | 429 or 409 — retry not allowed yet | — | No state change |
 | `:assessmentId` does not exist | 404 not found | — | No state change |
 | Missing or malformed `answers` array | 422 validation error | `VALIDATION_ERROR` | No state change |
@@ -199,7 +201,9 @@ All training routes are mounted under `/api/training`. Note: the actual route pr
 | Step | Actor/System | Action | Endpoint Method + Path | Auth | Expected Response |
 |------|-------------|--------|------------------------|------|-------------------|
 | 1 | Enabler | Fetch module detail and completion info | `GET /api/training/api/v1/modules/:id` | Enabler JWT | 200 — module with `completionStatus` and certification info; data-level 404 if no fixture |
-| 2 | Enabler | Fetch full certification status | `GET /api/training/certification` | Enabler JWT | 200 `{ data: { status, passedAt, expiresAt, score, certificateUrl } }` |
+| 2 | Enabler | Check training progress | `GET /api/training/api/v1/training/progress/:learnerId` | Enabler JWT | 200 `{ data: { status, completedModules, totalRequired, progressPercent } }` or 404 |
+
+> ⚠️ **Corrected 2026-11-06:** Previous endpoint was `GET /api/training/certification` (returns 404 in live testing). The correct endpoint is `GET /api/training/api/v1/training/progress/:learnerId`, verified in LC-26.
 
 **Example certification response:**
 ```jsonc

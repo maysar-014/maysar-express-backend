@@ -369,6 +369,7 @@ export const CatalogModule: Module = {
             createCategoryUseCase,
             updateCategoryUseCase,
             deleteCategoryUseCase,
+            prisma as any,
             {},
             updateProductUseCase,
             deleteProductUseCase,
@@ -568,6 +569,41 @@ export const CatalogModule: Module = {
             router.use(createReviewRoutes(reviewController));
             router.use(createBuyBoxAdminRoutes(buyBoxAdminController));
 
+            // ── MUVA Phase 1-3: Configuration & Seller Offer API routes (ENH-009) ──
+            try {
+                const { createConfigurationRoutes } = await import('./src/api/routes/configuration.routes');
+                router.use(createConfigurationRoutes());
+                logger.info('✅ Configuration API routes mounted');
+            } catch (e) {
+                logger.warn('⚠️ Failed to mount configuration routes:', errorContext(e));
+            }
+
+            try {
+                const { createSellerOfferRoutes } = await import('./src/api/routes/seller-offer.routes');
+                router.use(createSellerOfferRoutes());
+                logger.info('✅ Seller Offer API routes mounted');
+            } catch (e) {
+                logger.warn('⚠️ Failed to mount seller offer routes:', errorContext(e));
+            }
+
+            // ── MSLE Seller Listing Workflow routes (ENH-005) ──────────────────
+            try {
+                const { createSellerListingRoutes } = await import('./src/api/routes/seller-listing.routes');
+                router.use(createSellerListingRoutes());
+                logger.info('✅ Seller Listing API routes mounted');
+            } catch (e) {
+                logger.warn('⚠️ Failed to mount seller listing routes:', errorContext(e));
+            }
+
+            // ── Checkout Validation routes (ENH-007/011/012) ───────────────────
+            try {
+                const { createCheckoutValidationRoutes } = await import('./src/api/routes/checkout-validation.routes');
+                router.use(createCheckoutValidationRoutes());
+                logger.info('✅ Checkout Validation API routes mounted');
+            } catch (e) {
+                logger.warn('⚠️ Failed to mount checkout validation routes:', errorContext(e));
+            }
+
             // ── Seller locations & product inventory ──────────────────────────
             // Full path: /api/catalog/seller-locations
             // Use the already-resolved globalPrisma — do NOT rely on globalThis.prisma
@@ -634,7 +670,7 @@ export const CatalogModule: Module = {
         }));
         router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createCatalogMaintenanceRoutes(prisma));
 
-        CatalogModule.routes = router;
+        CatalogModule.routes!.use('/', router);
     },
     routes: Router(),
     shutdown: async () => {

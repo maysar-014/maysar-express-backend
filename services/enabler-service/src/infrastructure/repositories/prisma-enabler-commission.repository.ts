@@ -67,17 +67,18 @@ export class PrismaEnablerCommissionRepository implements IEnablerCommissionRepo
   async findLedgerByEnablerId(enablerId: string, query: EnablerCommissionLedgerQuery = {}) {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
+    const earningsDelegate = (this.prismaClient as any).enabler_Earning;
     const where = {
       enablerId,
       ...(query.status ? { status: query.status } : {})
     };
 
-    const [items, total] = await Promise.all([
+    const [items, legacyTotal] = await Promise.all([
       this.prismaClient.enabler_Commission.findMany({
         where,
         orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
+        skip: earningsDelegate ? 0 : (page - 1) * limit,
+        take: earningsDelegate ? (page - 1) * limit + limit : limit,
         include: {
           enablerOrder: {
             select: {
@@ -89,28 +90,41 @@ export class PrismaEnablerCommissionRepository implements IEnablerCommissionRepo
       this.prismaClient.enabler_Commission.count({ where })
     ]);
 
+    if (!earningsDelegate) {
+      return {
+        items: items.map((item) => this.mapLegacyEntry(item)),
+        page,
+        limit,
+        total: legacyTotal,
+        totalPages: legacyTotal === 0 ? 0 : Math.ceil(legacyTotal / limit)
+      };
+    }
+
+    const earningStatuses = query.status === 'pending' ? ['ATTRIBUTED', 'PENDING']
+      : query.status === 'approved' ? ['QUALIFIED', 'AVAILABLE']
+      : query.status === 'paid' ? ['PAID']
+      : query.status === 'disputed' ? ['DISPUTED']
+      : query.status === 'forfeited' ? ['CANCELLED', 'REVERSED', 'REJECTED']
+      : query.status === 'on_hold' ? [] : undefined;
+    const earningWhere = { enablerId, ...(earningStatuses ? { status: { in: earningStatuses } } : {}) };
+    const [earnings, earningTotal] = await Promise.all([
+      earningStatuses?.length === 0 ? Promise.resolve([]) : earningsDelegate.findMany({
+        where: earningWhere,
+        orderBy: { createdAt: 'desc' },
+        skip: 0,
+        take: (page - 1) * limit + limit,
+      }),
+      earningStatuses?.length === 0 ? Promise.resolve(0) : earningsDelegate.count({ where: earningWhere }),
+    ]);
+    const legacyRows = items.filter((item: any) => !earnings.some((earning: any) => earning.orderId === item.enablerOrder?.orderId));
+    const earningRows = earnings.map((earning: any) => this.mapEarningEntry(earning));
+    const merged = [...legacyRows.map((item: any) => this.mapLegacyEntry(item)), ...earningRows]
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const start = (page - 1) * limit;
+    const total = legacyTotal + earningTotal;
+
     return {
-      items: items.map((item) => ({
-        id: item.id,
-        enablerId: item.enablerId,
-        enablerOrderId: item.enablerOrderId,
-        orderId: item.enablerOrder?.orderId ?? null,
-        commissionId: item.commissionId ?? null,
-        status: item.status,
-        baseCommission: toNumber(item.baseCommission),
-        tierBonus: toNumber(item.tierBonus),
-        performanceBonus: toNumber(item.performanceBonus),
-        totalCommission: toNumber(item.totalCommission),
-        protectionStatus: item.protectionStatus,
-        fraudCheckStatus: item.fraudCheckStatus,
-        approvedAt: item.approvedAt ?? null,
-        holdUntil: item.holdUntil ?? null,
-        paidAt: item.paidAt ?? null,
-        payoutId: item.payoutId ?? null,
-        paymentMethod: item.paymentMethod ?? null,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt
-      })),
+      items: merged.slice(start, start + limit),
       page,
       limit,
       total,
@@ -165,6 +179,49 @@ export class PrismaEnablerCommissionRepository implements IEnablerCommissionRepo
       }
     }
 
+    const earningsDelegate = (this.prismaClient as any).enabler_Earning;
+    if (earningsDelegate) {
+      const [earningAggregate, earningGrouped, latestEnablerPaid] = await Promise.all([
+        earningsDelegate.aggregate({ where: { enablerId }, _sum: { amount: true }, _count: { _all: true } }),
+        earningsDelegate.groupBy({ by: ['status'], where: { enablerId }, _sum: { amount: true }, _count: { _all: true } }),
+        earningsDelegate.findFirst({ where: { enablerId, paidAt: { not: null } }, orderBy: { paidAt: 'desc' }, select: { paidAt: true } }),
+      ]);
+      for (const item of earningGrouped) {
+        const mapped = this.mapEarningStatus(String(item.status));
+        if (!mapped) continue;
+        totals[mapped] += toNumber(item._sum.amount);
+        counts[mapped] += item._count._all;
+      }
+      const totalCommission = toNumber(aggregate._sum.totalCommission) + toNumber(earningAggregate._sum.amount);
+      const totalPending = totals.pending;
+      const totalApproved = totals.approved;
+      const totalPaid = totals.paid;
+      const totalOnHold = totals.on_hold;
+      const totalDisputed = totals.disputed;
+      const totalForfeited = totals.forfeited;
+      return {
+        currency: 'TZS' as const,
+        totalCommission,
+        totalPaid,
+        totalPending,
+        totalApproved,
+        totalOnHold,
+        totalDisputed,
+        totalForfeited,
+        totalOutstanding: totalPending + totalApproved + totalOnHold,
+        counts: {
+          all: aggregate._count._all + earningAggregate._count._all,
+          pending: counts.pending,
+          approved: counts.approved,
+          paid: counts.paid,
+          onHold: counts.on_hold,
+          disputed: counts.disputed,
+          forfeited: counts.forfeited
+        },
+        lastPaidAt: latestEnablerPaid?.paidAt ?? latestPaid?.paidAt ?? null,
+      };
+    }
+
     return {
       currency: 'TZS' as const,
       totalCommission: toNumber(aggregate._sum.totalCommission),
@@ -186,5 +243,63 @@ export class PrismaEnablerCommissionRepository implements IEnablerCommissionRepo
       },
       lastPaidAt: latestPaid?.paidAt ?? null
     };
+  }
+
+  private mapLegacyEntry(item: any) {
+    return {
+      id: item.id,
+      enablerId: item.enablerId,
+      enablerOrderId: item.enablerOrderId,
+      orderId: item.enablerOrder?.orderId ?? null,
+      commissionId: item.commissionId ?? null,
+      status: item.status,
+      baseCommission: toNumber(item.baseCommission),
+      tierBonus: toNumber(item.tierBonus),
+      performanceBonus: toNumber(item.performanceBonus),
+      totalCommission: toNumber(item.totalCommission),
+      protectionStatus: item.protectionStatus,
+      fraudCheckStatus: item.fraudCheckStatus,
+      approvedAt: item.approvedAt ?? null,
+      holdUntil: item.holdUntil ?? null,
+      paidAt: item.paidAt ?? null,
+      payoutId: item.payoutId ?? null,
+      paymentMethod: item.paymentMethod ?? null,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+    };
+  }
+
+  private mapEarningEntry(earning: any) {
+    const status = this.mapEarningStatus(String(earning.status)) ?? 'pending';
+    return {
+      id: earning.id,
+      enablerId: earning.enablerId,
+      enablerOrderId: earning.id,
+      orderId: earning.orderId,
+      commissionId: earning.commissionId ?? null,
+      status,
+      baseCommission: toNumber(earning.amount),
+      tierBonus: 0,
+      performanceBonus: 0,
+      totalCommission: toNumber(earning.amount),
+      protectionStatus: earning.status === 'DISPUTED' ? 'disputed' : 'active',
+      fraudCheckStatus: 'not_applicable',
+      approvedAt: earning.qualifiedAt ?? null,
+      holdUntil: null,
+      paidAt: earning.paidAt ?? null,
+      payoutId: earning.payoutId ?? null,
+      paymentMethod: earning.walletTransactionId ? 'WALLET' : null,
+      createdAt: earning.createdAt,
+      updatedAt: earning.updatedAt,
+    };
+  }
+
+  private mapEarningStatus(status: string): 'pending' | 'approved' | 'paid' | 'on_hold' | 'disputed' | 'forfeited' | null {
+    if (status === 'ATTRIBUTED' || status === 'PENDING') return 'pending';
+    if (status === 'QUALIFIED' || status === 'AVAILABLE') return 'approved';
+    if (status === 'PAID') return 'paid';
+    if (status === 'DISPUTED') return 'disputed';
+    if (status === 'CANCELLED' || status === 'REVERSED' || status === 'REJECTED') return 'forfeited';
+    return null;
   }
 }

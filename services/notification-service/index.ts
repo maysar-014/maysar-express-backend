@@ -169,16 +169,16 @@ export const NotificationModule: Module = {
             logger.warn('Failed to initialize Saga Recovery Worker', { error });
         }
 
-        const router = Router();
-
-        router.use('/sms', createSmsRouter());
-        router.use('/sms/health', smsHealthRoutes);
-        router.use('/notifications', requireAuth, createNotificationRoutes(notificationController));
-        router.use('/templates', requireAuth, createTemplateRoutes(templateController));
-        router.use('/preferences', requireAuth, createPreferenceRoutes(preferenceController));
-        router.use('/health', notificationHealthRoutes);
-        router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
-        router.get('/health-summary', (_req, res) => {
+        // Add all routes to the pre-declared router that app.ts already mounted.
+        const notifRouter = NotificationModule.routes!;
+        notifRouter.use('/sms', createSmsRouter());
+        notifRouter.use('/sms/health', smsHealthRoutes);
+        notifRouter.use('/notifications', requireAuth, createNotificationRoutes(notificationController));
+        notifRouter.use('/templates', requireAuth, createTemplateRoutes(templateController));
+        notifRouter.use('/preferences', requireAuth, createPreferenceRoutes(preferenceController));
+        notifRouter.use('/health', notificationHealthRoutes);
+        notifRouter.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
+        notifRouter.get('/health-summary', (_req, res) => {
             res.json({
                 status: 'ok',
                 service: 'notification-service',
@@ -186,8 +186,6 @@ export const NotificationModule: Module = {
                 timestamp: new Date().toISOString()
             });
         });
-
-        NotificationModule.routes = router;
     },
     routes: Router(),
     shutdown: async () => {

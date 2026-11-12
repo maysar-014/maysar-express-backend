@@ -5,6 +5,7 @@ import { IUserRepository } from '../../domain/repositories';
 import { UserPolicies } from '../../domain/policies/user-policies';
 import { UserProfileUpdatedEvent, IDomainEventPublisher } from '../../domain/events';
 import { logger } from '../../infrastructure/services/logger.service';
+import { NameResolutionCache, NAME_RESOLUTION_CACHE_PREFIX } from './resolve-names.use-case';
 
 /**
  * Input for updating a user
@@ -42,7 +43,14 @@ export interface UpdateUserOutput {
 export class UpdateUserUseCase {
   constructor(
     private userRepository: IUserRepository,
-    private eventPublisher: IDomainEventPublisher
+    private eventPublisher: IDomainEventPublisher,
+    /**
+     * Optional cache adapter used to invalidate stale display-name entries
+     * after a user's first or last name changes. When undefined, cache
+     * invalidation is skipped (the next name-resolution call will serve a
+     * stale entry until the TTL expires — acceptable in test environments).
+     */
+    private nameCache?: NameResolutionCache
   ) {}
 
   /**
@@ -196,6 +204,21 @@ export class UpdateUserUseCase {
         updatedBy: input.updatedBy,
         changes: changes
       });
+
+      // Invalidate the display-name cache entry for this user when their
+      // first or last name changed. Best-effort: a Redis failure is logged
+      // but does not fail the update — the entry simply expires at its TTL.
+      if (this.nameCache && (changes.includes('firstName') || changes.includes('lastName'))) {
+        try {
+          await this.nameCache.del(NAME_RESOLUTION_CACHE_PREFIX + user.id);
+          logger.info('Invalidated name resolution cache after profile update', { userId: user.id, changes });
+        } catch (cacheErr: any) {
+          logger.warn('Failed to invalidate name resolution cache', {
+            userId: user.id,
+            error: cacheErr?.message ?? cacheErr,
+          });
+        }
+      }
 
       return {
         user: updatedUser,

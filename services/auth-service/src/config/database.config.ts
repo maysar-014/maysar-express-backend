@@ -13,7 +13,7 @@ export const databaseConfig = {
 
   // Prisma Configuration
   prisma: {
-    log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['warn', 'error'],
+    log: ['warn', 'error'] as ('warn' | 'error')[],
     errorFormat: process.env.NODE_ENV === 'development' ? 'pretty' : 'colorless'
   },
 

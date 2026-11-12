@@ -1,0 +1,3477 @@
+[
+  {
+    "flowId": "FLOW-001",
+    "service": "analytics",
+    "roles": [
+      "Seller",
+      "Admin"
+    ],
+    "docPath": "docs/FLOWS/analytics/user-flow/admin-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "PATCH",
+        "path": "/api/analytics/action-items/{actionId}/resolve"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/platform/kpis"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/admin/dashboard/red-flags"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/admin/dashboard/founder-operating-system"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/seller-profitability/dashboard"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/analytics/action-items/:actionId/resolve"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/seller-profitability/revenue-health"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/seller-profitability/retention"
+      }
+    ],
+    "servicesTouched": [
+      "analytics-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-003"
+    ]
+  },
+  {
+    "flowId": "FLOW-002",
+    "service": "analytics",
+    "roles": [
+      "Seller"
+    ],
+    "docPath": "docs/FLOWS/analytics/user-flow/seller-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "PATCH",
+        "path": "/api/analytics/action-items/{actionId}/resolve"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/dashboard"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/sellers/:sellerId/sla"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/action-items"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/analytics/action-items/:actionId/resolve"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/seller-profitability/dashboard"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/seller-profitability/revenue-health"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/sellers/:sellerId/sla/breaches"
+      }
+    ],
+    "servicesTouched": [
+      "analytics-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-003"
+    ]
+  },
+  {
+    "flowId": "FLOW-003",
+    "service": "auth",
+    "roles": [
+      "Admin"
+    ],
+    "docPath": "docs/FLOWS/auth/user-flow/admin-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/verify"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/register"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/refresh"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/enable"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/disable"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/login"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/logout"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/password/reset/initiate"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/admin/users/:id/suspend"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/admin/users/:id/unlock"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/setup"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/password/reset/confirm"
+      }
+    ],
+    "servicesTouched": [
+      "auth-service",
+      "notification-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-020"
+    ]
+  },
+  {
+    "flowId": "FLOW-004",
+    "service": "auth",
+    "roles": [
+      "Buyer"
+    ],
+    "docPath": "docs/FLOWS/auth/user-flow/buyer-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/auth/refresh"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/enable"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/disable"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/register"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/login"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/logout"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/password/reset/initiate"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/setup"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/verify"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/password/reset/confirm"
+      }
+    ],
+    "servicesTouched": [
+      "auth-service",
+      "user-service",
+      "wallet-service",
+      "cross-service",
+      "notification-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-020"
+    ]
+  },
+  {
+    "flowId": "FLOW-005",
+    "service": "auth",
+    "roles": [
+      "Courier"
+    ],
+    "docPath": "docs/FLOWS/auth/user-flow/courier-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/auth/refresh"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/enable"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/disable"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/register"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/login"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/logout"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/verify"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/password/reset/initiate"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/setup"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/password/reset/confirm"
+      }
+    ],
+    "servicesTouched": [
+      "auth-service",
+      "user-service",
+      "wallet-service",
+      "logistics-service",
+      "cross-service",
+      "notification-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-020"
+    ]
+  },
+  {
+    "flowId": "FLOW-006",
+    "service": "auth",
+    "roles": [
+      "Enabler"
+    ],
+    "docPath": "docs/FLOWS/auth/user-flow/enabler-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/auth/refresh"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/enable"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/disable"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/register"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/login"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/logout"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/verify"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/password/reset/initiate"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/setup"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/password/reset/confirm"
+      }
+    ],
+    "servicesTouched": [
+      "auth-service",
+      "user-service",
+      "wallet-service",
+      "enabler-service",
+      "cross-service",
+      "notification-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-020"
+    ]
+  },
+  {
+    "flowId": "FLOW-007",
+    "service": "auth",
+    "roles": [
+      "Seller"
+    ],
+    "docPath": "docs/FLOWS/auth/user-flow/seller-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/auth/refresh"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/enable"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/disable"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/register"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/login"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/logout"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/verify"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/password/reset/initiate"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/setup"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/password/reset/confirm"
+      }
+    ],
+    "servicesTouched": [
+      "auth-service",
+      "user-service",
+      "wallet-service",
+      "cross-service",
+      "notification-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-020"
+    ]
+  },
+  {
+    "flowId": "FLOW-008",
+    "service": "auth",
+    "roles": [
+      "Supplier"
+    ],
+    "docPath": "docs/FLOWS/auth/user-flow/supplier-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/auth/refresh"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/enable"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/disable"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/register"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/login"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/logout"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/verify"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/password/reset/initiate"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/setup"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/password/reset/confirm"
+      }
+    ],
+    "servicesTouched": [
+      "auth-service",
+      "user-service",
+      "wallet-service",
+      "production-service",
+      "inter-service",
+      "cross-service",
+      "notification-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-020"
+    ]
+  },
+  {
+    "flowId": "FLOW-009",
+    "service": "business-registry",
+    "roles": [
+      "Seller",
+      "Admin"
+    ],
+    "docPath": "docs/FLOWS/business-registry/user-flow/admin-flows.md",
+    "title": "Admin Flows — Business Registry Service",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/business-registry/businesses/:id/verify"
+      },
+      {
+        "method": "POST",
+        "path": "/api/business-registry/businesses/:id/suspend"
+      },
+      {
+        "method": "GET",
+        "path": "/api/business-registry/businesses/:id/compliance-records"
+      },
+      {
+        "method": "GET",
+        "path": "/api/business-registry/businesses/:id/documents"
+      },
+      {
+        "method": "GET",
+        "path": "/api/business-registry/businesses/search"
+      },
+      {
+        "method": "POST",
+        "path": "/api/business-registry/businesses"
+      },
+      {
+        "method": "PUT",
+        "path": "/api/business-registry/businesses/:id"
+      },
+      {
+        "method": "POST",
+        "path": "/api/business-registry/businesses/{id}/verify"
+      },
+      {
+        "method": "POST",
+        "path": "/api/business-registry/businesses/:id/reactivate"
+      },
+      {
+        "method": "POST",
+        "path": "/api/business-registry/businesses/:id/compliance-records"
+      },
+      {
+        "method": "PUT",
+        "path": "/api/business-registry/businesses/:id/compliance-records/:recordId"
+      },
+      {
+        "method": "POST",
+        "path": "/api/business-registry/businesses/:id/documents"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/business-registry/businesses/:id/documents/:docId"
+      },
+      {
+        "method": "GET",
+        "path": "/api/business-registry/businesses/search?q=&industry=&status=&page=&limit="
+      },
+      {
+        "method": "GET",
+        "path": "/api/business-registry/public/*"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/business-registry/businesses/:id"
+      },
+      {
+        "method": "GET",
+        "path": "/api/business-registry/public/sellers"
+      },
+      {
+        "method": "POST",
+        "path": "/api/business-registry/public"
+      }
+    ],
+    "servicesTouched": [],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-010",
+    "service": "business-registry",
+    "roles": [
+      "Buyer",
+      "Seller"
+    ],
+    "docPath": "docs/FLOWS/business-registry/user-flow/seller-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/business-registry/businesses"
+      },
+      {
+        "method": "GET",
+        "path": "/api/business-registry/businesses/:id"
+      },
+      {
+        "method": "GET",
+        "path": "/api/business-registry/public/sellers/{sellerId}"
+      },
+      {
+        "method": "POST",
+        "path": "/api/business-registry/public"
+      }
+    ],
+    "servicesTouched": [
+      "registry-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-011",
+    "service": "catalog",
+    "roles": [
+      "Seller",
+      "Admin"
+    ],
+    "docPath": "docs/FLOWS/catalog/user-flow/admin-flows.md",
+    "title": "Admin Flows — Catalog Service",
+    "endpoints": [
+      {
+        "method": "DELETE",
+        "path": "/api/catalog/v1/categories"
+      },
+      {
+        "method": "PUT",
+        "path": "/api/catalog/v1/admin/buy-box/strategies/:categoryId"
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/v1/admin/buy-box/history/:productId"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/catalog/v1/admin/buy-box/anomaly-flags/:flagId"
+      },
+      {
+        "method": "POST",
+        "path": "/api/catalog/v1/pricing/rules"
+      },
+      {
+        "method": "PUT",
+        "path": "/api/catalog/v1/reviews/:reviewId/moderate"
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/match/audit/:productId"
+      },
+      {
+        "method": "POST",
+        "path": "/api/catalog/v1/categories"
+      },
+      {
+        "method": "PUT",
+        "path": "/api/catalog/v1/categories/:id"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/catalog/v1/categories/:id"
+      },
+      {
+        "method": "POST",
+        "path": "/api/catalog/v1/admin/buy-box/overrides"
+      },
+      {
+        "method": "POST",
+        "path": "/api/catalog/v1/pricing/bulk-update"
+      },
+      {
+        "method": "PUT",
+        "path": "/api/catalog/v1/products/:productId/pricing"
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/v1/pricing/analytics"
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/match/pending"
+      },
+      {
+        "method": "POST",
+        "path": "/api/catalog/match/confirm/:confirmationId"
+      },
+      {
+        "method": "POST",
+        "path": "/api/catalog/system/maintenance/*"
+      }
+    ],
+    "servicesTouched": [
+      "catalog-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-004"
+    ]
+  },
+  {
+    "flowId": "FLOW-012",
+    "service": "catalog",
+    "roles": [
+      "Buyer"
+    ],
+    "docPath": "docs/FLOWS/catalog/user-flow/buyer-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/catalog/v1/products/search"
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/v1/products/:productId"
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/v1/categories"
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/v1/categories/:categoryId/products"
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/v1/search"
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/v1/search/products"
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/v1/products/search?q=&category=&minPrice=&maxPrice=&page=&limit="
+      }
+    ],
+    "servicesTouched": [
+      "catalog-service",
+      "inter-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-013",
+    "service": "catalog",
+    "roles": [
+      "Seller"
+    ],
+    "docPath": "docs/FLOWS/catalog/user-flow/seller-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/catalog/v1/products"
+      },
+      {
+        "method": "POST",
+        "path": "/api/catalog/v1/products/{id}/publish"
+      },
+      {
+        "method": "PUT",
+        "path": "/api/catalog/v1/products/{id}"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/catalog/v1/products/{id}"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/catalog/v1/admin/buy-box/anomaly-flags/{flagId}"
+      }
+    ],
+    "servicesTouched": [
+      "catalog-service",
+      "kyc-service",
+      "compliance-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-014",
+    "service": "chat",
+    "roles": [
+      "Buyer",
+      "Seller"
+    ],
+    "docPath": "docs/FLOWS/chat/user-flow/buyer-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/chat/v1/conversations"
+      },
+      {
+        "method": "POST",
+        "path": "/api/chat/v1/conversations/:id/messages"
+      },
+      {
+        "method": "GET",
+        "path": "/api/chat/v1/conversations/:id/messages"
+      }
+    ],
+    "servicesTouched": [
+      "chat-service",
+      "catalog-service",
+      "order-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-015",
+    "service": "chat",
+    "roles": [
+      "Buyer",
+      "Seller",
+      "Supplier"
+    ],
+    "docPath": "docs/FLOWS/chat/user-flow/seller-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/chat/v1/conversations/:id/messages"
+      },
+      {
+        "method": "POST",
+        "path": "/api/chat/v1/conversations"
+      },
+      {
+        "method": "GET",
+        "path": "/api/chat/v1/conversations/:id/messages"
+      }
+    ],
+    "servicesTouched": [
+      "chat-service",
+      "catalog-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-016",
+    "service": "checkout",
+    "roles": [
+      "Buyer"
+    ],
+    "docPath": "docs/FLOWS/checkout/user-flow/buyer-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/checkout/items"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/checkout/items"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/checkout/items"
+      },
+      {
+        "method": "POST",
+        "path": "/api/checkout/merge"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/checkout/{cartId}"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/checkout/cart/items"
+      },
+      {
+        "method": "POST",
+        "path": "/api/checkout/cart/merge"
+      },
+      {
+        "method": "GET",
+        "path": "/api/checkout/cart/current"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/checkout/cart/{cartId}"
+      },
+      {
+        "method": "POST",
+        "path": "/api/checkout/{id}/confirm"
+      },
+      {
+        "method": "GET",
+        "path": "/api/checkout/{id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/internal/quotes/:quoteId"
+      }
+    ],
+    "servicesTouched": [
+      "checkout-service",
+      "inter-service",
+      "logistics-service",
+      "order-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-005"
+    ]
+  },
+  {
+    "flowId": "FLOW-017",
+    "service": "commission",
+    "roles": [
+      "Enabler"
+    ],
+    "docPath": "docs/FLOWS/commission/user-flow/enabler-flows.md",
+    "title": "Enabler Flows — Commission Service",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/commission/sellers/:sellerId"
+      },
+      {
+        "method": "GET",
+        "path": "/api/commission/sellers/:sellerId/summary"
+      },
+      {
+        "method": "POST",
+        "path": "/api/commission/calculate"
+      },
+      {
+        "method": "PUT",
+        "path": "/api/commission/:id/approve"
+      },
+      {
+        "method": "GET",
+        "path": "/api/wallet/statement"
+      },
+      {
+        "method": "GET",
+        "path": "/api/commission/:id"
+      },
+      {
+        "method": "GET",
+        "path": "/api/commission/sellers/:sellerId?status=&limit=&cursor="
+      },
+      {
+        "method": "GET",
+        "path": "/api/wallet/wallets/:userId/statement"
+      }
+    ],
+    "servicesTouched": [
+      "commission-service",
+      "commissions-service",
+      "wallet-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-018",
+    "service": "commission",
+    "roles": [
+      "Seller",
+      "Enabler"
+    ],
+    "docPath": "docs/FLOWS/commission/user-flow/seller-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/commission/calculate"
+      },
+      {
+        "method": "PUT",
+        "path": "/api/commission/:id/approve"
+      },
+      {
+        "method": "GET",
+        "path": "/api/commission/sellers/:sellerId"
+      },
+      {
+        "method": "GET",
+        "path": "/api/commission/sellers/:sellerId/summary"
+      },
+      {
+        "method": "GET",
+        "path": "/api/commission/:id"
+      },
+      {
+        "method": "GET",
+        "path": "/api/commission/health"
+      },
+      {
+        "method": "GET",
+        "path": "/api/wallet/statement"
+      }
+    ],
+    "servicesTouched": [
+      "commission-service",
+      "commissions-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-024"
+    ]
+  },
+  {
+    "flowId": "FLOW-019",
+    "service": "community",
+    "roles": [
+      "Buyer"
+    ],
+    "docPath": "docs/FLOWS/community/user-flow/buyer-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/community/articles"
+      },
+      {
+        "method": "POST",
+        "path": "/api/community/articles"
+      },
+      {
+        "method": "GET",
+        "path": "/api/community/challenges"
+      },
+      {
+        "method": "GET",
+        "path": "/api/community/knowledge"
+      },
+      {
+        "method": "GET",
+        "path": "/api/community/feed"
+      },
+      {
+        "method": "POST",
+        "path": "/api/community/posts"
+      }
+    ],
+    "servicesTouched": [
+      "community-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-020",
+    "service": "community",
+    "roles": [
+      "Seller"
+    ],
+    "docPath": "docs/FLOWS/community/user-flow/seller-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/community/articles"
+      },
+      {
+        "method": "POST",
+        "path": "/api/community/articles"
+      },
+      {
+        "method": "GET",
+        "path": "/api/community/challenges"
+      }
+    ],
+    "servicesTouched": [
+      "community-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-021",
+    "service": "enabler",
+    "roles": [
+      "Enabler",
+      "Admin"
+    ],
+    "docPath": "docs/FLOWS/enabler/user-flow/admin-flows.md",
+    "title": "Admin Flows — Enabler Service",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/enabler/enablers/{id}"
+      },
+      {
+        "method": "POST",
+        "path": "/api/enabler/enablers/{id}/approve"
+      },
+      {
+        "method": "POST",
+        "path": "/api/enabler/enablers/{id}/terms"
+      },
+      {
+        "method": "POST",
+        "path": "/api/enabler/enablers/{id}/activation"
+      },
+      {
+        "method": "GET",
+        "path": "/api/enabler/enablers/{id}/capabilities"
+      },
+      {
+        "method": "POST",
+        "path": "/api/enabler/enablers/:id/approve"
+      },
+      {
+        "method": "POST",
+        "path": "/api/enabler/enablers/{id}/suspend"
+      },
+      {
+        "method": "POST",
+        "path": "/api/enabler/enablers/{id}/deactivate"
+      },
+      {
+        "method": "POST",
+        "path": "/api/enabler/enablers/:id/suspend"
+      },
+      {
+        "method": "POST",
+        "path": "/api/enabler/enablers/:id/reactivate"
+      },
+      {
+        "method": "POST",
+        "path": "/api/enabler/enablers/:id/deactivate"
+      }
+    ],
+    "servicesTouched": [
+      "enabler-service",
+      "self-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-002"
+    ]
+  },
+  {
+    "flowId": "FLOW-022",
+    "service": "enabler",
+    "roles": [
+      "Enabler",
+      "Admin"
+    ],
+    "docPath": "docs/FLOWS/enabler/user-flow/enabler-flows.md",
+    "title": "Flows in This Document",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/enabler/enablers/{id}"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/register"
+      },
+      {
+        "method": "POST",
+        "path": "/api/enabler/enablers/:id/approve"
+      },
+      {
+        "method": "POST",
+        "path": "/api/enabler/enablers/:enablerId/terms"
+      },
+      {
+        "method": "POST",
+        "path": "/api/enabler/enablers/:enablerId/activation"
+      },
+      {
+        "method": "GET",
+        "path": "/api/enabler/enablers/:enablerId/capabilities"
+      },
+      {
+        "method": "POST",
+        "path": "/api/enabler/enablers/{id}/approve"
+      }
+    ],
+    "servicesTouched": [
+      "enabler-service",
+      "auth-service",
+      "wallet-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-002"
+    ]
+  },
+  {
+    "flowId": "FLOW-023",
+    "service": "inventory",
+    "roles": [
+      "Seller"
+    ],
+    "docPath": "docs/FLOWS/inventory/user-flow/seller-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/inventory/stock/:variantId"
+      },
+      {
+        "method": "POST",
+        "path": "/api/inventory/stock/adjust"
+      },
+      {
+        "method": "GET",
+        "path": "/api/inventory/warehouses/:id"
+      }
+    ],
+    "servicesTouched": [
+      "inventory-service",
+      "order-service",
+      "logistics-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-024",
+    "service": "inventory",
+    "roles": [
+      "Supplier"
+    ],
+    "docPath": "docs/FLOWS/inventory/user-flow/supplier-flows.md",
+    "title": "Supplier Flows — Inventory Service",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/inventory/stock/:variantId"
+      },
+      {
+        "method": "PUT",
+        "path": "/api/inventory/stock/:variantId/:warehouseId"
+      },
+      {
+        "method": "GET",
+        "path": "/api/inventory/materials"
+      },
+      {
+        "method": "PUT",
+        "path": "/api/inventory/materials/:variantId/warehouses/:warehouseId"
+      },
+      {
+        "method": "GET",
+        "path": "/api/inventory/warehouses"
+      },
+      {
+        "method": "POST",
+        "path": "/api/inventory/inventory-counts"
+      },
+      {
+        "method": "PUT",
+        "path": "/api/inventory/inventory-counts/:countId"
+      },
+      {
+        "method": "GET",
+        "path": "/api/inventory/materials/:variantId"
+      },
+      {
+        "method": "GET",
+        "path": "/api/inventory/warehouses/:id"
+      },
+      {
+        "method": "POST",
+        "path": "/api/inventory/reservations"
+      },
+      {
+        "method": "GET",
+        "path": "/api/inventory/reservations/:orderId"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/inventory/reservations/:orderId"
+      }
+    ],
+    "servicesTouched": [
+      "inventory-service",
+      "order-service",
+      "production-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-025",
+    "service": "kyc",
+    "roles": [
+      "Enabler",
+      "Supplier"
+    ],
+    "docPath": "docs/FLOWS/kyc/user-flow/enabler-flows.md",
+    "title": "Flows in This Document",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/enabler/enablers/:enablerId/listings"
+      },
+      {
+        "method": "POST",
+        "path": "/api/payout/payouts"
+      }
+    ],
+    "servicesTouched": [
+      "kyc-service",
+      "enabler-service",
+      "payout-service",
+      "compliance-service",
+      "order-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-011"
+    ]
+  },
+  {
+    "flowId": "FLOW-026",
+    "service": "kyc",
+    "roles": [
+      "Buyer",
+      "Seller",
+      "Enabler"
+    ],
+    "docPath": "docs/FLOWS/kyc/user-flow/seller-flows.md",
+    "title": "Flows in This Document",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/catalog/v1/products"
+      },
+      {
+        "method": "POST",
+        "path": "/api/payout/payouts"
+      }
+    ],
+    "servicesTouched": [
+      "kyc-service",
+      "catalog-service",
+      "payout-service",
+      "wallet-service",
+      "enabler-service",
+      "compliance-service",
+      "order-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-011"
+    ]
+  },
+  {
+    "flowId": "FLOW-027",
+    "service": "kyc",
+    "roles": [
+      "Supplier"
+    ],
+    "docPath": "docs/FLOWS/kyc/user-flow/supplier-flows.md",
+    "title": "Supplier Flows — KYC Service",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/payout/payouts"
+      },
+      {
+        "method": "POST",
+        "path": "/api/catalog/v1/products"
+      }
+    ],
+    "servicesTouched": [
+      "kyc-service",
+      "payout-service",
+      "catalog-service",
+      "wallet-service",
+      "compliance-service",
+      "order-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-011"
+    ]
+  },
+  {
+    "flowId": "FLOW-028",
+    "service": "logistics",
+    "roles": [
+      "Buyer",
+      "Seller",
+      "Courier"
+    ],
+    "docPath": "docs/FLOWS/logistics/user-flow/buyer-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/logistics/v1/quote"
+      },
+      {
+        "method": "POST",
+        "path": "/api/logistics/v1/fulfillment-options"
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/deliveries/:deliveryId"
+      },
+      {
+        "method": "POST",
+        "path": "/api/checkout/{id}/confirm"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/logistics/internal/quotes/:quoteId/consume"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/logistics/api/v1/deliveries/:deliveryId/status"
+      },
+      {
+        "method": "POST",
+        "path": "/api/logistics/v1/cod/:deliveryId/verify"
+      },
+      {
+        "method": "POST",
+        "path": "/api/logistics/v1/cod/:deliveryId/otp"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/logistics/internal/quotes/:quoteId/consume\\n(called"
+      }
+    ],
+    "servicesTouched": [
+      "logistics-service",
+      "inter-service",
+      "maps-service",
+      "order-service",
+      "payment-service",
+      "notification-service",
+      "wallet-service",
+      "user-service",
+      "support-service",
+      "checkout-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-029",
+    "service": "logistics",
+    "roles": [
+      "Buyer",
+      "Courier"
+    ],
+    "docPath": "docs/FLOWS/logistics/user-flow/courier-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/logistics/internal/jobs/:jobId/match-drivers"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/logistics/api/v1/deliveries/:deliveryId/status"
+      },
+      {
+        "method": "POST",
+        "path": "/api/logistics/v1/cod/:deliveryId/otp"
+      },
+      {
+        "method": "POST",
+        "path": "/api/logistics/v1/cod/:deliveryId/verify"
+      }
+    ],
+    "servicesTouched": [
+      "payment-service",
+      "logistics-service",
+      "notification-service",
+      "wallet-service",
+      "user-service",
+      "x-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-030",
+    "service": "maps",
+    "roles": [
+      "Courier"
+    ],
+    "docPath": "docs/FLOWS/maps/user-flow/courier-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/maps/routing/calculate"
+      },
+      {
+        "method": "POST",
+        "path": "/api/maps/geocoding/geocode"
+      }
+    ],
+    "servicesTouched": [
+      "maps-service",
+      "logistics-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-031",
+    "service": "notification",
+    "roles": [
+      "Buyer",
+      "Courier"
+    ],
+    "docPath": "docs/FLOWS/notification/user-flow/buyer-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/notification/notifications"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/notification/notifications/:id/read"
+      },
+      {
+        "method": "GET",
+        "path": "/api/notification/notifications/count"
+      },
+      {
+        "method": "POST",
+        "path": "/api/notification/push-tokens"
+      },
+      {
+        "method": "POST",
+        "path": "/api/logistics/v1/cod/:deliveryId/otp"
+      },
+      {
+        "method": "GET",
+        "path": "/api/notification/notifications?page=1&limit=20&isRead=false"
+      },
+      {
+        "method": "POST",
+        "path": "/api/notification/sms/webhook/africastalking"
+      }
+    ],
+    "servicesTouched": [
+      "notification-service",
+      "auth-service",
+      "order-service",
+      "wallet-service",
+      "logistics-service",
+      "support-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-032",
+    "service": "order",
+    "roles": [
+      "Buyer",
+      "Seller"
+    ],
+    "docPath": "docs/FLOWS/order/user-flow/buyer-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/order/orders/:orderId"
+      },
+      {
+        "method": "POST",
+        "path": "/api/order/orders/:orderId/cancel"
+      },
+      {
+        "method": "GET",
+        "path": "/api/order/orders"
+      },
+      {
+        "method": "POST",
+        "path": "/api/order/orders/:orderId/cancel-request"
+      },
+      {
+        "method": "POST",
+        "path": "/api/order/orders/:orderId/cancel-request/decline"
+      },
+      {
+        "method": "POST",
+        "path": "/api/order/orders/:orderId/cancel-request/approve"
+      }
+    ],
+    "servicesTouched": [
+      "order-service",
+      "cross-service",
+      "logistics-service",
+      "notification-service",
+      "wallet-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-033",
+      "DEF-035",
+      "DEF-030",
+      "DEF-027"
+    ]
+  },
+  {
+    "flowId": "FLOW-033",
+    "service": "order",
+    "roles": [
+      "Buyer",
+      "Seller"
+    ],
+    "docPath": "docs/FLOWS/order/user-flow/seller-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/order/seller/orders"
+      },
+      {
+        "method": "POST",
+        "path": "/api/order/orders/:orderId/verify-stock"
+      },
+      {
+        "method": "POST",
+        "path": "/api/order/orders/:orderId/decline-stock"
+      }
+    ],
+    "servicesTouched": [
+      "order-service",
+      "notification-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-033"
+    ]
+  },
+  {
+    "flowId": "FLOW-034",
+    "service": "payment",
+    "roles": [
+      "Buyer"
+    ],
+    "docPath": "docs/FLOWS/payment/user-flow/buyer-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/payment/payment-methods"
+      },
+      {
+        "method": "POST",
+        "path": "/api/payment/payments"
+      },
+      {
+        "method": "GET",
+        "path": "/api/payment/payments/:paymentId"
+      },
+      {
+        "method": "GET",
+        "path": "/api/payment/payments/:paymentId/status"
+      },
+      {
+        "method": "GET",
+        "path": "/api/payment/payments/order/:orderId"
+      },
+      {
+        "method": "POST",
+        "path": "/api/payment/payments/webhooks/payment-gateway"
+      },
+      {
+        "method": "GET",
+        "path": "/api/order/orders/:orderId"
+      },
+      {
+        "method": "GET",
+        "path": "/api/wallet/statement"
+      }
+    ],
+    "servicesTouched": [
+      "payment-service",
+      "wallet-service",
+      "order-service",
+      "checkout-service",
+      "logistics-service",
+      "to-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-001",
+      "DEF-012",
+      "DEF-033"
+    ]
+  },
+  {
+    "flowId": "FLOW-035",
+    "service": "payout",
+    "roles": [
+      "Buyer",
+      "Courier"
+    ],
+    "docPath": "docs/FLOWS/payout/user-flow/courier-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/payout/payouts"
+      },
+      {
+        "method": "GET",
+        "path": "/api/payout/payouts/:id"
+      },
+      {
+        "method": "POST",
+        "path": "/api/payout/payouts/:id/cancel"
+      }
+    ],
+    "servicesTouched": [
+      "payout-service",
+      "kyc-service",
+      "wallet-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-011"
+    ]
+  },
+  {
+    "flowId": "FLOW-036",
+    "service": "payout",
+    "roles": [
+      "Buyer",
+      "Enabler"
+    ],
+    "docPath": "docs/FLOWS/payout/user-flow/enabler-flows.md",
+    "title": "Enabler Flows — Payout Service",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/payout/payouts"
+      },
+      {
+        "method": "GET",
+        "path": "/api/commission/sellers/:sellerId"
+      },
+      {
+        "method": "GET",
+        "path": "/api/payout/payouts/:id"
+      },
+      {
+        "method": "POST",
+        "path": "/api/payout/payouts/:id/cancel"
+      },
+      {
+        "method": "GET",
+        "path": "/api/commission/sellers/:sellerId/summary"
+      },
+      {
+        "method": "GET",
+        "path": "/api/wallet/wallets/:userId/balance"
+      },
+      {
+        "method": "GET",
+        "path": "/api/wallet/statement"
+      },
+      {
+        "method": "POST",
+        "path": "/api/wallet/wallets/:userId/payout"
+      }
+    ],
+    "servicesTouched": [
+      "payout-service",
+      "kyc-service",
+      "cross-service",
+      "wallet-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-011",
+      "DEF-008"
+    ]
+  },
+  {
+    "flowId": "FLOW-037",
+    "service": "payout",
+    "roles": [
+      "Buyer",
+      "Seller"
+    ],
+    "docPath": "docs/FLOWS/payout/user-flow/seller-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/payout/payouts"
+      },
+      {
+        "method": "GET",
+        "path": "/api/payout/payouts/:id"
+      },
+      {
+        "method": "POST",
+        "path": "/api/payout/payouts/:id/cancel"
+      }
+    ],
+    "servicesTouched": [
+      "payout-service",
+      "kyc-service",
+      "wallet-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-011"
+    ]
+  },
+  {
+    "flowId": "FLOW-038",
+    "service": "payout",
+    "roles": [
+      "Buyer",
+      "Supplier"
+    ],
+    "docPath": "docs/FLOWS/payout/user-flow/supplier-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/payout/payouts"
+      },
+      {
+        "method": "GET",
+        "path": "/api/payout/payouts/:id"
+      },
+      {
+        "method": "POST",
+        "path": "/api/payout/payouts/:id/cancel"
+      }
+    ],
+    "servicesTouched": [
+      "payout-service",
+      "kyc-service",
+      "production-service",
+      "wallet-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-011"
+    ]
+  },
+  {
+    "flowId": "FLOW-039",
+    "service": "production",
+    "roles": [
+      "Supplier"
+    ],
+    "docPath": "docs/FLOWS/production/user-flow/supplier-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/production/plans"
+      },
+      {
+        "method": "POST",
+        "path": "/api/production/plans/:planId/schedule"
+      },
+      {
+        "method": "POST",
+        "path": "/api/production/plans/:planId/start"
+      },
+      {
+        "method": "POST",
+        "path": "/api/production/plans/:planId/checkpoints/:checkpointId"
+      },
+      {
+        "method": "POST",
+        "path": "/api/production/plans/:planId/complete"
+      },
+      {
+        "method": "GET",
+        "path": "/api/production/plans"
+      },
+      {
+        "method": "GET",
+        "path": "/api/production/plans/:planId"
+      },
+      {
+        "method": "GET",
+        "path": "/api/production/plans?status=&page=&limit="
+      }
+    ],
+    "servicesTouched": [
+      "inter-service",
+      "production-service",
+      "inventory-service",
+      "cross-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-040",
+    "service": "request",
+    "roles": [
+      "Buyer"
+    ],
+    "docPath": "docs/FLOWS/request/user-flow/buyer-flows.md",
+    "title": "Buyer (Customer) Flows — Request Service",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/request/requests"
+      },
+      {
+        "method": "GET",
+        "path": "/api/request/requests/:requestId"
+      },
+      {
+        "method": "POST",
+        "path": "/api/request/requests/:requestId/messages"
+      },
+      {
+        "method": "GET",
+        "path": "/api/request/requests/:requestId/quotes"
+      },
+      {
+        "method": "GET",
+        "path": "/api/request/requests/assess/:token"
+      },
+      {
+        "method": "POST",
+        "path": "/api/request/requests/assess/:token/convert"
+      },
+      {
+        "method": "POST",
+        "path": "/api/request/requests/:requestId/cancel"
+      },
+      {
+        "method": "GET",
+        "path": "/api/request/requests"
+      },
+      {
+        "method": "GET",
+        "path": "/api/request/requests/:requestId/messages"
+      }
+    ],
+    "servicesTouched": [
+      "request-service",
+      "inter-service",
+      "order-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-041",
+    "service": "request",
+    "roles": [
+      "Supplier"
+    ],
+    "docPath": "docs/FLOWS/request/user-flow/provider-flows.md",
+    "title": "Provider (Ops) Flows — Request Service",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/request/provider/requests"
+      },
+      {
+        "method": "POST",
+        "path": "/api/request/provider/requests/:requestId/assign"
+      },
+      {
+        "method": "POST",
+        "path": "/api/request/provider/requests/:requestId/assess"
+      },
+      {
+        "method": "POST",
+        "path": "/api/request/provider/suppliers"
+      },
+      {
+        "method": "POST",
+        "path": "/api/request/provider/requests/:requestId/items/:itemId/source"
+      },
+      {
+        "method": "POST",
+        "path": "/api/request/provider/requests/:requestId/quotes"
+      },
+      {
+        "method": "POST",
+        "path": "/api/request/provider/quotes/:quoteId/publish"
+      },
+      {
+        "method": "POST",
+        "path": "/api/request/provider/quotes/:quoteId/assessment-link"
+      },
+      {
+        "method": "GET",
+        "path": "/api/request/provider/procurement/orders/:orderId"
+      },
+      {
+        "method": "GET",
+        "path": "/api/request/provider/requests?status=&page=&limit="
+      },
+      {
+        "method": "GET",
+        "path": "/api/request/requests/:requestId/quotes"
+      },
+      {
+        "method": "GET",
+        "path": "/api/request/requests/assess/:token"
+      },
+      {
+        "method": "POST",
+        "path": "/api/request/provider/procurement/orders/:orderId/advance"
+      }
+    ],
+    "servicesTouched": [
+      "request-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-042",
+    "service": "role-overviews",
+    "roles": [
+      "Admin"
+    ],
+    "docPath": "docs/FLOWS/role-overviews/admin-lifecycle.md",
+    "title": "Admin Lifecycle Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/verify"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/enable"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/disable"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/login"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/admin/dashboard/red-flags"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/admin/dashboard/founder-operating-system"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/platform/kpis"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/admin/kyc/:userId"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/admin/users/:id/suspend"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/admin/users/:id/unlock"
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/admin/users"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/disputes/:id/resolve"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/disputes/:id"
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/v1/admin/buy-box/anomaly-flags"
+      },
+      {
+        "method": "POST",
+        "path": "/api/{service}/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "POST",
+        "path": "/api/{service}/system/maintenance/cleanup/outbox/report"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/verify|"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/admin/users/:id/unlock|"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/backup-codes/regenerate"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/analytics/action-items/:actionId/resolve"
+      },
+      {
+        "method": "POST",
+        "path": "/api/enabler/enablers/:enablerId/enforcement"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/admin/tickets"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/catalog/v1/admin/buy-box/anomaly-flags/{flagId}"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "POST",
+        "path": "/api/enabler/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "POST",
+        "path": "/api/wallet/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "POST",
+        "path": "/api/payout/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "POST",
+        "path": "/api/user/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "POST",
+        "path": "/api/notification/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "POST",
+        "path": "/api/order/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "POST",
+        "path": "/api/logistics/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/analytics/action-items/{actionId}/resolve"
+      }
+    ],
+    "servicesTouched": [
+      "compliance-service",
+      "auth-service",
+      "user-service",
+      "support-service",
+      "catalog-service",
+      "analytics-service",
+      "order-service",
+      "payment-service",
+      "community-service",
+      "chat-service",
+      "x-service",
+      "kyc-service",
+      "payout-service",
+      "wallet-service",
+      "enabler-service",
+      "notification-service",
+      "logistics-service",
+      "governance-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-020",
+      "DEF-004",
+      "DEF-003"
+    ]
+  },
+  {
+    "flowId": "FLOW-043",
+    "service": "role-overviews",
+    "roles": [
+      "Buyer",
+      "Courier",
+      "Admin"
+    ],
+    "docPath": "docs/FLOWS/role-overviews/buyer-lifecycle.md",
+    "title": "Buyer Lifecycle Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/auth/register"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/phone/initiate"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/phone/verify"
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/v1/products/search"
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/v1/products/:productId"
+      },
+      {
+        "method": "POST",
+        "path": "/api/logistics/v1/quote"
+      },
+      {
+        "method": "POST",
+        "path": "/api/checkout/{id}/confirm"
+      },
+      {
+        "method": "GET",
+        "path": "/api/order/orders/:orderId"
+      },
+      {
+        "method": "POST",
+        "path": "/api/logistics/v1/cod/:deliveryId/otp"
+      },
+      {
+        "method": "POST",
+        "path": "/api/catalog/v1/products/:productId/reviews"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/tickets"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/admin/users/:id/unlock\"|"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/admin/users/:id/suspend\"|"
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/v1/search"
+      },
+      {
+        "method": "GET",
+        "path": "/api/catalog/v1/search/products"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/disputes"
+      },
+      {
+        "method": "GET",
+        "path": "/api/payment/payments/{id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/payment/payments/{id}/status"
+      },
+      {
+        "method": "GET",
+        "path": "/api/payment/payments/order/{orderId}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/wallet/statement"
+      }
+    ],
+    "servicesTouched": [
+      "wallet-service",
+      "auth-service",
+      "user-service",
+      "notification-service",
+      "order-service",
+      "logistics-service",
+      "payment-service",
+      "support-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-033"
+    ]
+  },
+  {
+    "flowId": "FLOW-044",
+    "service": "role-overviews",
+    "roles": [
+      "Admin",
+      "Compliance Officer"
+    ],
+    "docPath": "docs/FLOWS/role-overviews/compliance-officer-lifecycle.md",
+    "title": "Compliance Officer Lifecycle Overview",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/support/admin/kyc/:userId"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/disputes/:id/resolve"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/login"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/verify"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/admin/dashboard/red-flags"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/admin/dashboard/founder-operating-system"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/disputes/:id"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/admin/users/:id/suspend"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/tickets"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/admin/tickets"
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/admin/users"
+      }
+    ],
+    "servicesTouched": [
+      "compliance-service",
+      "kyc-service",
+      "order-service",
+      "support-service",
+      "user-service",
+      "auth-service",
+      "analytics-service",
+      "catalog-service",
+      "payout-service",
+      "wallet-service",
+      "enabler-service",
+      "governance-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-020"
+    ]
+  },
+  {
+    "flowId": "FLOW-045",
+    "service": "role-overviews",
+    "roles": [
+      "Buyer",
+      "Seller",
+      "Courier",
+      "Admin"
+    ],
+    "docPath": "docs/FLOWS/role-overviews/courier-lifecycle.md",
+    "title": "Courier Lifecycle Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/auth/register"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/logistics/api/v1/couriers/:courierId/status"
+      },
+      {
+        "method": "GET",
+        "path": "/api/training/api/v1/modules"
+      },
+      {
+        "method": "POST",
+        "path": "/api/training/api/v1/modules/:id/complete"
+      },
+      {
+        "method": "POST",
+        "path": "/api/training/api/v1/assessments"
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/deliveries/:deliveryId"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/logistics/api/v1/deliveries/:deliveryId/status"
+      },
+      {
+        "method": "POST",
+        "path": "/api/logistics/v1/cod/:deliveryId/otp"
+      },
+      {
+        "method": "POST",
+        "path": "/api/logistics/v1/cod/:deliveryId/verify"
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/earnings"
+      },
+      {
+        "method": "POST",
+        "path": "/api/payout/payouts"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/logistics/api/v1/couriers/:id/status\"|"
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/earnings/summary"
+      },
+      {
+        "method": "GET",
+        "path": "/api/logistics/api/v1/routes"
+      }
+    ],
+    "servicesTouched": [
+      "payment-service",
+      "wallet-service",
+      "payout-service",
+      "auth-service",
+      "user-service",
+      "training-service",
+      "order-service",
+      "notification-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-011"
+    ]
+  },
+  {
+    "flowId": "FLOW-046",
+    "service": "role-overviews",
+    "roles": [
+      "Enabler",
+      "Admin"
+    ],
+    "docPath": "docs/FLOWS/role-overviews/enabler-lifecycle.md",
+    "title": "Enabler Lifecycle Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/auth/register"
+      },
+      {
+        "method": "POST",
+        "path": "/api/enabler/enablers/:id/approve"
+      },
+      {
+        "method": "POST",
+        "path": "/api/training/modules/:moduleId/complete"
+      },
+      {
+        "method": "POST",
+        "path": "/api/training/assessments/:assessmentId/submit"
+      },
+      {
+        "method": "POST",
+        "path": "/api/payout/payouts"
+      },
+      {
+        "method": "GET",
+        "path": "/api/training/modules?role=ENABLER"
+      },
+      {
+        "method": "POST",
+        "path": "/api/training/modules/:moduleId/start"
+      },
+      {
+        "method": "GET",
+        "path": "/api/enabler/hub"
+      },
+      {
+        "method": "POST",
+        "path": "/api/enabler/enablers/:enablerId/orders"
+      },
+      {
+        "method": "GET",
+        "path": "/api/enabler/enablers/:enablerId/earnings"
+      },
+      {
+        "method": "GET",
+        "path": "/api/enabler/enablers/:enablerId/earnings/summary"
+      },
+      {
+        "method": "GET",
+        "path": "/api/enabler/enablers/{id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/commission/sellers/:sellerId"
+      },
+      {
+        "method": "GET",
+        "path": "/api/commission/:id"
+      },
+      {
+        "method": "GET",
+        "path": "/api/wallet/statement"
+      }
+    ],
+    "servicesTouched": [
+      "enabler-service",
+      "training-service",
+      "auth-service",
+      "kyc-service",
+      "catalog-service",
+      "wallet-service",
+      "payout-service",
+      "commission-service",
+      "user-service",
+      "checkout-service",
+      "commissions-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-002",
+      "DEF-011"
+    ]
+  },
+  {
+    "flowId": "FLOW-047",
+    "service": "role-overviews",
+    "roles": [
+      "Seller",
+      "Admin",
+      "Platform Operator"
+    ],
+    "docPath": "docs/FLOWS/role-overviews/platform-operator-lifecycle.md",
+    "title": "Platform Operator Lifecycle Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/auth/login"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/2fa/verify"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/platform/kpis"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/admin/dashboard/red-flags"
+      },
+      {
+        "method": "GET",
+        "path": "/api/{service}/health/live"
+      },
+      {
+        "method": "POST",
+        "path": "/api/{service}/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "POST",
+        "path": "/api/{service}/system/maintenance/cleanup/outbox/report"
+      },
+      {
+        "method": "POST",
+        "path": "/api/{service}/system/maintenance/cleanup/idempotency"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/admin/dashboard/founder-operating-system"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/seller-profitability/dashboard"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/sellers/:sellerId/sla"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/sellers/:sellerId/sla/breaches"
+      },
+      {
+        "method": "POST",
+        "path": "/api/analytics/sellers/:sellerId/sla/evaluate"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/system/maintenance/cleanup/outbox/report"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "POST",
+        "path": "/api/enabler/system/maintenance/cleanup/outbox/report"
+      },
+      {
+        "method": "POST",
+        "path": "/api/enabler/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "POST",
+        "path": "/api/wallet/system/maintenance/cleanup/outbox/report"
+      },
+      {
+        "method": "POST",
+        "path": "/api/wallet/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/system/maintenance/cleanup/outbox/report"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "POST",
+        "path": "/api/payout/system/maintenance/cleanup/outbox/report"
+      },
+      {
+        "method": "POST",
+        "path": "/api/payout/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "POST",
+        "path": "/api/user/system/maintenance/cleanup/outbox/report"
+      },
+      {
+        "method": "POST",
+        "path": "/api/user/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "POST",
+        "path": "/api/notification/system/maintenance/cleanup/outbox/report"
+      },
+      {
+        "method": "POST",
+        "path": "/api/notification/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "POST",
+        "path": "/api/order/system/maintenance/cleanup/outbox/report"
+      },
+      {
+        "method": "POST",
+        "path": "/api/order/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "POST",
+        "path": "/api/logistics/system/maintenance/cleanup/outbox/report"
+      },
+      {
+        "method": "POST",
+        "path": "/api/logistics/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "POST",
+        "path": "/api/wallet/system/maintenance/cleanup/idempotency/report"
+      },
+      {
+        "method": "POST",
+        "path": "/api/wallet/system/maintenance/cleanup/idempotency"
+      },
+      {
+        "method": "POST",
+        "path": "/api/checkout/{id}/confirm"
+      },
+      {
+        "method": "GET",
+        "path": "/api/wallet/balance"
+      },
+      {
+        "method": "GET",
+        "path": "/api/wallet/statement"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/seller-profitability/revenue-health"
+      },
+      {
+        "method": "GET",
+        "path": "/api/analytics/seller-profitability/retention"
+      }
+    ],
+    "servicesTouched": [
+      "x-service",
+      "auth-service",
+      "wallet-service",
+      "notification-service",
+      "analytics-service",
+      "enabler-service",
+      "support-service",
+      "payout-service",
+      "user-service",
+      "order-service",
+      "logistics-service",
+      "training-service",
+      "multi-service",
+      "checkout-service",
+      "governance-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-020"
+    ]
+  },
+  {
+    "flowId": "FLOW-048",
+    "service": "role-overviews",
+    "roles": [
+      "Seller",
+      "Admin"
+    ],
+    "docPath": "docs/FLOWS/role-overviews/seller-lifecycle.md",
+    "title": "Seller Lifecycle Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/auth/register"
+      },
+      {
+        "method": "POST",
+        "path": "/api/business-registry/businesses"
+      },
+      {
+        "method": "POST",
+        "path": "/api/catalog/v1/products"
+      },
+      {
+        "method": "POST",
+        "path": "/api/payout/payouts"
+      },
+      {
+        "method": "POST",
+        "path": "/api/catalog/v1/products/{id}/publish"
+      },
+      {
+        "method": "GET",
+        "path": "/api/order/seller/orders"
+      },
+      {
+        "method": "POST",
+        "path": "/api/order/orders/:orderId/verify-stock"
+      },
+      {
+        "method": "POST",
+        "path": "/api/order/orders/:orderId/decline-stock"
+      },
+      {
+        "method": "GET",
+        "path": "/api/business-registry/public/sellers/{sellerId}"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/catalog/v1/admin/buy-box/anomaly-flags/{flagId}"
+      }
+    ],
+    "servicesTouched": [
+      "compliance-service",
+      "registry-service",
+      "kyc-service",
+      "catalog-service",
+      "payout-service",
+      "wallet-service",
+      "enabler-service",
+      "auth-service",
+      "user-service",
+      "order-service",
+      "logistics-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-011",
+      "DEF-033"
+    ]
+  },
+  {
+    "flowId": "FLOW-049",
+    "service": "role-overviews",
+    "roles": [
+      "Supplier",
+      "Admin"
+    ],
+    "docPath": "docs/FLOWS/role-overviews/supplier-lifecycle.md",
+    "title": "Supplier Lifecycle Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/auth/register"
+      },
+      {
+        "method": "POST",
+        "path": "/api/production/plans"
+      },
+      {
+        "method": "POST",
+        "path": "/api/production/plans/:planId/schedule"
+      },
+      {
+        "method": "POST",
+        "path": "/api/production/plans/:planId/start"
+      },
+      {
+        "method": "POST",
+        "path": "/api/production/plans/:planId/checkpoints/:checkpointId"
+      },
+      {
+        "method": "POST",
+        "path": "/api/payout/payouts"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/admin/users/:id/suspend"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/admin/users/:id/unlock"
+      },
+      {
+        "method": "POST",
+        "path": "/api/production/plans/:planId/reject"
+      },
+      {
+        "method": "POST",
+        "path": "/api/production/plans/:planId/complete"
+      }
+    ],
+    "servicesTouched": [
+      "production-service",
+      "inter-service",
+      "inventory-service",
+      "order-service",
+      "logistics-service",
+      "auth-service",
+      "user-service",
+      "wallet-service",
+      "payout-service",
+      "cross-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-011"
+    ]
+  },
+  {
+    "flowId": "FLOW-050",
+    "service": "role-overviews",
+    "roles": [
+      "Admin",
+      "Support Agent"
+    ],
+    "docPath": "docs/FLOWS/role-overviews/support-agent-lifecycle.md",
+    "title": "Support Agent Lifecycle Overview",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/support/agents"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/login"
+      },
+      {
+        "method": "PUT",
+        "path": "/api/support/agents/:id"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/tickets"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/admin/tickets"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/support/tickets/:id/assign"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/tickets/:ticketId/messages"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/tickets/:id/resolve"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/tickets/:id/close"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/tickets/:id/escalate"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/disputes/:id/resolve"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/admin/users/:id/unlock"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/tickets?status=OPEN"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/disputes/:id"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/admin/kyc/:userId"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/disputes/{id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/tickets/{id}"
+      }
+    ],
+    "servicesTouched": [
+      "compliance-service",
+      "support-service",
+      "auth-service",
+      "user-service",
+      "order-service",
+      "payment-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-020"
+    ]
+  },
+  {
+    "flowId": "FLOW-051",
+    "service": "support",
+    "roles": [
+      "Buyer",
+      "Admin",
+      "Support Agent"
+    ],
+    "docPath": "docs/FLOWS/support/user-flow/admin-flows.md",
+    "title": "Admin Flows — Support Service",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/support/admin/tickets"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/tickets"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/admin/kyc/:userId"
+      },
+      {
+        "method": "GET",
+        "path": "/api/user/:userId"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/disputes/:id/resolve"
+      },
+      {
+        "method": "POST",
+        "path": "/api/order/orders/disputes/:id/resolve"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/agents"
+      },
+      {
+        "method": "PUT",
+        "path": "/api/support/agents/:id"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/disputes"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/disputes/:id/escalate"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/system/maintenance/cleanup/outbox"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/tickets?status=&priority=&page=&limit="
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/disputes/{id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/disputes/:id"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/disputes/:id/evidence"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/tickets/:id/escalate"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/system/maintenance/cleanup/outbox/report"
+      }
+    ],
+    "servicesTouched": [
+      "support-service",
+      "order-service",
+      "auth-service",
+      "user-service",
+      "x-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-033"
+    ]
+  },
+  {
+    "flowId": "FLOW-052",
+    "service": "support",
+    "roles": [
+      "Buyer"
+    ],
+    "docPath": "docs/FLOWS/support/user-flow/buyer-flows.md",
+    "title": "Flows in This Document",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/support/tickets"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/tickets/:ticketId/messages"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/tickets/:ticketId"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/disputes"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/disputes/:id/evidence"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/disputes/:id/resolve"
+      }
+    ],
+    "servicesTouched": [
+      "support-service",
+      "user-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-053",
+    "service": "support",
+    "roles": [
+      "Seller"
+    ],
+    "docPath": "docs/FLOWS/support/user-flow/seller-flows.md",
+    "title": "Flows in This Document",
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/support/tickets"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/tickets/:ticketId/messages"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/tickets/:ticketId"
+      }
+    ],
+    "servicesTouched": [
+      "support-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-054",
+    "service": "support",
+    "roles": [
+      "Buyer",
+      "Courier",
+      "Admin",
+      "Support Agent"
+    ],
+    "docPath": "docs/FLOWS/support/user-flow/support-agent-flows.md",
+    "title": "Flows in This Document",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/support/tickets"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/support/tickets/:id/assign"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/tickets/:ticketId/messages"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/tickets/:id/resolve"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/tickets/:id/close"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/tickets/:id/escalate"
+      },
+      {
+        "method": "POST",
+        "path": "/api/support/disputes/:id/resolve"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/tickets?status=OPEN&page=1&limit=20"
+      },
+      {
+        "method": "GET",
+        "path": "/api/support/disputes/:id"
+      }
+    ],
+    "servicesTouched": [
+      "support-service",
+      "user-service",
+      "order-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-055",
+    "service": "training",
+    "roles": [
+      "Courier",
+      "Enabler"
+    ],
+    "docPath": "docs/FLOWS/training/user-flow/courier-flows.md",
+    "title": "Overview",
+    "endpoints": [],
+    "servicesTouched": [
+      "training-service",
+      "enabler-service",
+      "logistics-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-056",
+    "service": "training",
+    "roles": [
+      "Enabler"
+    ],
+    "docPath": "docs/FLOWS/training/user-flow/enabler-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/training/api/v1/modules"
+      },
+      {
+        "method": "POST",
+        "path": "/api/training/api/v1/modules/:moduleId/start"
+      },
+      {
+        "method": "POST",
+        "path": "/api/training/api/v1/assessments/:assessmentId/submit"
+      },
+      {
+        "method": "GET",
+        "path": "/api/training/api/v1/modules/:id"
+      },
+      {
+        "method": "GET",
+        "path": "/api/training/certification"
+      },
+      {
+        "method": "GET",
+        "path": "/api/training/api/v1/modules?role=ENABLER"
+      },
+      {
+        "method": "POST",
+        "path": "/api/training/api/v1/modules/:moduleId/complete"
+      }
+    ],
+    "servicesTouched": [
+      "training-service",
+      "logistics-service",
+      "enabler-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-057",
+    "service": "user",
+    "roles": [
+      "Admin"
+    ],
+    "docPath": "docs/FLOWS/user/user-flow/admin-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/auth/admin/users"
+      },
+      {
+        "method": "GET",
+        "path": "/api/user/:userId"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/admin/users/:id/suspend"
+      },
+      {
+        "method": "POST",
+        "path": "/api/auth/admin/users/:id/unlock"
+      },
+      {
+        "method": "GET",
+        "path": "/api/auth/admin/users?search=&role=&status=&page=&limit="
+      },
+      {
+        "method": "GET",
+        "path": "/api/user/lookup"
+      },
+      {
+        "method": "GET",
+        "path": "/api/user/search"
+      }
+    ],
+    "servicesTouched": [
+      "user-service",
+      "auth-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-058",
+    "service": "user",
+    "roles": [
+      "Buyer"
+    ],
+    "docPath": "docs/FLOWS/user/user-flow/buyer-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/user/:userId"
+      },
+      {
+        "method": "PUT",
+        "path": "/api/user/:userId"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/user/:userId"
+      },
+      {
+        "method": "GET",
+        "path": "/api/user/lookup"
+      },
+      {
+        "method": "GET",
+        "path": "/api/user/search"
+      }
+    ],
+    "servicesTouched": [
+      "user-service",
+      "order-service",
+      "logistics-service",
+      "support-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-059",
+    "service": "wallet",
+    "roles": [
+      "Buyer",
+      "Seller"
+    ],
+    "docPath": "docs/FLOWS/wallet/user-flow/buyer-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/wallet/balance"
+      },
+      {
+        "method": "GET",
+        "path": "/api/wallet/statement"
+      },
+      {
+        "method": "GET",
+        "path": "/api/payment/payments/:paymentId"
+      },
+      {
+        "method": "GET",
+        "path": "/api/payment/payments/order/:orderId"
+      }
+    ],
+    "servicesTouched": [
+      "wallet-service",
+      "cross-service",
+      "order-service",
+      "logistics-service",
+      "payment-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-012"
+    ]
+  },
+  {
+    "flowId": "FLOW-060",
+    "service": "wallet",
+    "roles": [
+      "Courier"
+    ],
+    "docPath": "docs/FLOWS/wallet/user-flow/courier-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/wallet/balance"
+      },
+      {
+        "method": "GET",
+        "path": "/api/wallet/statement"
+      },
+      {
+        "method": "POST",
+        "path": "/api/logistics/v1/cod/:deliveryId/verify"
+      },
+      {
+        "method": "POST",
+        "path": "/api/payout/payouts"
+      }
+    ],
+    "servicesTouched": [
+      "wallet-service",
+      "logistics-service",
+      "payout-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-011"
+    ]
+  },
+  {
+    "flowId": "FLOW-061",
+    "service": "wallet",
+    "roles": [
+      "Enabler",
+      "Supplier"
+    ],
+    "docPath": "docs/FLOWS/wallet/user-flow/enabler-flows.md",
+    "title": "Enabler Flows — Wallet Service",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/wallet/balance"
+      },
+      {
+        "method": "GET",
+        "path": "/api/wallet/statement"
+      },
+      {
+        "method": "POST",
+        "path": "/api/payout/payouts"
+      },
+      {
+        "method": "GET",
+        "path": "/api/enabler/enablers/:enablerId/earnings"
+      }
+    ],
+    "servicesTouched": [
+      "wallet-service",
+      "payout-service",
+      "enabler-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-011"
+    ]
+  },
+  {
+    "flowId": "FLOW-062",
+    "service": "wallet",
+    "roles": [
+      "Buyer",
+      "Seller",
+      "Courier"
+    ],
+    "docPath": "docs/FLOWS/wallet/user-flow/seller-flows.md",
+    "title": "Overview",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/wallet/balance"
+      },
+      {
+        "method": "GET",
+        "path": "/api/wallet/statement"
+      },
+      {
+        "method": "POST",
+        "path": "/api/logistics/v1/cod/:deliveryId/verify"
+      }
+    ],
+    "servicesTouched": [
+      "wallet-service",
+      "cross-service",
+      "logistics-service",
+      "order-service"
+    ],
+    "discoveryStatus": "discovered"
+  },
+  {
+    "flowId": "FLOW-063",
+    "service": "wallet",
+    "roles": [
+      "Supplier"
+    ],
+    "docPath": "docs/FLOWS/wallet/user-flow/supplier-flows.md",
+    "title": "Supplier Flows — Wallet Service",
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/wallet/balance"
+      },
+      {
+        "method": "GET",
+        "path": "/api/wallet/statement"
+      },
+      {
+        "method": "POST",
+        "path": "/api/payout/payouts"
+      }
+    ],
+    "servicesTouched": [
+      "wallet-service",
+      "payout-service",
+      "logistics-service",
+      "order-service"
+    ],
+    "discoveryStatus": "discovered",
+    "priorDefectIds": [
+      "DEF-011"
+    ]
+  }
+]

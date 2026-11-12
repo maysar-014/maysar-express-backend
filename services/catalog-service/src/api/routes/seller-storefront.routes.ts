@@ -7,7 +7,7 @@ import { validateRequest as validateSchemaRequest } from '../middleware/validati
 
 const shareUrlBodySchema = z.object({
   includeQR: z.boolean().optional(),
-  customSlug: z.string().min(1).regex(/^[a-zA-Z0-9-]+$/).optional()
+  customSlug: z.string().min(1).max(80).regex(/^[a-zA-Z0-9-]+$/).optional()
 }).strict().default({});
 
 export function createSellerStorefrontRoutes(controller: SellerStorefrontController): Router {

@@ -437,4 +437,92 @@ describe('DistributedSagaOrchestrator', () => {
       })
     );
   });
+
+  describe('awaitCompletion', () => {
+    const completedEntry = (sagaId: string): SagaLogEntry => ({
+      sagaId,
+      sagaType: 'TestSaga',
+      status: SagaStatus.COMPLETED,
+      currentStep: 'DONE',
+      payload: {},
+      context: {},
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    it('resolves without reading the saga back when not requested', async () => {
+      const repo = createSagaLogRepository();
+      const saga = createSaga([createStep('reserve-stock')], repo);
+      jest
+        .spyOn(saga as unknown as { executeNextStep: (id: string, p: TestPayload, i: number) => Promise<void> }, 'executeNextStep')
+        .mockResolvedValue(undefined);
+
+      await expect(saga.start({ orderId: 'ord-1' })).resolves.toBe('uuid-1');
+
+      // Default fire-and-forget behaviour must be preserved for existing callers.
+      expect(repo.getById).not.toHaveBeenCalled();
+    });
+
+    it('resolves when the saga reached COMPLETED', async () => {
+      const repo = createSagaLogRepository();
+      repo.getById.mockResolvedValue(completedEntry('uuid-1'));
+      const saga = createSaga([createStep('reserve-stock')], repo);
+      jest
+        .spyOn(saga as unknown as { executeNextStep: (id: string, p: TestPayload, i: number) => Promise<void> }, 'executeNextStep')
+        .mockResolvedValue(undefined);
+
+      await expect(
+        saga.start({ orderId: 'ord-1' }, undefined, { awaitCompletion: true })
+      ).resolves.toBe('uuid-1');
+      expect(repo.getById).toHaveBeenCalledWith('uuid-1');
+    });
+
+    it('throws the recorded saga error when the saga did not complete', async () => {
+      const repo = createSagaLogRepository();
+      repo.getById.mockResolvedValue({
+        ...completedEntry('uuid-1'),
+        status: SagaStatus.COMPENSATED,
+        error: 'Verification Failed: Invalid or expired OTP'
+      });
+      const saga = createSaga([createStep('reserve-stock')], repo);
+      jest
+        .spyOn(saga as unknown as { executeNextStep: (id: string, p: TestPayload, i: number) => Promise<void> }, 'executeNextStep')
+        .mockResolvedValue(undefined);
+
+      // This is the fail-open case: a saga that failed and compensated must not be
+      // reported to the caller as success.
+      await expect(
+        saga.start({ orderId: 'ord-1' }, undefined, { awaitCompletion: true })
+      ).rejects.toThrow('Verification Failed: Invalid or expired OTP');
+    });
+
+    it('throws a descriptive error when the saga log cannot be read back', async () => {
+      const repo = createSagaLogRepository();
+      repo.getById.mockResolvedValue(null);
+      const saga = createSaga([createStep('reserve-stock')], repo);
+      jest
+        .spyOn(saga as unknown as { executeNextStep: (id: string, p: TestPayload, i: number) => Promise<void> }, 'executeNextStep')
+        .mockResolvedValue(undefined);
+
+      await expect(
+        saga.start({ orderId: 'ord-1' }, undefined, { awaitCompletion: true })
+      ).rejects.toThrow('could not be read back');
+    });
+
+    it('rejects on FAILED rather than silently passing', async () => {
+      const repo = createSagaLogRepository();
+      repo.getById.mockResolvedValue({
+        ...completedEntry('uuid-1'),
+        status: SagaStatus.FAILED
+      });
+      const saga = createSaga([createStep('reserve-stock')], repo);
+      jest
+        .spyOn(saga as unknown as { executeNextStep: (id: string, p: TestPayload, i: number) => Promise<void> }, 'executeNextStep')
+        .mockResolvedValue(undefined);
+
+      await expect(
+        saga.start({ orderId: 'ord-1' }, undefined, { awaitCompletion: true })
+      ).rejects.toThrow(/finished in state FAILED/);
+    });
+  });
 });

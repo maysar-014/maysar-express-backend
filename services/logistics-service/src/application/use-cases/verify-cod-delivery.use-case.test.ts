@@ -34,7 +34,11 @@ describe('VerifyCODDeliveryUseCase', () => {
         sellerId: 'seller-1',
         providedOtp: '123456',
         currentLocation: location
-      })
+      }),
+      // Correlation is left undefined: the settlement saga advances from a separate
+      // HTTP request and must not reuse the initiation saga's correlation handle.
+      undefined,
+      { awaitCompletion: true }
     );
   });
 

@@ -366,6 +366,7 @@ export class DeliveryController {
       const limit = parseInt(req.query.limit as string) || 10;
       const status = req.query.status as string;
       const courierId = req.query.courierId as string;
+      const orderId = req.query.orderId as string;
       const dateFrom = req.query.dateFrom ? new Date(req.query.dateFrom as string) : undefined;
       const dateTo = req.query.dateTo ? new Date(req.query.dateTo as string) : undefined;
 
@@ -375,6 +376,7 @@ export class DeliveryController {
         limit,
         status,
         courierId,
+        orderId,
         dateFrom,
         dateTo
       });

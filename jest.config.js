@@ -429,6 +429,20 @@ module.exports = {
       displayName: 'contract-scripts',
       testEnvironment: 'node',
       testMatch: ['<rootDir>/scripts/contract/**/*.test.js']
+    },
+    {
+      displayName: 'verification-scripts',
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      testMatch: ['<rootDir>/scripts/verification/__tests__/**/*.test.ts'],
+      moduleNameMapper: {
+        '^uuid$': require.resolve('uuid'),
+      },
+      globals: {
+        'ts-jest': {
+          tsconfig: '<rootDir>/scripts/verification/tsconfig.json'
+        }
+      }
     }
   ],
 

@@ -28,6 +28,7 @@ import { HttpBusinessRegistryClient } from './src/infrastructure/clients/busines
 import { createPrismaClient } from '@shared/database/prisma-client';
 import { getModelPrefix, makeId } from '@shared/ids/id';
 import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
+import { appLogger } from '../../shared/logger/logger';
 
 let outboxProcessor: OutboxProcessor | null = null;
 let prisma: PrismaClient;
@@ -253,7 +254,7 @@ class PrismaExpertProfileProvider {
 export const CommunityModule: Module = {
     name: 'community-service',
     initialize: async () => {
-        console.log('Initializing community-service module');
+        appLogger.info('Initializing community-service module');
 
         prisma = createPrismaClient();
 
@@ -319,33 +320,30 @@ export const CommunityModule: Module = {
             const outbox = new TransactionalOutbox(prisma, 'outboxEvent');
             outboxProcessor = new OutboxProcessor(prisma, outbox, eventBus, 'community-service');
             outboxProcessor.start();
-            console.log('Community-service outbox processor started');
+            appLogger.info('Community-service outbox processor started');
         } catch (e) {
-            console.error('Failed to start community-service outbox processor:', e);
+            appLogger.error('Failed to start community-service outbox processor', { error: e instanceof Error ? e.message : String(e) });
         }
 
-        const router = Router();
-
-        router.get('/health', (_req, res) => {
+        const commRouter = CommunityModule.routes!;
+        commRouter.get('/health', (_req, res) => {
             res.json({ status: 'healthy', service: 'community-service', timestamp: new Date().toISOString() });
         });
 
-        router.get('/metrics', async (_req, res) => {
+        commRouter.get('/metrics', async (_req, res) => {
             res.set('Content-Type', metricsRegistry.contentType);
             res.end(await metricsRegistry.metrics());
         });
 
-        router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes(prisma));
-        router.use('/knowledge', createKnowledgeRouter(knowledgeController as never));
-        router.use('/', createCommunityRouter(communityController as never));
-        router.use('/discussions', createDiscussionsRouter(discussionsController as never));
-        router.use('/posts', postsRoutes);
-
-        CommunityModule.routes = router;
+        commRouter.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes(prisma));
+        commRouter.use('/knowledge', createKnowledgeRouter(knowledgeController as never));
+        commRouter.use('/', createCommunityRouter(communityController as never));
+        commRouter.use('/discussions', createDiscussionsRouter(discussionsController as never));
+        commRouter.use('/posts', postsRoutes);
     },
     routes: Router(),
     shutdown: async () => {
-        console.log('Shutting down community-service module');
+        appLogger.info('Shutting down community-service module');
         if (outboxProcessor) {
             outboxProcessor.stop();
         }

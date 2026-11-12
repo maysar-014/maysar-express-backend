@@ -1,3 +1,13 @@
+###############################################################################
+# IMPORTANT: This Terraform configuration is an EXAMPLE for Oracle Cloud (OCI).
+#
+# Provider names appear here ONLY as an example. Maysar Express Backend is
+# infrastructure-agnostic — you can replace the OCI provider with any other
+# cloud provider (AWS, Azure, GCP, Hetzner, DigitalOcean, self-hosted, etc.)
+# by swapping the required_providers block and resource types. No provider is
+# mandated in system code.
+###############################################################################
+
 terraform {
   required_providers {
     oci = {

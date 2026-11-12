@@ -13,3 +13,11 @@ export { ChangeRoleUseCase, ChangeRoleInput, ChangeRoleOutput } from './change-r
 export { VerifyPhoneUseCase, VerifyPhoneInput, VerifyPhoneOutput } from './verify-phone.use-case';
 export { SetupTwoFactorUseCase, SetupTwoFactorInput, SetupTwoFactorOutput } from './setup-two-factor.use-case';
 export { ReportSecurityBreachUseCase, ReportSecurityBreachInput, ReportSecurityBreachOutput } from './report-security-breach.use-case';
+export {
+  ResolveNamesUseCase,
+  ResolveNamesInput,
+  ResolveNamesOutput,
+  NameResolutionCache,
+  NAME_RESOLUTION_CACHE_PREFIX,
+  NAME_RESOLUTION_CACHE_TTL_SECONDS,
+} from './resolve-names.use-case';

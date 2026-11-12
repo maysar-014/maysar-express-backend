@@ -171,6 +171,12 @@ Blocked for `suspended`, `deactivated`, `inactive` users. Email field is ignored
 GET /api/user/:id
 ```
 
+### Resolve display names in bulk
+```
+POST /api/user/resolve-names
+```
+Accepts `{ ids: string[] }` (max 100 unique IDs). Returns `{ success: true, data: { [id]: { fullName, publicCode, role } | null } }` — `null` for unresolved IDs. PII-minimal: only the three display fields are returned, never email/phone/KYC. Server-side Redis cache (300s TTL) invalidates on profile rename. See `docs/user/FETCH_NAME_BY_ID.md` for full integration guidance.
+
 ### Update user (admin)
 ```
 PUT /api/user/:id
@@ -309,6 +315,7 @@ Call this on every app launch after the user grants push notification permission
 | PUT | `/api/user/profile` | JWT | Update own profile |
 | GET | `/api/user/lookup` | internal | Lookup by email/phone (auth-service only) |
 | GET | `/api/user/search` | internal | Search users (auth-service only) |
+| POST | `/api/user/resolve-names` | JWT | Bulk resolve user IDs to display names (`fullName`, `publicCode`, `role`). Max 100 IDs per request. Returns `null` for unresolved IDs. See `docs/user/FETCH_NAME_BY_ID.md` |
 | GET | `/api/user/:id` | JWT | Get user by ID |
 | PUT | `/api/user/:id` | JWT (admin) | Update user (admin) |
 | DELETE | `/api/user/:id` | JWT | Delete account |

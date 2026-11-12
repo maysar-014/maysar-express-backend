@@ -3,205 +3,120 @@ import express from 'express';
 import { createSellerStorefrontRoutes } from '../../src/api/routes/seller-storefront.routes';
 import { SellerStorefrontController } from '../../src/api/controllers/seller-storefront.controller';
 
-jest.setTimeout(60000);
-
-describe('Seller Storefront Routes Integration', () => {
+describe('Seller storefront routes', () => {
+  const sellerId = 'usr_storefront-test';
+  const slugs = new Map<string, string>();
   let app: express.Application;
-  let controller: SellerStorefrontController;
 
   beforeAll(() => {
-    process.env.ALLOWED_SERVICE_KEYS = 'test-service-key';
+    const db = {
+      business: {
+        findFirst: jest.fn(async ({ where }: any) => !where.status || where.ownerId === 'usr_missing'
+          ? null
+          : ({ id: `business-${where.ownerId}`, ownerId: where.ownerId, name: `Shop ${where.ownerId}`, description: null }))
+      },
+      product: { count: jest.fn(async () => 3) },
+      sellerStorefront: {
+        findUnique: jest.fn(async ({ where }: any) => {
+          if (where.slug) {
+            const ownerId = slugs.get(where.slug);
+            return ownerId ? { sellerId: ownerId, slug: where.slug } : null;
+          }
+          const slug = [...slugs.entries()].find(([, ownerId]) => ownerId === where.sellerId)?.[0];
+          return slug ? { sellerId: where.sellerId, slug } : null;
+        }),
+        upsert: jest.fn(async ({ where, create, update }: any) => {
+          const slug = update.slug || create.slug;
+          if ([...slugs.entries()].some(([existingSlug, ownerId]) => existingSlug === slug && ownerId !== where.sellerId)) {
+            throw Object.assign(new Error('unique constraint'), { code: 'P2002' });
+          }
+          for (const [existingSlug, ownerId] of slugs.entries()) {
+            if (ownerId === where.sellerId) slugs.delete(existingSlug);
+          }
+          slugs.set(slug, where.sellerId);
+          return { sellerId: where.sellerId, slug };
+        })
+      }
+    };
+
     app = express();
     app.use(express.json());
-    
-    controller = new SellerStorefrontController('https://maysar.co.tz');
-    jest.spyOn(controller as any, 'generateQRCode').mockImplementation((async (url: string) => {
-      return `data:image/png;base64,${Buffer.from(url).toString('base64')}`;
-    }) as any);
-
-    const routes = createSellerStorefrontRoutes(controller);
-    app.use('/api/catalog/api/v1/sellers', routes);
+    app.use('/api/catalog/api/v1/sellers', createSellerStorefrontRoutes(
+      new SellerStorefrontController(db as any, 'https://maysar.co.tz')
+    ));
   });
 
-  describe('GET /api/catalog/api/v1/sellers/:sellerId/storefront', () => {
-    it('should return 200 with storefront details', async () => {
-      const response = await request(app)
-        .get('/api/catalog/api/v1/sellers/seller123/storefront')
-        .expect(200);
+  const auth = (userId: string) => ({
+    'x-contract-test': '1',
+    'x-user-id': userId,
+    'x-user-roles': 'seller'
+  });
 
-      expect(response.body).toMatchObject({
-        success: true,
-        data: {
-          id: 'seller123',
-          name: expect.any(String),
-          shareUrl: 'https://maysar.co.tz/seller/seller123',
-          shortUrl: 'https://maysar.co.tz/s/seller123',
-          qrCode: expect.stringMatching(/^data:image\/png;base64,/),
-          stats: {
-            totalProducts: expect.any(Number),
-            rating: expect.any(Number)
-          }
-        },
-        meta: {
-          timestamp: expect.any(String)
-        }
-      });
-    });
+  it('returns public verified storefront details by seller ID', async () => {
+    const response = await request(app)
+      .get(`/api/catalog/api/v1/sellers/${sellerId}/storefront`)
+      .expect(200);
 
-    it('should return 400 for missing seller ID', async () => {
-      const response = await request(app)
-        .get('/api/catalog/api/v1/sellers//storefront')
-        .expect(404); // Express returns 404 for missing route params
-    });
-
-    it('should include proper content-type header', async () => {
-      const response = await request(app)
-        .get('/api/catalog/api/v1/sellers/seller123/storefront');
-
-      expect(response.headers['content-type']).toMatch(/application\/json/);
+    expect(response.body).toMatchObject({
+      success: true,
+      data: {
+        id: sellerId,
+        name: `Shop ${sellerId}`,
+        shareUrl: `https://maysar.co.tz/seller/${sellerId}`,
+        shortUrl: `https://maysar.co.tz/s/${sellerId}`,
+        stats: { totalProducts: 3, rating: 0 }
+      }
     });
   });
 
-  describe('POST /api/catalog/api/v1/sellers/:sellerId/share-url', () => {
-    it('should generate share URL with QR code', async () => {
-      const response = await request(app)
-        .post('/api/catalog/api/v1/sellers/seller456/share-url')
-        .set('x-service-key', 'test-service-key')
-        .set('x-user-id', 'user-123')
-        .send({ includeQR: true })
-        .expect(200);
-
-      expect(response.body).toMatchObject({
-        success: true,
-        data: {
-          shareUrl: 'https://maysar.co.tz/seller/seller456',
-          shortUrl: 'https://maysar.co.tz/s/seller456',
-          qrCode: expect.any(String)
-        }
-      });
-    });
-
-    it('should generate share URL without QR code when requested', async () => {
-      const response = await request(app)
-        .post('/api/catalog/api/v1/sellers/seller456/share-url')
-        .set('x-service-key', 'test-service-key')
-        .set('x-user-id', 'user-123')
-        .send({ includeQR: false })
-        .expect(200);
-
-      expect(response.body.data).not.toHaveProperty('qrCode');
-    });
-
-    it('should accept custom slug', async () => {
-      const response = await request(app)
-        .post('/api/catalog/api/v1/sellers/seller456/share-url')
-        .set('x-service-key', 'test-service-key')
-        .set('x-user-id', 'user-123')
-        .send({ customSlug: 'my-shop' })
-        .expect(200);
-
-      expect(response.body.data).toMatchObject({
-        shareUrl: 'https://maysar.co.tz/seller/my-shop',
-        shortUrl: 'https://maysar.co.tz/s/my-shop'
-      });
-    });
-
-    it('should handle empty request body', async () => {
-      const response = await request(app)
-        .post('/api/catalog/api/v1/sellers/seller456/share-url')
-        .set('x-service-key', 'test-service-key')
-        .set('x-user-id', 'user-123')
-        .send({})
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('shareUrl');
-      expect(response.body.data).toHaveProperty('qrCode');
-    });
-
-    it('should validate content-type for POST requests', async () => {
-      await request(app)
-        .post('/api/catalog/api/v1/sellers/seller456/share-url')
-        .set('x-service-key', 'test-service-key')
-        .set('x-user-id', 'user-123')
-        .set('Content-Type', 'application/json')
-        .send({ includeQR: true })
-        .expect(200);
-    });
+  it('returns 404 when the seller has no public business', async () => {
+    await request(app)
+      .get('/api/catalog/api/v1/sellers/usr_missing/storefront')
+      .expect(404);
   });
 
-  describe('URL structure validation', () => {
-    it('should generate consistent URL format', async () => {
-      const response1 = await request(app)
-        .get('/api/catalog/api/v1/sellers/test-seller/storefront');
-      
-      const response2 = await request(app)
-        .post('/api/catalog/api/v1/sellers/test-seller/share-url')
-        .set('x-service-key', 'test-service-key')
-        .set('x-user-id', 'user-123')
-        .send({});
+  it('requires authentication and seller ownership to generate links', async () => {
+    await request(app)
+      .post(`/api/catalog/api/v1/sellers/${sellerId}/share-url`)
+      .send({})
+      .expect(401);
 
-      expect(response1.body.data.shareUrl).toBe(response2.body.data.shareUrl);
-      expect(response1.body.data.shortUrl).toBe(response2.body.data.shortUrl);
-    });
-
-    it('should handle special characters in seller ID', async () => {
-      const response = await request(app)
-        .get('/api/catalog/api/v1/sellers/seller-123_abc/storefront')
-        .expect(200);
-
-      expect(response.body.data.shareUrl).toContain('seller-123_abc');
-    });
+    await request(app)
+      .post(`/api/catalog/api/v1/sellers/${sellerId}/share-url`)
+      .set(auth('usr_other-seller'))
+      .send({})
+      .expect(403);
   });
 
-  describe('QR Code validation', () => {
-    it('should generate valid base64 QR code', async () => {
-      const response = await request(app)
-        .get('/api/catalog/api/v1/sellers/seller123/storefront')
-        .expect(200);
+  it('saves a custom slug, returns links, and resolves the slug for public storefront reads', async () => {
+    const shareResponse = await request(app)
+      .post(`/api/catalog/api/v1/sellers/${sellerId}/share-url`)
+      .set(auth(sellerId))
+      .send({ customSlug: 'my-shop', includeQR: false })
+      .expect(200);
 
-      const qrCode = response.body.data.qrCode;
-      expect(qrCode).toMatch(/^data:image\/png;base64,[A-Za-z0-9+/=]+$/);
-      
-      // Verify base64 can be decoded
-      const base64Data = qrCode.split(',')[1];
-      expect(() => Buffer.from(base64Data, 'base64')).not.toThrow();
+    expect(shareResponse.body.data).toEqual({
+      shareUrl: 'https://maysar.co.tz/seller/my-shop',
+      shortUrl: 'https://maysar.co.tz/s/my-shop'
     });
 
-    it('should generate different QR codes for different sellers', async () => {
-      const response1 = await request(app)
-        .get('/api/catalog/api/v1/sellers/seller1/storefront');
-      
-      const response2 = await request(app)
-        .get('/api/catalog/api/v1/sellers/seller2/storefront');
-
-      expect(response1.body.data.qrCode).not.toBe(response2.body.data.qrCode);
-    });
+    const storefront = await request(app)
+      .get('/api/catalog/api/v1/sellers/my-shop/storefront')
+      .expect(200);
+    expect(storefront.body.data).toMatchObject({ id: sellerId, shareUrl: 'https://maysar.co.tz/seller/my-shop' });
   });
 
-  describe('Performance', () => {
-    it('should respond within acceptable time', async () => {
-      const start = Date.now();
-      
-      await request(app)
-        .get('/api/catalog/api/v1/sellers/seller123/storefront')
-        .expect(200);
-      
-      const duration = Date.now() - start;
-      expect(duration).toBeLessThan(5000); // Allow for QR generation and test overhead
-    });
+  it('rejects invalid and conflicting slugs', async () => {
+    await request(app)
+      .post(`/api/catalog/api/v1/sellers/${sellerId}/share-url`)
+      .set(auth(sellerId))
+      .send({ customSlug: 'bad slug' })
+      .expect(400);
 
-    it('should handle concurrent requests', async () => {
-      const requests = Array.from({ length: 10 }, (_, i) =>
-        request(app).get(`/api/catalog/api/v1/sellers/seller${i}/storefront`)
-      );
-
-      const responses = await Promise.all(requests);
-      
-      responses.forEach(response => {
-        expect(response.status).toBe(200);
-        expect(response.body.success).toBe(true);
-      });
-    });
+    await request(app)
+      .post('/api/catalog/api/v1/sellers/usr_other-owner/share-url')
+      .set(auth('usr_other-owner'))
+      .send({ customSlug: 'my-shop' })
+      .expect(409);
   });
 });

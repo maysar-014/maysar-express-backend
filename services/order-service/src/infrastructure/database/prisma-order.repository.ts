@@ -3,6 +3,7 @@ import { Order } from '../../domain/entities/order.entity';
 import { OrderStatus } from '../../domain/entities/order.entity';
 import { databaseManager } from '../../config/database.config';
 import { getModelPrefix, makeId } from '@shared/ids/id';
+import { createHash } from 'crypto';
 
 interface OrderDelegate {
   create(args: Record<string, unknown>): Promise<unknown>;
@@ -31,6 +32,8 @@ export class PrismaOrderRepository implements OrderRepository {
         id: order.id,
         buyerId: order.buyerId,
         sellerId: order.sellerId,
+        enablerId: order.enablerId ?? null,
+        enablerCode: order.enablerCode ?? null,
         status: this.toDbStatus(order.status),
         paymentMethod: this.toDbPaymentMethod(order.paymentMethod),
         totalAmount: order.totalAmount.amount,
@@ -74,7 +77,59 @@ export class PrismaOrderRepository implements OrderRepository {
             currency: item.price.currency,
             weight: item.weight
           }))
-        }
+        },
+        ...(order.enablerAttributionEnablerId && order.enablerAttributionProductIds.length > 0
+          ? {
+            enablerAttributions: {
+              create: order.enablerAttributionProductIds.map((productId) => ({
+                enablerId: order.enablerAttributionEnablerId,
+                customerId: order.buyerId,
+                context: 'ORDER_LINK',
+                status: 'CONVERTED',
+                attributionKey: createHash('sha256')
+                  .update(`${order.id}:${order.enablerAttributionEnablerId}:${productId}`)
+                  .digest('hex'),
+                productId,
+                convertedAt: order.createdAt,
+                metadata: {
+                  source: 'enabler_purchase_link',
+                  enablerCode: order.enablerAttributionCode ?? null,
+                  authorizationId: order.enablerAttributionAuthorizationId ?? null,
+                  earningRuleType: order.enablerAttributionRuleType ?? 'PERCENTAGE_OF_ITEM_SUBTOTAL',
+                  earningRuleValue: order.enablerAttributionRate ?? 0,
+                  baseAmount: order.enablerAttributionBaseAmount ?? 0,
+                  commissionAmount: order.enablerAttributionAmount ?? 0,
+                },
+              })),
+            },
+          }
+          : {}),
+        ...(order.enablerAttributionEnablerId && order.enablerAttributionAuthorizationId && order.enablerAttributionAmount && order.enablerAttributionAmount > 0
+          ? {
+            enablerEarnings: {
+              create: {
+                id: makeId(getModelPrefix('Enabler_Earning')),
+                enablerId: order.enablerAttributionEnablerId,
+                sellerId: order.sellerId,
+                authorizationId: order.enablerAttributionAuthorizationId,
+                status: 'PENDING',
+                currency: order.totalAmount.currency,
+                baseAmount: order.enablerAttributionBaseAmount ?? 0,
+                earningRuleType: order.enablerAttributionRuleType ?? 'PERCENTAGE_OF_ITEM_SUBTOTAL',
+                earningRuleValue: order.enablerAttributionRate ?? 0,
+                amount: order.enablerAttributionAmount,
+                calculationContext: {
+                  source: 'enabler_purchase_link',
+                  productIds: order.enablerAttributionProductIds,
+                  baseAmount: order.enablerAttributionBaseAmount ?? 0,
+                  earningRuleValue: order.enablerAttributionRate ?? 0,
+                  authorizationId: order.enablerAttributionAuthorizationId,
+                },
+                attributedAt: order.createdAt,
+              },
+            },
+          }
+          : {}),
       };
 
       await this.orderDelegate.create({
@@ -204,6 +259,8 @@ export class PrismaOrderRepository implements OrderRepository {
       id: prismaOrder.id,
       buyerId: prismaOrder.buyerId,
       sellerId: prismaOrder.sellerId,
+      enablerId: prismaOrder.enablerId ?? undefined,
+      enablerCode: prismaOrder.enablerCode ?? undefined,
       items: prismaOrder.items.map((item: any) => ({
         productId: item.productId,
         quantity: item.quantity,

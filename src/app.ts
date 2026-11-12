@@ -15,6 +15,11 @@ import { i18next, i18nextMiddleware } from '../shared/i18n/i18n';
 import { csrfTokenMiddleware, getOrCreateCsrfToken } from '../shared/middleware/csrf.middleware';
 import { pingSharedRedis } from '../shared/redis/ioredis-client';
 import { attachAuthContext } from '../shared/middleware/auth-context.middleware';
+import { rateLimitMiddleware, financialRateLimiter, generalRateLimiter } from './middleware/rate-limit';
+import { idempotencyMiddleware } from './middleware/idempotency';
+import { paginationMiddleware } from './middleware/pagination';
+import { dataloaderMiddleware } from './middleware/dataloader';
+import { getPaymentBreakerHealth, isPaymentGatewayAvailable } from './lib/payment-circuit-breaker';
 import { methodNotAllowedMiddleware } from '../shared/middleware/method-not-allowed.middleware';
 import { globalErrorHandler, notFoundHandler } from '../shared/middleware/global-error-handler.middleware';
 
@@ -58,8 +63,8 @@ export const createApp = () => {
     app.use(attachAuthContext);
     app.use(csrfTokenMiddleware);
 
-    app.use(express.json());
-    app.use(express.urlencoded({ extended: true }));
+    app.use(express.json({ limit: '100kb' }));
+    app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
     // Normalize malformed JSON / URI parse failures into stable JSON responses.
     app.use((err: unknown, _req: Request, res: Response, next: NextFunction) => {
@@ -91,6 +96,23 @@ export const createApp = () => {
         res.json({ csrfToken: token });
     });
 
+    // Rate limiting — applies per Article 11.10 (rate limits and resource protections)
+    // Financial endpoints: 10 req/min; General API: 100 req/min
+    app.use(rateLimitMiddleware);
+
+    // Idempotency — applies per Article 11.11 (idempotent execution) and Article 18
+    // (Financial and Transactional Integrity — prevent duplicate charges/orders/credits/debits)
+    // Caches responses for state-changing requests with Idempotency-Key header for 24 hours
+    app.use(idempotencyMiddleware);
+
+    // Pagination — applies per Article 10.2 (query result boundaries) and Article 11.1
+    // (Return only necessary response information). Default: page=1, limit=20, max=100
+    app.use(paginationMiddleware);
+
+    // DataLoader — applies per Article 10.3 (N+1 query elimination)
+    // Creates per-request DataLoader instances for batched loading of related records
+    app.use(dataloaderMiddleware);
+
     // Register module routes
     const modules = moduleRegistry.getModules();
     modules.forEach(module => {
@@ -121,9 +143,9 @@ export const createApp = () => {
         res.json(healthcheck);
     });
 
-    // Readiness Check - Checks dependencies (DB, Redis)
+    // Readiness Check - Checks dependencies (DB, Redis) and module health
     app.get('/ready', async (req, res) => {
-        const checks: Record<string, string> = {};
+        const checks: Record<string, string | object> = {};
         let isReady = true;
 
         // Check Database
@@ -149,11 +171,33 @@ export const createApp = () => {
             appLogger.error('Readiness check failed (redis):', error);
         }
 
+        // Check module health per Article 19 (Failure Isolation) and Article 26 (Failure Handling)
+        const moduleHealth = moduleRegistry.getModuleHealth();
+        checks.modules = moduleHealth;
+        const allModulesHealthy = Object.values(moduleHealth).every((h) => h === 'healthy');
+        if (!allModulesHealthy) {
+            isReady = false;
+            appLogger.error('Readiness check failed: one or more modules are unhealthy', moduleHealth);
+        }
+
         if (isReady) {
             res.json({ status: 'ready', checks });
         } else {
             res.status(503).json({ status: 'not ready', checks });
         }
+    });
+
+    // Payment Gateway Health Check - Circuit breaker status per Article 19
+    app.get('/health/payment-gateway', (_req, res) => {
+        const health = getPaymentBreakerHealth();
+        const available = isPaymentGatewayAvailable();
+
+        res.status(available ? 200 : 503).json({
+            success: available,
+            service: 'payment-gateway',
+            circuitBreaker: health,
+            timestamp: new Date().toISOString(),
+        });
     });
 
     // Sentry test endpoint (disabled unless explicitly enabled)

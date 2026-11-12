@@ -36,6 +36,7 @@ import {
   StructuredCreateProductDto
 } from '../../application/dto/product.dto';
 import { ProductMapper } from '../../application/mappers/product-mapper';
+import { generateDefaultSlug } from '../../utils/slug.utils';
 
 /**
  * Product Controller Configuration
@@ -95,6 +96,37 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
 }
 
 /**
+ * Thin interface for the DB accessors injected into ProductController.
+ * Allows slug lookup/upsert, business-name lookup, and purchase-count
+ * enrichment to be mocked in tests.
+ */
+export interface SellerStorefrontDb {
+  sellerStorefront: {
+    findUnique(args: { where: { sellerId?: string; slug?: string } }): Promise<{ sellerId: string; slug: string } | null>;
+    upsert(args: { where: { sellerId: string }; create: { sellerId: string; slug: string }; update: { slug: string } }): Promise<{ sellerId: string; slug: string }>;
+  };
+  /** Used to fetch the business name for slug generation when no slug is persisted yet. */
+  business: {
+    findFirst(args: { where: { ownerId: string }; select: { name: true } }): Promise<{ name: string } | null>;
+  };
+  /** Used to batch-fetch units-sold per product for purchaseCount enrichment. */
+  analytics_SellerProductPerformance: {
+    findMany(args: {
+      where: { sellerId: string; productId: { in: string[] } };
+      select: { productId: true; orders: true };
+    }): Promise<Array<{ productId: string; orders: number }>>;
+  };
+  /** Fallback: live order item aggregation when analytics data is missing. */
+  order_OrderItem: {
+    groupBy(args: {
+      by: string[];
+      where: { productId: { in: string[] }; order: { sellerId: string; status: string } };
+      _sum: { quantity: true };
+    }): Promise<Array<{ productId: string; _sum: { quantity: number | null } }>>;
+  };
+}
+
+/**
  * Product Controller
  * Express.js controller for product CRUD operations
  * Validates requests, orchestrates use cases, and formats responses
@@ -115,6 +147,7 @@ export class ProductController {
     private readonly createCategoryUseCase?: CreateCategoryUseCase,
     private readonly updateCategoryUseCase?: UpdateCategoryUseCase,
     private readonly deleteCategoryUseCase?: DeleteCategoryUseCase,
+    private readonly db?: SellerStorefrontDb,
     config: Partial<ProductControllerConfig> = {},
     private readonly updateProductUseCase?: UpdateProductUseCase,
     private readonly deleteProductUseCase?: DeleteProductUseCase,
@@ -126,6 +159,100 @@ export class ProductController {
 
   private isContractTestRequest(req: Request): boolean {
     return String(req.headers?.['x-contract-test'] || '').trim() === '1' && process.env.NODE_ENV !== 'production';
+  }
+
+  /**
+   * Resolve the public slug for a seller.
+   * Queries `sellerStorefront` if a `db` was injected; auto-generates and persists
+   * a slug when none exists. Falls back to the raw sellerId only if no db is available.
+   */
+  private async resolveSellerSlug(sellerId: string): Promise<string> {
+    if (!this.db) {
+      // No db injected — return raw ID as last-resort fallback (should not happen in production)
+      return sellerId;
+    }
+
+    const row = await this.db.sellerStorefront.findUnique({ where: { sellerId } });
+    if (row) {
+      return row.slug;
+    }
+
+    // No slug persisted yet — look up the business name so the slug is human-readable.
+    // Fall back to sellerId-based slug only when no business record exists (edge case).
+    const business = await this.db.business.findFirst({
+      where: { ownerId: sellerId },
+      select: { name: true }
+    });
+
+    const slug = await generateDefaultSlug(
+      business?.name ?? '',
+      sellerId,
+      (candidate) =>
+        this.db!.sellerStorefront
+          .findUnique({ where: { slug: candidate } })
+          .then((r) => r !== null)
+    );
+
+    const upserted = await this.db.sellerStorefront.upsert({
+      where: { sellerId },
+      create: { sellerId, slug },
+      update: { slug }
+    });
+
+    return upserted.slug;
+  }
+
+  /**
+   * Batch-resolve purchaseCount for a list of products belonging to one seller.
+   *
+   * Strategy:
+   * 1. Fetch units-sold from the nightly analytics table (fast, indexed).
+   * 2. For any productIds not yet in analytics (new listings), fall back to
+   *    a live aggregation from order_OrderItem over DELIVERED orders.
+   * 3. Returns a Map<productId, count>; missing entries default to 0 at call site.
+   */
+  private async resolvePurchaseCounts(
+    sellerId: string,
+    productIds: string[]
+  ): Promise<Map<string, number>> {
+    const result = new Map<string, number>();
+    if (!this.db || productIds.length === 0) return result;
+
+    try {
+      // Step 1 — Analytics table (nightly aggregated, preferred)
+      const analyticsRows = await this.db.analytics_SellerProductPerformance.findMany({
+        where: { sellerId, productId: { in: productIds } },
+        select: { productId: true, orders: true }
+      });
+
+      const coveredIds = new Set<string>();
+      for (const row of analyticsRows) {
+        result.set(row.productId, row.orders ?? 0);
+        coveredIds.add(row.productId);
+      }
+
+      // Step 2 — Fallback for products not yet in analytics table
+      const uncoveredIds = productIds.filter(id => !coveredIds.has(id));
+      if (uncoveredIds.length > 0) {
+        const liveRows = await this.db.order_OrderItem.groupBy({
+          by: ['productId'],
+          where: {
+            productId: { in: uncoveredIds },
+            order: { sellerId, status: 'DELIVERED' }
+          },
+          _sum: { quantity: true }
+        });
+
+        for (const row of liveRows) {
+          result.set(row.productId, row._sum?.quantity ?? 0);
+        }
+      }
+    } catch (err) {
+      // Non-fatal: purchaseCount enrichment failing should not break the product list
+      console.warn('[getProductsBySeller] purchaseCount enrichment failed:', err);
+    }
+
+    return result;
   }
 
   /**
@@ -290,14 +417,16 @@ export class ProductController {
       });
 
       if (result.status === 'success') {
-        // Map to DTOs
+        // Map to DTOs — same shape as search endpoint
         const productDtos: ProductSummaryDto[] = result.products.map(product => ({
           id: product.id,
           name: product.name,
+          description: (product as any).description ?? null,
           price: product.price,
           categoryId: product.categoryId,
           categoryName: (product as any).categoryName || (product as any).category?.name || null,
           sellerId: product.sellerId,
+          sellerName: (product as any).sellerName ?? null,
           supplierLocationId: product.supplierLocationId,
           supplierLocation: product.supplierLocation,
           type: product.type,
@@ -305,16 +434,43 @@ export class ProductController {
           status: product.status,
           thumbnailUrl: product.thumbnailUrl
             || product.media?.[0]?.url
-            || product.mediaUrls?.[0],
-          mediaUrls: Array.isArray(product.mediaUrls) ? product.mediaUrls : (product.media || []).map((media: any) => media.url).filter(Boolean),
+            || product.mediaUrls?.[0]
+            || null,
+          mediaUrls: Array.isArray(product.mediaUrls)
+            ? product.mediaUrls
+            : (product.media || []).map((media: any) => media.url).filter(Boolean),
+          attributes: (product as any).attributes ?? null,
           brand: (product as any).brand ?? null,
-          inventoryStatus: product.inventory?.status,
+          inventoryStatus: product.inventory?.status ?? (product as any).inventoryStatus,
           inventoryAvailable: product.inventory?.available ?? (product as any).inventoryAvailable ?? 0,
+          codAccepted: (product as any).codAccepted ?? false,
+          freeDelivery: (product as any).freeDelivery === true,
+          condition: (product as any).condition ?? null,
+          averageRating: (product as any).averageRating ?? null,
+          reviewCount: (product as any).reviewCount ?? 0,
           createdAt: product.createdAt,
+          slug: (product as any).slug ?? null,
+          qualityScore: (product as any).qualityScore ?? null,
+          variantId: (product as any).variantId ?? (product as any).variants?.[0]?.id ?? null,
+          variants: Array.isArray((product as any).variants)
+            ? (product as any).variants.map((v: any) => ({ id: v.id, name: v.name, price: v.price, sku: v.sku }))
+            : [],
+          sku: (product as any).sku ?? null,
+          compareAtPrice: (product as any).compareAtPrice ?? null,
+          weight: (product as any).weight ?? null,
+          campaign: (product as any).campaign ?? null,
           publishedAt: product.status === 'published' ? (product.updatedAt ?? product.createdAt) : null
         }));
 
-        const baseUrl = process.env.BASE_URL || 'https://maysar.co.tz';
+        // Enrich with purchaseCount — batch lookup, not per-product query
+        const productIds = productDtos.map(p => p.id);
+        const purchaseCountMap = await this.resolvePurchaseCounts(sellerId, productIds);
+        for (const dto of productDtos) {
+          dto.purchaseCount = purchaseCountMap.get(dto.id) ?? 0;
+        }
+
+        const baseUrl = process.env.STOREFRONT_BASE_URL || 'https://maysar.co.tz';
+        const sellerSlug = await this.resolveSellerSlug(sellerId);
         const response: PaginatedResponse<ProductSummaryDto> = {
           success: true,
           data: productDtos,
@@ -331,10 +487,10 @@ export class ProductController {
           }
         };
 
-        // Add seller info with shareUrl
+        // Add seller info with slug-based shareUrl
         (response as any).seller = {
           id: sellerId,
-          shareUrl: `${baseUrl}/seller/${sellerId}`
+          shareUrl: `${baseUrl}/seller/${sellerSlug}`
         };
 
         res.status(200).json(response);
@@ -342,7 +498,8 @@ export class ProductController {
         // Use case returned an error result (internal failure) — degrade gracefully with empty list
         // rather than surfacing a 500 to the client.
         console.warn(`[getProductsBySeller] Use case returned error for seller ${sellerId}: ${result.message}`);
-        const baseUrl = process.env.BASE_URL || 'https://maysar.co.tz';
+        const baseUrl = process.env.STOREFRONT_BASE_URL || 'https://maysar.co.tz';
+        const sellerSlug = await this.resolveSellerSlug(sellerId);
         res.status(200).json({
           success: true,
           data: [],
@@ -350,7 +507,7 @@ export class ProductController {
             timestamp: new Date(),
             pagination: { page, limit, total: 0, totalPages: 0, hasNext: false, hasPrev: false }
           },
-          seller: { id: sellerId, shareUrl: `${baseUrl}/seller/${sellerId}` }
+          seller: { id: sellerId, shareUrl: `${baseUrl}/seller/${sellerSlug}` }
         });
       }
 
@@ -408,7 +565,10 @@ export class ProductController {
           slug: (product as any).slug ?? null,
           brand: (product as any).brand ?? null,
           qualityScore: (product as any).qualityScore,
-          variantId: (product as any).variantId ?? null,
+          variantId: (product as any).variantId ?? (product as any).variants?.[0]?.id ?? null,
+          variants: Array.isArray((product as any).variants)
+            ? (product as any).variants.map((v: any) => ({ id: v.id, name: v.name, price: v.price, sku: v.sku }))
+            : [],
           sku: (product as any).sku ?? null,
           compareAtPrice: (product as any).compareAtPrice ?? null,
           weight: (product as any).weight ?? null,
@@ -1240,7 +1400,11 @@ export class ProductController {
       publishedAt: productDetails.publishedAt,
       codAccepted: productDetails.codAccepted === true,
       freeDelivery: productDetails.freeDelivery === true,
-      condition: (productDetails.condition ?? 'new') as 'new' | 'used' | 'refurbished' | 'damaged'
+      condition: (productDetails.condition ?? 'new') as 'new' | 'used' | 'refurbished' | 'damaged',
+      variantId: (productDetails.variantId ?? productDetails.variants?.[0]?.id) || null,
+      variants: Array.isArray(productDetails.variants)
+        ? productDetails.variants.map((v: any) => ({ id: v.id, name: v.name, price: v.price, sku: v.sku, status: v.status }))
+        : [],
     };
   }
 
@@ -1344,6 +1508,7 @@ export class ProductControllerFactory {
     createCategoryUseCase?: CreateCategoryUseCase,
     updateCategoryUseCase?: UpdateCategoryUseCase,
     deleteCategoryUseCase?: DeleteCategoryUseCase,
+    db?: SellerStorefrontDb,
     config: Partial<ProductControllerConfig> = {},
     updateProductUseCase?: UpdateProductUseCase,
     deleteProductUseCase?: DeleteProductUseCase,
@@ -1363,6 +1528,7 @@ export class ProductControllerFactory {
       createCategoryUseCase,
       updateCategoryUseCase,
       deleteCategoryUseCase,
+      db,
       config,
       updateProductUseCase,
       deleteProductUseCase,

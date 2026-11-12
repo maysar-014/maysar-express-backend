@@ -113,7 +113,7 @@ function createConfiguredBusinessRoutes(mode: BusinessRouteMode): Router {
 
   router.use(requireAuth);
 
-  if (mode === 'default') {
+  if (mode === 'default' || mode === 'legacy') {
     router.post('/', validateCreateBusiness, (req, res, next) =>
       controller.registerBusiness(req, res).catch(next)
     );

@@ -40,7 +40,7 @@ import { RefundPolicy } from "./domain/policies/refund.policy";
 import { PaymentController } from "./api/controllers/payment.controller";
 import { PaymentAdminController } from "./api/controllers/payment-admin.controller";
 import { WebhookController } from "./api/controllers/webhook.controller";
-import { EventBus } from "@shared-events/eventBus";
+import { eventBus as sharedEventBus } from "@shared-events/eventBus";
 import { IEventBus } from "./infrastructure/messaging/event-bus.interface";
 import { OutboxRepository } from "./infrastructure/messaging/outbox.repository";
 import { OutboxProcessor } from "./infrastructure/messaging/outbox-processor";
@@ -134,8 +134,14 @@ export class Container {
     this.outboxRepository = new OutboxRepository(this.prisma);
     this.webhookEventRepository = new WebhookEventRepository(this.prisma);
 
-    // Messaging - MUST be assigned before OutboxProcessor construction
-    this.eventBus = new EventBus();
+    // Messaging - MUST be assigned before OutboxProcessor construction.
+    // Use the shared in-process bus singleton (the monolith's event fabric) so
+    // payment events — webhook completions/failures above all — are observable
+    // by other modules (e.g. analytics). Previously this was a private
+    // `new EventBus()` instance whose events nobody outside this container
+    // could ever receive. Payment's own handlers (PaymentEventHandlers) already
+    // subscribe on this same shared singleton.
+    this.eventBus = sharedEventBus;
     this.outboxProcessor = new OutboxProcessor(
       this.outboxRepository,
       this.eventBus,

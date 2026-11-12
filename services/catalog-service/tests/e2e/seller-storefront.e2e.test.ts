@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { createApp } from '../../src/app';
+import { SellerStorefrontController } from '../../src/api/controllers/seller-storefront.controller';
 
 jest.setTimeout(60000);
 
@@ -12,12 +13,44 @@ describe('Seller Storefront E2E Tests', () => {
   };
 
   beforeAll(async () => {
-    app = createApp();
+    const slugs = new Map<string, string>();
+    const db = {
+      business: {
+        findFirst: jest.fn(async ({ where }: any) => where.status ? ({
+          id: `business-${where.ownerId}`,
+          ownerId: where.ownerId,
+          name: `Seller ${where.ownerId}`,
+          description: 'Verified test seller',
+          attributes: null
+        }) : null)
+      },
+      product: { count: jest.fn(async () => 0) },
+      sellerStorefront: {
+        findUnique: jest.fn(async ({ where }: any) => {
+          if (where.slug) {
+            const sellerId = slugs.get(where.slug);
+            return sellerId ? { sellerId, slug: where.slug } : null;
+          }
+          const slug = [...slugs.entries()].find(([, sellerId]) => sellerId === where.sellerId)?.[0];
+          return slug ? { sellerId: where.sellerId, slug } : null;
+        }),
+        upsert: jest.fn(async ({ where, create, update }: any) => {
+          const slug = update.slug || create.slug;
+          slugs.set(slug, where.sellerId);
+          return { sellerId: where.sellerId, slug };
+        })
+      }
+    };
+    const controller = new SellerStorefrontController(db as any);
+    jest.spyOn(controller as any, 'generateQRCode').mockImplementation(async (...args: unknown[]) =>
+      `data:image/png;base64,${Buffer.from(String(args[0])).toString('base64')}`
+    );
+    app = createApp(controller);
   });
 
   describe('Complete seller storefront workflow', () => {
     it('should complete full storefront URL generation flow', async () => {
-      const sellerId = 'test-seller-' + Date.now();
+      const sellerId = 'usr_catalog-e2e';
 
       const storefrontResponse = await request(app)
         .get(`/api/catalog/api/v1/sellers/${sellerId}/storefront`)
@@ -48,8 +81,8 @@ describe('Seller Storefront E2E Tests', () => {
       });
 
       const { shareUrl, shortUrl } = shareUrlResponse.body.data;
-      // SellerStorefrontController builds links from BASE_URL (fallback: production host).
-      const storefrontBaseUrl = process.env.BASE_URL || 'https://maysar.co.tz';
+      // Public storefront links use the storefront host, separate from the API host.
+      const storefrontBaseUrl = process.env.STOREFRONT_BASE_URL || 'https://maysar.co.tz';
       expect(shareUrl).toBe(`${storefrontBaseUrl}/seller/${customSlug}`);
       expect(shortUrl).toBe(`${storefrontBaseUrl}/s/${customSlug}`);
     });

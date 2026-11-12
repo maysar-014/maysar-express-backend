@@ -1,4 +1,5 @@
 import { getModelPrefix, isSystemId, makeId } from '@shared/ids/id';
+import { isOrderNumber } from '@shared/ids/human-readable-ids';
 
 export abstract class BaseId {
   constructor(protected readonly value: string) {
@@ -30,9 +31,25 @@ export class CommissionId extends BaseId {
   }
 }
 
-export class OrderId extends BaseId {
+export class OrderId {
+  constructor(protected readonly value: string) {
+    // Accept both ULID-format system IDs and human-readable order numbers (ORD-YYYYMMDD-NLNL).
+    // Commission calculation should work with any valid order identifier.
+    if (!isSystemId(value) && !isOrderNumber(value)) {
+      throw new Error(`Invalid order ID: ${value}`);
+    }
+  }
+
+  toString(): string {
+    return this.value;
+  }
+
+  equals(other: OrderId): boolean {
+    return this.value === other.value;
+  }
+
   static create(): OrderId {
-    return new OrderId(BaseId.generate(getModelPrefix('Order_Order')));
+    return new OrderId(makeId(getModelPrefix('Order_Order')));
   }
 
   static fromString(value: string): OrderId {

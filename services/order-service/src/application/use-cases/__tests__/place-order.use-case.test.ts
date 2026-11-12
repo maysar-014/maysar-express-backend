@@ -35,6 +35,7 @@ describe('PlaceOrderUseCase', () => {
     // failed regardless of what they asserted.
     let mockCatalogLookup: any;
     let mockVerificationAudit: any;
+    let mockEnablerAuthorizationLookup: any;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -62,6 +63,10 @@ describe('PlaceOrderUseCase', () => {
         mockVerificationAudit = {
             append: jest.fn().mockResolvedValue(undefined),
         };
+        mockEnablerAuthorizationLookup = {
+            findByCode: jest.fn().mockResolvedValue({ id: 'enb_01', userId: 'enabler-1', status: 'ACTIVE' }),
+            getAuthorizedProductIds: jest.fn().mockResolvedValue(['prod-1']),
+        };
         useCase = new PlaceOrderUseCase(
             mockRepository,
             mockEventPublisher,
@@ -74,7 +79,8 @@ describe('PlaceOrderUseCase', () => {
             // collaborators would land in the wrong slots.
             undefined,
             mockCatalogLookup,
-            mockVerificationAudit
+            mockVerificationAudit,
+            mockEnablerAuthorizationLookup,
         );
     });
 
@@ -89,6 +95,37 @@ describe('PlaceOrderUseCase', () => {
         // confirmed by the seller before stock is reserved or payment taken.
         expect(result.nextAction).toBe('AWAIT_VERIFICATION');
         expect(mockSagaOrchestrator.start).not.toHaveBeenCalled();
+    });
+
+    it('persists product-scoped attribution only for approved lines in a mixed seller order', async () => {
+        await useCase.execute({
+            ...validRequest,
+            enablerId: 'enb_01',
+            enablerCode: 'ENB-123456',
+            enablerProductIds: ['prod-1', 'prod-2'],
+        });
+
+        expect(mockEnablerAuthorizationLookup.getAuthorizedProductIds).toHaveBeenCalledWith('enb_01', ['prod-1', 'prod-2']);
+        const savedOrder = mockRepository.save.mock.calls[0][0];
+        expect(savedOrder.enablerId).toBeUndefined();
+        expect(savedOrder.enablerAttributionEnablerId).toBe('enb_01');
+        expect(savedOrder.enablerAttributionProductIds).toEqual(['prod-1']);
+    });
+
+    it('stores legacy order-level attribution only when all seller-order lines are approved', async () => {
+        mockEnablerAuthorizationLookup.getAuthorizedProductIds.mockResolvedValue(['prod-1', 'prod-2']);
+
+        await useCase.execute({
+            ...validRequest,
+            enablerId: 'enb_01',
+            enablerCode: 'ENB-123456',
+            enablerProductIds: ['prod-1', 'prod-2'],
+        });
+
+        const savedOrder = mockRepository.save.mock.calls[0][0];
+        expect(savedOrder.enablerId).toBe('enb_01');
+        expect(savedOrder.enablerCode).toBe('ENB-123456');
+        expect(savedOrder.enablerAttributionProductIds).toEqual(['prod-1', 'prod-2']);
     });
 
     it('defers the COD commitment to checkout rather than taking it at placement', async () => {

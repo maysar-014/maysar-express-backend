@@ -6,13 +6,14 @@ import { Container } from './src/container';
 import { SagaRecoveryWorker } from '../../shared/saga/saga-recovery.worker';
 import { SagaFactory } from '../../shared/saga/saga-factory';
 import { requireAuth, requireRoleOrService } from '@shared/middleware/auth-context.middleware';
+import { appLogger } from '../../shared/logger/logger';
 
 let sagaRecoveryWorker: SagaRecoveryWorker | null = null;
 
 export const PayoutModule: Module = {
     name: 'payout-service',
     initialize: async () => {
-        console.log('Initializing payout-service module');
+        appLogger.info('Initializing payout-service module');
         const container = Container.getInstance();
         try {
             await container.prisma.$connect();
@@ -26,7 +27,7 @@ export const PayoutModule: Module = {
             });
             sagaRecoveryWorker.start();
         } catch (error) {
-            console.error('Failed to initialize payout-service module:', error);
+        appLogger.error('Failed to initialize payout-service module', { error: error instanceof Error ? error.message : String(error) });
         }
     },
     routes: (() => {
@@ -37,14 +38,14 @@ export const PayoutModule: Module = {
         return router;
     })(),
     shutdown: async () => {
-        console.log('Shutting down payout-service module');
+        appLogger.info('Shutting down payout-service module');
         try {
             sagaRecoveryWorker?.stop();
             const container = Container.getInstance();
             container.outboxProcessor.stop();
             await container.prisma.$disconnect();
         } catch (error) {
-            console.error('Failed to shutdown payout-service module:', error);
+        appLogger.error('Failed to shutdown payout-service module', { error: error instanceof Error ? error.message : String(error) });
         }
     }
 };

@@ -8,6 +8,19 @@ import { createSafeFileTransports } from './file-transports';
 import { isErrorLike, normalizeLogMeta, serializeError } from './error-utils';
 
 // ============================================================================
+// LEVEL ICONS — visual classification in development terminal
+// ============================================================================
+
+const LEVEL_ICONS: Record<string, string> = {
+    error: '✖',
+    warn:  '⚠',
+    info:  '●',
+    debug: '○',
+    verbose: '…',
+    silly: '~',
+};
+
+// ============================================================================
 // LOG CONTEXT
 // ============================================================================
 
@@ -29,22 +42,51 @@ export function createServiceLogger(serviceName: string): winston.Logger {
     const isDev = process.env.NODE_ENV !== 'production';
     const logLevel = process.env.LOG_LEVEL || 'info';
 
+    const devFormat = winston.format.combine(
+        winston.format.colorize({ all: false, level: true }),
+        winston.format.timestamp({ format: 'HH:mm:ss' }),
+        winston.format.printf((info) => {
+            const { timestamp, level, message, service, context, error, stack, ...rest } = info as Record<string, unknown> & { level: string; message: unknown };
+
+            // Strip ANSI codes from level for icon lookup
+            const rawLevel = (level as string).replace(/\x1B\[[0-9;]*m/g, '');
+            const icon = LEVEL_ICONS[rawLevel] ?? '●';
+
+            // Build service tag
+            const svcTag = context ? `[${service ?? serviceName}:${context}]` : `[${service ?? serviceName}]`;
+
+            // Compose extras — omit internal Winston/meta fields
+            const skipKeys = new Set(['timestamp', 'level', 'message', 'service', 'context', 'requestId', 'correlationId', 'sagaId', 'eventId', 'executionTime']);
+            const extras: Record<string, unknown> = {};
+            for (const [k, v] of Object.entries(rest)) {
+                if (!skipKeys.has(k) && v !== undefined) extras[k] = v;
+            }
+
+            // Format error block
+            let errorBlock = '';
+            if (error && typeof error === 'object') {
+                const e = error as Record<string, unknown>;
+                const errMsg = (e['message'] as string) || '';
+                const errStack = (e['stack'] as string) || (stack as string) || '';
+                errorBlock = `\n  ↳ ${errMsg}${errStack ? `\n${errStack.split('\n').slice(1, 4).map((l: string) => `    ${l.trim()}`).join('\n')}` : ''}`;
+            }
+
+            // Compact extras line
+            const extrasStr = Object.keys(extras).length
+                ? '  ' + JSON.stringify(extras)
+                : '';
+
+            return `${timestamp} ${level} ${icon} ${svcTag} ${message}${extrasStr}${errorBlock}`;
+        }),
+    );
+
     const transportsArray: winston.transport[] = [
         new winston.transports.Console({
             level: logLevel,
-            format: isDev
-                ? winston.format.combine(
-                    winston.format.colorize(),
-                    winston.format.simple(),
-                    winston.format.printf(({ timestamp, level, message, ...meta }) => {
-                        const metaStr = Object.keys(meta).length ? JSON.stringify(meta, null, 2) : '';
-                        return `${timestamp} ${level}: ${message} ${metaStr}`;
-                    })
-                )
-                : winston.format.combine(
-                    winston.format.uncolorize(),
-                    winston.format.json()
-                ),
+            format: isDev ? devFormat : winston.format.combine(
+                winston.format.uncolorize(),
+                winston.format.json()
+            ),
         }),
     ];
 
@@ -126,11 +168,10 @@ export class ServiceLogger {
         if (errorOrMeta instanceof Error || isErrorLike(errorOrMeta)) {
             actualError = serializeError(errorOrMeta);
         } else if (errorOrMeta && typeof errorOrMeta === 'object') {
-            // If second arg is an object but not an Error, treat it as metadata
             actualMeta = { ...(errorOrMeta as Record<string, unknown>), ...actualMeta };
         }
 
-        const logData = this.formatMessage(message, {
+        const { message: _msg, ...logData } = this.formatMessage(message, {
             ...actualMeta,
             error: actualError
         });
@@ -138,15 +179,18 @@ export class ServiceLogger {
     }
 
     warn(message: string, meta?: LoggerMeta): void {
-        this.winstonLogger.warn(message, this.formatMessage(message, meta));
+        const { message: _msg, ...logData } = this.formatMessage(message, meta);
+        this.winstonLogger.warn(message, logData);
     }
 
     info(message: string, meta?: LoggerMeta): void {
-        this.winstonLogger.info(message, this.formatMessage(message, meta));
+        const { message: _msg, ...logData } = this.formatMessage(message, meta);
+        this.winstonLogger.info(message, logData);
     }
 
     debug(message: string, meta?: LoggerMeta): void {
-        this.winstonLogger.debug(message, this.formatMessage(message, meta));
+        const { message: _msg, ...logData } = this.formatMessage(message, meta);
+        this.winstonLogger.debug(message, logData);
     }
 
     // Business-specific logging methods

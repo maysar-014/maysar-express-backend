@@ -122,6 +122,39 @@ describe('PrismaOrderRepository', () => {
     );
   });
 
+  it('persists product-scoped enabler attribution atomically with the seller order', async () => {
+    const PrismaOrderRepository = getRepositoryClass();
+    mockOrderDelegate.create.mockResolvedValue({});
+    const repo = new PrismaOrderRepository();
+    const order = makeOrder();
+    order.enablerAttributionEnablerId = 'enb_01';
+    order.enablerAttributionCode = 'ENB-123456';
+    order.enablerAttributionProductIds = ['product-1'];
+
+    await repo.save(order);
+
+    const data = mockOrderDelegate.create.mock.calls[0][0].data;
+    expect(data.enablerAttributions.create).toEqual([
+      expect.objectContaining({
+        enablerId: 'enb_01',
+        customerId: 'buyer-1',
+        context: 'ORDER_LINK',
+        status: 'CONVERTED',
+        productId: 'product-1',
+        metadata: expect.objectContaining({
+          source: 'enabler_purchase_link',
+          enablerCode: 'ENB-123456',
+          authorizationId: null,
+          earningRuleType: 'PERCENTAGE_OF_ITEM_SUBTOTAL',
+          earningRuleValue: 0,
+          baseAmount: 0,
+          commissionAmount: 0,
+        }),
+      }),
+    ]);
+    expect(data.enablerAttributions.create[0].attributionKey).toHaveLength(64);
+  });
+
   it('maps prisma order to domain order and returns null when not found', async () => {
     const PrismaOrderRepository = getRepositoryClass();
     mockOrderDelegate.findUnique.mockResolvedValueOnce(makePrismaOrder()).mockResolvedValueOnce(null);

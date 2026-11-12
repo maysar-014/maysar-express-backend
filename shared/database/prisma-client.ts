@@ -11,7 +11,7 @@ const isLocalHost = (hostname: string): boolean =>
  *     createPrismaClient() call inherits the same bounded pool regardless of which
  *     service initialises globalThis.prisma first in the monolith.
  */
-const normalizeDatabaseUrl = (url?: string): { url?: string; disableSsl?: boolean } => {
+export const normalizeDatabaseUrl = (url?: string): { url?: string; disableSsl?: boolean } => {
   if (!url) return { url };
   try {
     const parsed = new URL(url);
@@ -44,6 +44,17 @@ const normalizeDatabaseUrl = (url?: string): { url?: string; disableSsl?: boolea
       parsed.searchParams.set('pool_timeout', envTimeout);
     } else if (!parsed.searchParams.has('pool_timeout')) {
       parsed.searchParams.set('pool_timeout', '30');
+    }
+    // Statement timeout to prevent long-running queries from holding connections
+    // PostgreSQL requires options in format: -c statement_timeout=5000 (raw space, URLSearchParams handles encoding)
+    const envStatementTimeout = process.env.DB_STATEMENT_TIMEOUT?.trim();
+    if (envStatementTimeout) {
+      parsed.searchParams.set('options', `-c statement_timeout=${envStatementTimeout}`);
+    } else if (!parsed.searchParams.has('options')) {
+      parsed.searchParams.set('options', '-c statement_timeout=5000');
+    } else if (!parsed.searchParams.get('options')?.includes('statement_timeout')) {
+      const existingOptions = parsed.searchParams.get('options') || '';
+      parsed.searchParams.set('options', `${existingOptions} -c statement_timeout=5000`);
     }
     return { url: parsed.toString(), disableSsl: isLocalHost(parsed.hostname) };
   } catch {

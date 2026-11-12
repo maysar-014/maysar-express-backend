@@ -1,5 +1,4 @@
 import { SellerLocation } from '../seller-location.entity';
-import { ProductLocation } from '../product-location.entity';
 
 const base = {
   id: 'sloc_1',
@@ -8,6 +7,7 @@ const base = {
   type: 'SHOP' as const,
   status: 'ACTIVE' as const,
   address: { street: 'Kariakoo Market', region: 'Dar es Salaam', country: 'Tanzania' },
+  fulfillmentCapabilities: [],
   latitude: -6.8167,
   longitude: 39.2833,
   isPrimary: true,
@@ -34,7 +34,7 @@ describe('SellerLocation', () => {
 
   it('throws on missing street', () => {
     expect(() => new SellerLocation({ ...base, address: { ...base.address, street: '' } }))
-      .toThrow('Street is required');
+      .toThrow('Street, locality, or directions is required');
   });
 
   it('deactivate sets status to INACTIVE', () => {
@@ -63,51 +63,5 @@ describe('SellerLocation', () => {
       },
     });
     expect(loc.displayAddress).toBe('Sea View, Kivukoni, Ilala Cbd, Dar es Salaam, Tanzania');
-  });
-});
-
-describe('ProductLocation', () => {
-  const pl = new ProductLocation({
-    id: 'ploc_1',
-    productId: 'prod_1',
-    locationId: 'sloc_1',
-    sellerId: 'seller_1',
-    quantityAvailable: 10,
-    quantityReserved: 3,
-    isAvailable: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
-
-  it('netAvailable = available - reserved', () => {
-    expect(pl.netAvailable).toBe(7);
-  });
-
-  it('reserve reduces netAvailable', () => {
-    const copy = new ProductLocation({ ...pl, quantityAvailable: 10, quantityReserved: 0, id: 'x', createdAt: new Date(), updatedAt: new Date() });
-    copy.reserve(4);
-    expect(copy.netAvailable).toBe(6);
-  });
-
-  it('reserve throws when insufficient stock', () => {
-    expect(() => pl.reserve(100)).toThrow('Insufficient stock');
-  });
-
-  it('adjustStock increments available', () => {
-    const copy = new ProductLocation({ ...pl, quantityAvailable: 5, quantityReserved: 0, id: 'y', createdAt: new Date(), updatedAt: new Date() });
-    copy.adjustStock(5);
-    expect(copy.quantityAvailable).toBe(10);
-  });
-
-  it('adjustStock throws on negative result', () => {
-    expect(() => pl.adjustStock(-100)).toThrow('negative');
-  });
-
-  it('throws on negative quantityAvailable at construction', () => {
-    expect(() => new ProductLocation({
-      id: 'z', productId: 'p', locationId: 'l', sellerId: 's',
-      quantityAvailable: -1, quantityReserved: 0, isAvailable: false,
-      createdAt: new Date(), updatedAt: new Date(),
-    })).toThrow('cannot be negative');
   });
 });

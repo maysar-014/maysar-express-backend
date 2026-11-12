@@ -819,3 +819,58 @@ Steps 1–3 are what make every later guarantee real rather than aspirational.
   in principle. Worth replacing with a structural check (e.g. "a saga file may not
   both publish settlement commands and accept OTP input"). Not done here — out of
   scope for this fix.
+- **Live e2e** — 149/149, with the settlement ordering observed in the server log;
+  see the re-verification note at the end of this file.
+
+---
+
+## Re-verification note — BLG-024 / BLG-027 against the live system
+
+**Result: live e2e green — `Test Suites: 19 passed, 19 total · Tests: 149 passed,
+149 total`**, measured with `RUN_LIVE_E2E=true npx jest --selectProjects e2e
+--runInBand` against a server started with `npx tsx src/main.ts`. This satisfies the
+"Live e2e" pointer in BLG-024 and re-measures the §1 row.
+
+**What `[COU-03]` (the COD full lifecycle) now proves end to end**, in order:
+
+1. A wrong code sent to `POST /cod/:id/verify` is rejected with
+   **409 `COD_VERIFICATION_FAILED: Invalid or expired OTP`**, and a follow-up read
+   shows the delivery is **not** `delivered`.
+2. The issued OTP then returns **200 / `success: true`**, and the read shows
+   **`delivered`**.
+
+**Two test defects that had to be fixed for those assertions to mean anything:**
+
+- **Ordering is load-bearing.** The wrong-OTP call originally ran *after* the
+  successful verification. By then the delivery is marked `codOtpVerified`, and the
+  use case answers an idempotent retry with 200 **without re-checking the OTP** — so
+  the `>= 400` assertion observed the retry short-circuit, not the OTP comparison. It
+  now runs *first*, and additionally pins the rejection reason (`/OTP/i`, excluding
+  "Missing idempotency key") and that the delivery did not advance.
+- **Proximity coordinates.** The test drove the courier to `DELIVERY_LOCATION`,
+  which sits ~8 km from the fixture's delivery address — correctly rejected by the
+  500 m gate, so the saga never completed. The fixture now exports
+  `FIXTURE_DELIVERY_COORDS` / `FIXTURE_PICKUP_COORDS` and the courier is sent to the
+  real delivery coordinates.
+
+**Confirmed in the server log** (`logs/live/server.log`), for the same delivery id:
+
+- wrong code → `CODSettlementSaga` started → `Error: Verification Failed: Invalid or
+  expired OTP` at `cod-settlement.saga.ts:73` → **`fully compensated`**, with **no**
+  `Settling COD transaction` line;
+- correct code → new `CODSettlementSaga` → **`Settling COD transaction`** →
+  **`completed`**.
+
+So settlement happens exactly once, only after a valid OTP — the structural claim
+BLG-027 makes about the split sagas, observed on the running system rather than
+inferred from unit tests.
+
+**Full-suite failures encountered along the way were environmental, not regressions.**
+An intermediate full run reported 139/149; all 10 failures were in `delivery.e2e` and
+`supplier-production.e2e` and were caused by the server itself — Prisma
+`connection pool timeout` errors that killed the process mid-run (`fetch failed`),
+plus runs starting while the app still answered `503 Application bootstrap in
+progress`. Both suites pass 20/20 in isolation against a healthy server, and the
+final clean run above is 149/149. Note this as an operational hazard: the e2e suite
+assumes a long-lived server, and pool exhaustion manifests as test failures that look
+like product defects.

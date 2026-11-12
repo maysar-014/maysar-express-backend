@@ -86,6 +86,7 @@ function buildUseCase(product: any): GetProductUseCase {
   const mockProductRepository: jest.Mocked<ProductRepository> = {
     save: jest.fn(),
     findById: jest.fn().mockResolvedValue(product),
+    findBySlug: jest.fn().mockResolvedValue(null),
     findBySeller: jest.fn(),
     findByCategory: jest.fn(),
     search: jest.fn(),
@@ -201,6 +202,7 @@ describe('Bug Condition Exploration — Inventory Status', () => {
     const mockProductRepository: jest.Mocked<ProductRepository> = {
       save: jest.fn(),
       findById: jest.fn().mockResolvedValue(product),
+      findBySlug: jest.fn().mockResolvedValue(null),
       findBySeller: jest.fn(),
       findByCategory: jest.fn(),
       search: jest.fn(),

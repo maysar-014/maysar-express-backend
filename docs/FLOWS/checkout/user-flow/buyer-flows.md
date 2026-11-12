@@ -1,8 +1,8 @@
 ﻿# Buyer Flows — Checkout Service
 
 > **Verification status:** Partially Verified (confirm flow and session status Verified at data-level; cart surface contract-verified at the canonical `/api/checkout/cart/*` paths — live re-verification pending)
-> **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` (September 2026)
-> **Last updated:** September 2026
+> **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` (September 2026); MUVA/MSLE Phase 3 implementation (2026-11-10)
+> **Last updated:** 2026-11-10 (added Flow 3: Pre-Confirmation Validation — ENH-007/011/012)
 
 ---
 
@@ -29,6 +29,7 @@ This document covers checkout-service flows from the buyer's perspective: confir
 |---|---|---|---|
 | 1 | Checkout Confirmation | Partially Verified | `POST /api/checkout/{id}/confirm` |
 | 2 | Get Checkout Session Status | Verified (data-level 404 observed) | `GET /api/checkout/{id}` |
+| 3 | Pre-Confirmation Validation | Pending Verification | `POST /api/catalog/v1/checkout/validate` |
 
 ---
 
@@ -57,7 +58,9 @@ This document covers checkout-service flows from the buyer's perspective: confir
 | 6 | checkout-service | In-process: calls `globalThis.__createOrderShipments` | — | — | `Logistics_Shipment` records created in logistics-service |
 | 7 | checkout-service | In-process: calls `globalThis.__lockFulfillmentPrice` | — | — | `FulfillmentCommitment` price lock written in logistics-service |
 | 8 | checkout-service | Publishes `OrderCreated` event to platform event bus | — | — | Event emitted via outbox |
-| 9 | Buyer | Receives response | — | — | 201 `{ orderId, status: "confirmed" }` |
+| 9 | Buyer | Receives response | — | — | 200 `{ data: { orderId, status: "confirmed" } }` when order placement succeeds; or `{ data: { checkoutId, status: "confirmed" } }` when placement is deferred |
+
+> ⚠️ **BOTH-004 corrected 2026-11-06:** The response includes `orderId` only when in-process order placement succeeds (`__placeOrderUseCase` ran). If placement was deferred (missing sellerId lookup, placement error handled non-fatally), the response contains `checkoutId` instead. Frontend must handle both shapes: always check `data.orderId ?? data.checkoutId`.
 
 ### Service Interaction Chain
 
@@ -75,7 +78,7 @@ POST /api/checkout/{id}/confirm
   → globalThis.__lockFulfillmentPrice (logistics-service in-process)
       → writes FulfillmentCommitment price lock
   → publishes OrderCreated event (outbox → platform event bus)
-  → returns 201 { orderId, status: "confirmed" }
+  → returns 200 { orderId | checkoutId, status: "confirmed" }
 ```
 
 **`shippingCostTzs` — CRITICAL:** The shipping cost is NEVER read from the client-supplied confirm request body. It is always read from the validated quote record retrieved from logistics-service via the internal quote validation endpoint (`GET /api/logistics/internal/quotes/:quoteId`). The frontend must NOT pass a `shippingCost` value in the confirm request body expecting it to be used. It will be ignored.
@@ -178,3 +181,107 @@ sequenceDiagram
 - `shippingCostTzs` is read from the validated quote record — never from the request body
 - `OrderCreated` is published via outbox for at-least-once delivery
 - The entire chain is idempotent — a second confirm call returns the same `orderId`
+
+---
+
+## Flow 3: Pre-Confirmation Validation
+
+> **Added 2026-11-10 — MUVA/MSLE Phase 3 (ENH-007/011/012)**
+> Before the buyer clicks "Confirm Order", the frontend can validate the checkout line item against the full 6-step atomic validation sequence. This catches configuration errors, price changes, and stock issues early — before the buyer commits.
+
+### Summary
+
+| Field | Value |
+|---|---|
+| Actor | Buyer |
+| Trigger | Buyer reviews cart before confirming, or configuration selection changes |
+| Preconditions | Authenticated (Bearer JWT, buyer role); line item with productId and quantity |
+| Terminal states (success) | 200 with validation result including resolved price, stock status, and order snapshot |
+| Terminal states (failure) | 400 (missing required fields); 500 (internal error) |
+| Verification status | Pending live verification |
+
+### Happy Path
+
+| Step | Actor/System | Action | Endpoint | Auth | Expected Response |
+|---|---|---|---|---|---|
+| 1 | Buyer | Frontend sends line item for validation | `POST /api/catalog/v1/checkout/validate` | Bearer JWT (buyer) | 200 with validation result |
+| 2 | catalog-service | Validates selected configuration against definition | — | — | Configuration valid |
+| 3 | catalog-service | Resolves active seller offer for the product | — | — | Offer found; price + stock available |
+| 4 | catalog-service | Recalculates price using precedence chain | — | — | Resolved price computed |
+| 5 | catalog-service | Checks stock sufficiency for requested quantity | — | — | Stock check result |
+| 6 | catalog-service | Builds immutable `OrderItemSnapshot` if all checks pass | — | — | Snapshot ready for checkout |
+
+### Request Body
+
+```json
+{
+  "lineItem": {
+    "productId": "prod_01ABC...",
+    "productName": "Samsung Galaxy A10",
+    "productImage": "https://...",
+    "variantId": null,
+    "selectedOptionIds": {
+      "dim_colour": ["opt_black"],
+      "dim_storage": ["opt_128gb"]
+    },
+    "quantity": 1
+  },
+  "promotionDiscount": null,
+  "promotionOriginalPrice": null,
+  "deliveryMethod": "standard",
+  "shippingCost": 2500,
+  "estimatedDeliveryDate": "2026-11-15",
+  "fulfillmentLocation": "Dar es Salaam"
+}
+```
+
+For simple products (no configuration), pass `selectedOptionIds: null` and `variantId` if available.
+
+### Response Shape
+
+```json
+{
+  "success": true,
+  "data": {
+    "valid": true,
+    "errors": [],
+    "resolvedPrice": 42000,
+    "resolvedCurrency": "TZS",
+    "priceSource": "seller_offer",
+    "stockSufficient": true,
+    "availableStock": 15,
+    "stockTracked": true,
+    "orderItemSnapshot": {
+      "configuration": { "productId": "...", "selectedConfiguration": { "Colour": "Black", "Storage": "128 GB" }, "configurationFingerprint": "a1b2c3..." },
+      "price": { "unitPrice": 42000, "currency": "TZS", "totalLinePrice": 42000, "priceSource": "seller_offer" },
+      "fulfillment": { "fulfillmentPolicy": "seller_fulfilled", "leadTimeDays": 2 }
+    }
+  }
+}
+```
+
+### Price Precedence Chain
+
+The `priceSource` field tells the frontend which level of the precedence chain was used:
+
+| Source | Priority | When used |
+|---|---|---|
+| `promotion` | 1 | An active promotion or pricing agreement applies |
+| `seller_offer` | 2-4 | The seller offer's price (including config-specific overrides) |
+| `catalog_default` | 5 | No seller offer; catalog-level default price is used as fallback |
+
+### When `valid: false`
+
+The `errors` array contains strings explaining each failure:
+- `"Configuration validation failed: ..."` — the selected configuration is invalid
+- `"No price could be resolved..."` — no seller offer and no catalog default available
+- `"Insufficient stock: requested X, available Y"` — stock check failed
+
+The frontend should show these errors and prevent the confirm button from being enabled until they are resolved.
+
+### Service Interaction Chain
+
+`POST /api/catalog/v1/checkout/validate` is handled within catalog-service by the `CheckoutTransactionBoundaryPolicy`. It resolves the configuration definition, seller offer, and catalog default price from the database in-process. No inter-service HTTP calls are needed — all data is available in the catalog database.
+
+> **Note:** This endpoint validates but does NOT reserve stock or create orders. The actual atomic reservation and order creation happen in the checkout confirmation flow (Flow 1). This endpoint is a pre-check to give the buyer confidence before committing.
+

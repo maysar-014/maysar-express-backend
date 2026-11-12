@@ -71,6 +71,20 @@ export const buildDeliveryId = (orderId: string): string => {
   }
   return id;
 };
+/**
+ * Coordinates of the fixture's delivery address (Kariakoo Market, Dar es Salaam).
+ *
+ * Exported so the COD verification call sites report the courier as standing at
+ * the delivery address itself. The settlement saga refuses to settle unless the
+ * courier is within 500 m of this point, and the tests previously sent a
+ * hardcoded downtown pair (~8 km away) that happened to coincide with the
+ * *pickup* coordinates — so the proximity gate correctly rejected a courier who
+ * was demonstrably not at the door. Hardcoding the pair twice let the two
+ * drift apart silently.
+ */
+export const FIXTURE_PICKUP_COORDS = { lat: -6.7924, lng: 39.2083 };
+export const FIXTURE_DELIVERY_COORDS = { lat: -6.81, lng: 39.28 };
+
 export interface CodDeliveryFixtureInput {
   orderId: string;
   courierId: string;
@@ -126,15 +140,15 @@ export const createCodDeliveryFixture = async (
     pickupStreet: 'Uhuru Street 1',
     pickupCity: 'Dar es Salaam',
     pickupRegion: 'Dar es Salaam',
-    pickupLatitude: -6.7924,
-    pickupLongitude: 39.2083,
+    pickupLatitude: FIXTURE_PICKUP_COORDS.lat,
+    pickupLongitude: FIXTURE_PICKUP_COORDS.lng,
     pickupContactName: 'Fixture Pickup',
     pickupContactPhone: '+255700000001',
     deliveryStreet: 'Kariakoo Market',
     deliveryCity: 'Dar es Salaam',
     deliveryRegion: 'Dar es Salaam',
-    deliveryLatitude: -6.81,
-    deliveryLongitude: 39.28,
+    deliveryLatitude: FIXTURE_DELIVERY_COORDS.lat,
+    deliveryLongitude: FIXTURE_DELIVERY_COORDS.lng,
     deliveryContactName: 'Fixture Delivery',
     deliveryContactPhone: '+255700000002',
     packageWeight: 1.0,

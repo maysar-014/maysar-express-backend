@@ -17,6 +17,7 @@ import { recordRequestAudit } from './request-audit';
 import { publishRequestEvent } from '../../infrastructure/messaging/request-outbox';
 import { RequestEntity, RequestData } from '../../domain/entities/request.entity';
 import { RequestMessage } from '../../domain/entities/request-message.entity';
+import { appLogger } from '../../../../../shared/logger/logger';
 
 const DEFAULT_INTERVAL_MS = 5 * 60 * 1000;
 const DEFAULT_TTL_DAYS = 30;
@@ -56,14 +57,14 @@ export class RequestExpirationSweeper {
       void this.runOnce();
     }, this.intervalMs);
     if (typeof this.timer.unref === 'function') this.timer.unref();
-    console.log(`[RequestSweeper] started (interval=${this.intervalMs}ms, ttlDays=${this.ttlDays})`);
+    appLogger.info(`[RequestSweeper] started (interval=${this.intervalMs}ms, ttlDays=${this.ttlDays})`);
   }
 
   stop(): void {
     if (!this.timer) return;
     clearInterval(this.timer);
     this.timer = null;
-    console.log('[RequestSweeper] stopped');
+    appLogger.info('[RequestSweeper] stopped');
   }
 
   async runOnce(now: Date = new Date()): Promise<SweepStats> {
@@ -83,7 +84,7 @@ export class RequestExpirationSweeper {
       await this.expireSupplierAvailability(now, stats);
       await this.expireStaleRequests(now, stats);
     } catch (err: any) {
-      console.error('[RequestSweeper] sweep failed (non-fatal):', err?.message);
+      appLogger.warn('[RequestSweeper] sweep failed (non-fatal)', { error: err?.message });
     } finally {
       this.running = false;
     }
@@ -98,13 +99,13 @@ export class RequestExpirationSweeper {
     try {
       const stale = await prisma.request_Quote.findMany({
         where: { status: 'PUBLISHED', validUntil: { lt: now } },
-        select: { quoteId: true, requestId: true },
+        select: { id: true, requestId: true },
         take: 200,
       });
       for (const q of stale) {
         try {
           await prisma.request_Quote.update({
-            where: { quoteId: q.quoteId },
+            where: { id: q.id },
             data: { status: 'EXPIRED' },
           });
           await recordRequestAudit({
@@ -112,20 +113,17 @@ export class RequestExpirationSweeper {
             actorType: 'SYSTEM',
             action: 'QUOTE_EXPIRED',
             toStatus: 'EXPIRED',
-            detail: { quoteId: q.quoteId },
+            detail: { quoteId: q.id },
           });
-          await publishRequestEvent('quote.expired', { quoteId: q.quoteId, requestId: q.requestId });
-          // §4.1 expiry semantics: expired quote → request returns to ASSESSING
-          // for reassessment + a STATUS conversation message. Never touches a
-          // request that is CONVERTED / CANCELLED / EXPIRED.
-          await this.reassessRequest(prisma, q.requestId, q.quoteId);
+          await publishRequestEvent('quote.expired', { quoteId: q.id, requestId: q.requestId });
+          await this.reassessRequest(prisma, q.requestId, q.id);
           stats.quotesExpired += 1;
         } catch (err: any) {
-          console.error('[RequestSweeper] quote expiry failed:', err?.message);
+          appLogger.warn('[RequestSweeper] quote expiry failed', { error: err?.message });
         }
       }
     } catch (err: any) {
-      console.error('[RequestSweeper] quote scan failed:', err?.message);
+      appLogger.warn('[RequestSweeper] quote scan failed', { error: err?.message });
     }
   }
 
@@ -200,19 +198,19 @@ export class RequestExpirationSweeper {
     try {
       const soon = await prisma.request_Quote.findMany({
         where: { status: 'PUBLISHED', validUntil: { gte: now, lte: horizon } },
-        select: { quoteId: true, requestId: true },
+        select: { id: true, requestId: true },
         take: 200,
       });
       for (const q of soon) {
         await publishRequestEvent('quote.expiring_soon', {
-          quoteId: q.quoteId,
+          quoteId: q.id,
           requestId: q.requestId,
           validUntil: horizon.toISOString(),
         });
         stats.expiringSoonNotified += 1;
       }
     } catch (err: any) {
-      console.error('[RequestSweeper] expiring-soon scan failed:', err?.message);
+      appLogger.warn('[RequestSweeper] expiring-soon scan failed', { error: err?.message });
     }
   }
 
@@ -238,11 +236,11 @@ export class RequestExpirationSweeper {
           });
           stats.linksExpired += 1;
         } catch (err: any) {
-          console.error('[RequestSweeper] link expiry failed:', err?.message);
+          appLogger.warn('[RequestSweeper] link expiry failed', { error: err?.message });
         }
       }
     } catch (err: any) {
-      console.error('[RequestSweeper] link expiry scan failed:', err?.message);
+      appLogger.warn('[RequestSweeper] link expiry scan failed', { error: err?.message });
     }
   }
 
@@ -251,12 +249,12 @@ export class RequestExpirationSweeper {
     if (!prisma?.request_Source?.updateMany) return;
     try {
       const res = await prisma.request_Source.updateMany({
-        where: { status: 'CONFIRMED', availableUntil: { lt: now } },
-        data: { status: 'UNAVAILABLE' },
+        where: { availability: 'CONFIRMED', availableUntil: { lt: now } },
+        data: { availability: 'UNAVAILABLE' },
       });
       stats.suppliersExpired = res?.count ?? 0;
     } catch (err: any) {
-      console.error('[RequestSweeper] supplier availability expiry failed:', err?.message);
+      appLogger.warn('[RequestSweeper] supplier availability expiry failed', { error: err?.message });
     }
   }
 
@@ -270,30 +268,30 @@ export class RequestExpirationSweeper {
           status: { in: ['SUBMITTED', 'ASSESSING', 'NEEDS_CLARIFICATION'] },
           updatedAt: { lt: cutoff },
         },
-        select: { requestId: true },
+        select: { id: true },
         take: 200,
       });
       for (const r of stale) {
         try {
           await prisma.request_Request.update({
-            where: { requestId: r.requestId },
+            where: { id: r.id },
             data: { status: 'EXPIRED' },
           });
           await recordRequestAudit({
-            requestId: r.requestId,
+            requestId: r.id,
             actorType: 'SYSTEM',
             action: 'REQUEST_EXPIRED',
             toStatus: 'EXPIRED',
             detail: { ttlDays: this.ttlDays },
           });
-          await publishRequestEvent('request.expired', { requestId: r.requestId });
+          await publishRequestEvent('request.expired', { requestId: r.id });
           stats.requestsExpired += 1;
         } catch (err: any) {
-          console.error('[RequestSweeper] request expiry failed:', err?.message);
+          appLogger.warn('[RequestSweeper] request expiry failed', { error: err?.message });
         }
       }
     } catch (err: any) {
-      console.error('[RequestSweeper] stale-request scan failed:', err?.message);
+      appLogger.warn('[RequestSweeper] stale-request scan failed', { error: err?.message });
     }
   }
 }

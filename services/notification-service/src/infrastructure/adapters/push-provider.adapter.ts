@@ -1,5 +1,11 @@
 /**
  * Push notification provider - Firebase/OneSignal
+ *
+ * IMPORTANT: This file references Firebase ONLY as an example push provider.
+ * Maysar Express Backend is provider-agnostic — you can replace this
+ * implementation with any other push provider (OneSignal, AWS SNS, Twilio,
+ * self-hosted, etc.) by implementing the IPushProvider interface. No provider
+ * is mandated in system code.
  */
 
 import admin from 'firebase-admin';

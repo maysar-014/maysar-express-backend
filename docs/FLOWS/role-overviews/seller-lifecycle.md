@@ -36,7 +36,7 @@ A Seller is a registered platform user who lists products, manages inventory, fu
 | **2. Business Registration** | Register business entity for the seller | `POST /api/business-registry/businesses` | business-registry | Registered account |
 | **3. KYC** | Complete KYC verification via kyc-service middleware gate; unlocks product creation and payouts | KYC middleware gate (no direct HTTP surface) | kyc (middleware only) | Business registered |
 | **4. Catalog Setup** | Create product drafts, publish listings (quality score ≥ 60), enter buy-box competition | `POST /api/catalog/v1/products`, `POST /api/catalog/v1/products/{id}/publish` | catalog, inventory | KYC level 1 |
-| **5. Active Selling** | Receive order notifications, verify or decline stock, hand off to logistics | `GET /api/order/seller/orders`, `POST /api/order/orders/:orderId/verify-stock`, `POST /api/order/orders/:orderId/decline-stock` | order, logistics, notification | Published product |
+| **5. Active Selling** | Receive order notifications, verify stock, hand off to logistics | `GET /api/order/seller/orders`, `POST /api/order/orders/:orderId/verify` | order, logistics, notification | Published product |
 | **6. Payout** | Request payout of earned wallet balance to mobile money or bank | `POST /api/payout/payouts` | payout, wallet | KYC level 2 |
 
 ---
@@ -107,14 +107,28 @@ The `kyc.status_changed` event is published by kyc-service and consumed by order
 
 Product statuses: `DRAFT → PENDING_REVIEW → ACTIVE | REJECTED | ARCHIVED`
 
-> ⚠️ **Known Gap:** `DELETE /api/catalog/v1/admin/buy-box/anomaly-flags/{flagId}` returns 500 (Failing). This affects admin workflows, not seller directly, but sellers' listings may remain flagged if the admin cannot clear anomaly flags.
+> **MSLE Progressive Listing (added 2026-11-10):** Sellers can also use the progressive listing workflow instead of the direct product creation flow:
+> - `POST /api/catalog/v1/seller/listing/start` — begin listing draft (Path A: sell existing, Path B: introduce new)
+> - `PUT /api/catalog/v1/seller/listing/draft/{id}` — save progress across 5 stages (identify → describe → configure → offer → publish)
+> - `POST /api/catalog/v1/seller/listing/{id}/validate` — pre-publish validation
+> - `POST /api/catalog/v1/seller/listing/{id}/publish` — publishes listing and creates seller offer
+> - Drafts survive interruptions and can be resumed via `GET /api/catalog/v1/seller/listing/drafts`
+
+> **Seller Offers (added 2026-11-10):** After listing, sellers manage their commercial terms via:
+> - `POST /api/catalog/v1/seller/offers` — create offer (price, stock, condition, fulfillment, warranty)
+> - `GET /api/catalog/v1/seller/offers` — view own offers
+> - `PATCH /api/catalog/v1/seller/offers/{id}/price` — update price
+> - `PATCH /api/catalog/v1/seller/offers/{id}/stock` — update stock
+> - `PATCH /api/catalog/v1/seller/offers/{id}/status` — activate/suspend/archive
+
+> ⚠️ **Known Gap (RESOLVED):** `DELETE /api/catalog/v1/admin/buy-box/anomaly-flags/{flagId}` now returns 404 for unknown flag IDs (previously returned 500). Fixed as DEF-004.
 
 ### Phase 5: Active Selling
 
 When an order is placed for a seller's product, order-service sends `order.pending_seller_verification` notification. The seller must respond within the configured `VerificationTimeoutJob` window:
 
-- `POST /api/order/orders/:orderId/verify-stock` — confirms stock; order advances to `CONFIRMED`
-- `POST /api/order/orders/:orderId/decline-stock` — declines; order cancelled, buyer wallet restored
+- `POST /api/order/orders/:orderId/verify` — confirms stock (body: `{ stockAvailable: true }`); order advances to `SELLER_VERIFIED`
+- If the seller does not respond within the `VerificationTimeoutJob` window, the order is auto-declined and the buyer's wallet is restored
 
 After verification, logistics-service handles the fulfillment chain. The seller hands off the physical goods to the courier.
 
@@ -136,7 +150,7 @@ Payout statuses: `PENDING → PROCESSING → COMPLETED | FAILED | REVERSED`
 
 | Endpoint | Status | Impact |
 |---|---|---|
-| `DELETE /api/catalog/v1/admin/buy-box/anomaly-flags/{flagId}` | **FAILING (500)** | Admin cannot delete buy-box anomaly flags; affects seller listing visibility indirectly |
+| `DELETE /api/catalog/v1/admin/buy-box/anomaly-flags/{flagId}` | **RESOLVED (DEF-004)** | Now returns 404 for unknown flag IDs; previously returned 500 |
 | Most `/api/business-registry/public/*` sub-routes | **MISSING (route-level 404)** | Public seller discovery is partially broken |
 
 ---

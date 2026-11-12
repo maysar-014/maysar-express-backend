@@ -1,0 +1,738 @@
+=== api/admin/dashboard ===
+  GET    /api/admin/dashboard/founder-operating-system  probed=admin status=200 anon=401
+  GET    /api/admin/dashboard/red-flags  probed=admin status=200 anon=401
+=== api/analytics/action-items ===
+  PATCH  /api/analytics/action-items/{actionId}/resolve  probed=buyer status=500 anon=401
+=== api/analytics/admin ===
+  GET    /api/analytics/admin/dashboard/founder-operating-system  probed=admin status=200 anon=401
+  GET    /api/analytics/admin/dashboard/red-flags  probed=admin status=200 anon=401
+=== api/analytics/analytics ===
+  GET    /api/analytics/analytics/dashboard/{sellerId}  probed=seller status=200 anon=401
+  GET    /api/analytics/analytics/sales/{sellerId}  probed=seller status=200 anon=401
+=== api/analytics/courier ===
+  GET    /api/analytics/courier/analytics/{courierId}  probed=courier status=200 anon=401
+=== api/analytics/health ===
+  GET    /api/analytics/health  probed=buyer status=200 anon=401
+=== api/analytics/metrics ===
+  GET    /api/analytics/metrics  probed=buyer status=200 anon=401
+=== api/analytics/seller-profitability ===
+  GET    /api/analytics/seller-profitability/dashboard/{sellerId}  probed=seller status=200 anon=401
+  GET    /api/analytics/seller-profitability/dashboard  probed=seller status=200 anon=401
+  GET    /api/analytics/seller-profitability/financial  probed=seller status=200 anon=401
+  GET    /api/analytics/seller-profitability/growth-indicators  probed=seller status=200 anon=401
+  GET    /api/analytics/seller-profitability/happiness  probed=seller status=200 anon=401
+  GET    /api/analytics/seller-profitability/retention  probed=seller status=200 anon=401
+  GET    /api/analytics/seller-profitability/revenue-health  probed=seller status=200 anon=401
+=== api/analytics/sellers ===
+  GET    /api/analytics/sellers/{sellerId}/dashboard/action-center  probed=seller status=200 anon=401
+  GET    /api/analytics/sellers/{sellerId}/dashboard/money-snapshot  probed=seller status=200 anon=401
+  GET    /api/analytics/sellers/{sellerId}/dashboard/profitability-score  probed=seller status=200 anon=401
+  GET    /api/analytics/sellers/{sellerId}/dashboard/sales-trend  probed=seller status=200 anon=401
+  GET    /api/analytics/sellers/{sellerId}/dashboard  probed=seller status=200 anon=401
+  GET    /api/analytics/sellers/{sellerId}/sla/breaches  probed=seller status=200 anon=401
+  POST   /api/analytics/sellers/{sellerId}/sla/evaluate  probed=seller status=200 anon=401
+  GET    /api/analytics/sellers/{sellerId}/sla/readiness  probed=seller status=200 anon=401
+  GET    /api/analytics/sellers/{sellerId}/sla  probed=seller status=200 anon=401
+=== api/analytics/supplier ===
+  GET    /api/analytics/supplier/analytics/{supplierId}  probed=supplier status=200 anon=401
+=== api/auth/2fa ===
+  POST   /api/auth/2fa/backup-codes/regenerate  probed=buyer status=400 anon=400
+  POST   /api/auth/2fa/backup  probed=buyer status=400 anon=400
+  POST   /api/auth/2fa/disable  probed=buyer status=403 anon=403
+  POST   /api/auth/2fa/enable  probed=buyer status=403 anon=403
+  GET    /api/auth/2fa/health/live  probed=buyer status=200 anon=200
+  GET    /api/auth/2fa/health/ready  probed=buyer status=200 anon=200
+  GET    /api/auth/2fa/health  probed=buyer status=200 anon=200
+  POST   /api/auth/2fa/setup  probed=buyer status=400 anon=401
+  GET    /api/auth/2fa/status  probed=buyer status=200 anon=401
+  POST   /api/auth/2fa/verify-setup  probed=buyer status=400 anon=400
+  POST   /api/auth/2fa/verify  probed=buyer status=400 anon=400
+=== api/auth/admin ===
+  GET    /api/auth/admin/audit  probed=admin status=200 anon=401
+  POST   /api/auth/admin/discovery/refresh  probed=admin status=200 anon=401
+  GET    /api/auth/admin/health  probed=admin status=200 anon=401
+  GET    /api/auth/admin/security-events  probed=admin status=200 anon=401
+  DELETE /api/auth/admin/sessions/{sessionId}  probed=admin status=400 anon=401
+  GET    /api/auth/admin/stats  probed=admin status=200 anon=401
+  PATCH  /api/auth/admin/users/{userId}/role  probed=admin status=400 anon=401
+  DELETE /api/auth/admin/users/{userId}/sessions  probed=admin status=200 anon=401
+  GET    /api/auth/admin/users/{userId}/sessions  probed=admin status=200 anon=401
+  PATCH  /api/auth/admin/users/{userId}/status  probed=admin status=400 anon=401
+  GET    /api/auth/admin/users/{userId}  probed=admin status=200 anon=401
+  GET    /api/auth/admin/users/search  probed=admin status=200 anon=401
+=== api/auth/blacklist-token ===
+  POST   /api/auth/blacklist-token  probed=buyer status=400 anon=400
+=== api/auth/check-blacklist ===
+  POST   /api/auth/check-blacklist  probed=buyer status=400 anon=400
+=== api/auth/check-brute-force ===
+  POST   /api/auth/check-brute-force  probed=buyer status=400 anon=400
+=== api/auth/device ===
+  DELETE /api/auth/device/{deviceId}  probed=buyer status=400 anon=400
+=== api/auth/device-history ===
+  GET    /api/auth/device-history/{userId}  probed=buyer status=200 anon=200
+=== api/auth/extend-session ===
+  POST   /api/auth/extend-session  probed=buyer status=400 anon=400
+=== api/auth/forgot-password ===
+  POST   /api/auth/forgot-password  probed=buyer status=400 anon=400
+=== api/auth/generate-api-key ===
+  POST   /api/auth/generate-api-key  probed=buyer status=400 anon=400
+=== api/auth/health ===
+  GET    /api/auth/health/circuit-breaker  probed=buyer status=200 anon=200
+  GET    /api/auth/health/detailed  probed=buyer status=200 anon=200
+  GET    /api/auth/health/discovery  probed=buyer status=200 anon=200
+  GET    /api/auth/health/live  probed=buyer status=200 anon=200
+  GET    /api/auth/health/metrics  probed=buyer status=200 anon=200
+  GET    /api/auth/health/ready  probed=buyer status=200 anon=200
+  GET    /api/auth/health  probed=buyer status=200 anon=200
+=== api/auth/invalidate-session ===
+  POST   /api/auth/invalidate-session  probed=buyer status=400 anon=400
+=== api/auth/login ===
+  POST   /api/auth/login  probed=buyer status=400 anon=400
+=== api/auth/logout ===
+  POST   /api/auth/logout  probed=buyer status=200 anon=200
+=== api/auth/metrics ===
+  GET    /api/auth/metrics  probed=buyer status=200 anon=200
+=== api/auth/middleware ===
+  GET    /api/auth/middleware/health  probed=buyer status=200 anon=200
+=== api/auth/oauth ===
+  GET    /api/auth/oauth/callback  probed=buyer status=400 anon=400
+  GET    /api/auth/oauth/initiate  probed=buyer status=200 anon=200
+  POST   /api/auth/oauth/refresh  probed=buyer status=400 anon=400
+  POST   /api/auth/oauth/revoke  probed=buyer status=400 anon=400
+=== api/auth/phone ===
+  POST   /api/auth/phone/send-otp  probed=buyer status=400 anon=401
+  POST   /api/auth/phone/verify-otp  probed=buyer status=400 anon=401
+=== api/auth/record-failure ===
+  POST   /api/auth/record-failure  probed=buyer status=400 anon=400
+=== api/auth/refresh ===
+  POST   /api/auth/refresh  probed=buyer status=401 anon=401
+=== api/auth/register ===
+  POST   /api/auth/register  probed=buyer status=400 anon=400
+=== api/auth/report-suspicious ===
+  POST   /api/auth/report-suspicious  probed=buyer status=400 anon=400
+=== api/auth/reset-brute-force ===
+  POST   /api/auth/reset-brute-force  probed=buyer status=400 anon=400
+=== api/auth/reset-password ===
+  POST   /api/auth/reset-password  probed=buyer status=400 anon=400
+=== api/auth/revoke-api-key ===
+  POST   /api/auth/revoke-api-key  probed=buyer status=400 anon=400
+=== api/auth/role-requests ===
+  GET    /api/auth/role-requests  probed=buyer status=200 anon=401
+  POST   /api/auth/role-requests  probed=buyer status=400 anon=401
+=== api/auth/session ===
+  GET    /api/auth/session/{sessionId}  probed=buyer status=404 anon=404
+=== api/auth/sessions ===
+  DELETE /api/auth/sessions/{sessionId}  probed=buyer status=204 anon=401
+  GET    /api/auth/sessions/health/live  probed=buyer status=200 anon=401
+  GET    /api/auth/sessions/health/ready  probed=buyer status=200 anon=401
+  GET    /api/auth/sessions/health  probed=buyer status=200 anon=401
+  GET    /api/auth/sessions  probed=buyer status=200 anon=401
+  POST   /api/auth/sessions  probed=buyer status=201 anon=401
+=== api/auth/stats ===
+  GET    /api/auth/stats  probed=buyer status=200 anon=200
+=== api/auth/switch-role ===
+  POST   /api/auth/switch-role  probed=buyer status=400 anon=401
+=== api/auth/system ===
+  POST   /api/auth/system/maintenance/cleanup/auth/report  probed=admin status=401 anon=401
+  POST   /api/auth/system/maintenance/cleanup/auth  probed=admin status=401 anon=401
+  POST   /api/auth/system/maintenance/cleanup/outbox/report  probed=admin status=401 anon=401
+  POST   /api/auth/system/maintenance/cleanup/outbox  probed=admin status=401 anon=401
+=== api/auth/track-device ===
+  POST   /api/auth/track-device  probed=buyer status=400 anon=400
+=== api/auth/validate-api-key ===
+  POST   /api/auth/validate-api-key  probed=buyer status=400 anon=400
+=== api/auth/validate-token ===
+  POST   /api/auth/validate-token  probed=buyer status=400 anon=400
+=== api/auth/verify ===
+  GET    /api/auth/verify  probed=buyer status=200 anon=401
+  POST   /api/auth/verify  probed=buyer status=400 anon=400
+=== api/auth/verify-otp ===
+  POST   /api/auth/verify-otp  probed=buyer status=400 anon=400
+=== api/business-registry ===
+  POST   /api/business-registry  probed=buyer status=404 anon=401
+=== api/business-registry/businesses ===
+  GET    /api/business-registry/businesses/{id}/compliance-records  probed=buyer status=404 anon=401
+  POST   /api/business-registry/businesses/{id}/compliance-records  probed=buyer status=400 anon=401
+  GET    /api/business-registry/businesses/{id}/documents  probed=buyer status=404 anon=401
+  POST   /api/business-registry/businesses/{id}/documents  probed=buyer status=400 anon=401
+  POST   /api/business-registry/businesses/{id}/reactivate  probed=buyer status=404 anon=401
+  POST   /api/business-registry/businesses/{id}/suspend  probed=buyer status=400 anon=401
+  POST   /api/business-registry/businesses/{id}/verify  probed=buyer status=400 anon=401
+  DELETE /api/business-registry/businesses/{id}  probed=buyer status=404 anon=401
+  GET    /api/business-registry/businesses/{id}  probed=buyer status=404 anon=401
+  PUT    /api/business-registry/businesses/{id}  probed=buyer status=403 anon=401
+  GET    /api/business-registry/businesses/industries/{industry}/sellers  probed=seller status=404 anon=401
+  GET    /api/business-registry/businesses/owner/{ownerId}  probed=buyer status=200 anon=401
+  GET    /api/business-registry/businesses/search  probed=buyer status=200 anon=401
+  GET    /api/business-registry/businesses/sellers/{sellerId}/industries  probed=seller status=404 anon=401
+  GET    /api/business-registry/businesses/sellers/{sellerId}  probed=seller status=404 anon=401
+  GET    /api/business-registry/businesses/sellers  probed=seller status=400 anon=401
+  POST   /api/business-registry/businesses  probed=buyer status=400 anon=401
+=== api/business-registry/health ===
+  GET    /api/business-registry/health/live  probed=buyer status=200 anon=200
+  GET    /api/business-registry/health/ready  probed=buyer status=200 anon=200
+  GET    /api/business-registry/health  probed=buyer status=200 anon=200
+=== api/business-registry/industries ===
+  GET    /api/business-registry/industries/{industry}/sellers  probed=seller status=404 anon=401
+=== api/business-registry/owner ===
+  GET    /api/business-registry/owner/{ownerId}  probed=buyer status=200 anon=401
+=== api/business-registry/public ===
+  GET    /api/business-registry/public/{id}/compliance-records  probed=buyer status=404 anon=401
+  POST   /api/business-registry/public/{id}/compliance-records  probed=buyer status=404 anon=401
+  GET    /api/business-registry/public/{id}/documents  probed=buyer status=404 anon=401
+  POST   /api/business-registry/public/{id}/documents  probed=buyer status=404 anon=401
+  POST   /api/business-registry/public/{id}/reactivate  probed=buyer status=404 anon=401
+  POST   /api/business-registry/public/{id}/suspend  probed=buyer status=404 anon=401
+  POST   /api/business-registry/public/{id}/verify  probed=buyer status=404 anon=401
+  DELETE /api/business-registry/public/{id}  probed=buyer status=404 anon=401
+  GET    /api/business-registry/public/{id}  probed=buyer status=404 anon=401
+  PUT    /api/business-registry/public/{id}  probed=buyer status=404 anon=401
+  GET    /api/business-registry/public/industries/{industry}/sellers  probed=seller status=200 anon=200
+  GET    /api/business-registry/public/owner/{ownerId}  probed=buyer status=404 anon=401
+  GET    /api/business-registry/public/search  probed=buyer status=404 anon=401
+  GET    /api/business-registry/public/sellers/{sellerId}/industries  probed=seller status=404 anon=404
+  GET    /api/business-registry/public/sellers/{sellerId}  probed=seller status=404 anon=404
+  GET    /api/business-registry/public/sellers  probed=seller status=200 anon=200
+  POST   /api/business-registry/public  probed=buyer status=405 anon=401
+=== api/business-registry/search ===
+  GET    /api/business-registry/search  probed=buyer status=200 anon=401
+=== api/business-registry/sellers ===
+  GET    /api/business-registry/sellers/{sellerId}/industries  probed=seller status=404 anon=401
+  GET    /api/business-registry/sellers/{sellerId}  probed=seller status=404 anon=401
+  GET    /api/business-registry/sellers  probed=seller status=400 anon=401
+=== api/business-registry/system ===
+  POST   /api/business-registry/system/maintenance/cleanup/outbox/report  probed=admin status=401 anon=401
+  POST   /api/business-registry/system/maintenance/cleanup/outbox  probed=admin status=401 anon=401
+=== api/business-registry/{id} ===
+  GET    /api/business-registry/{id}/compliance-records  probed=buyer status=404 anon=401
+  POST   /api/business-registry/{id}/compliance-records  probed=buyer status=404 anon=401
+  GET    /api/business-registry/{id}/documents  probed=buyer status=404 anon=401
+  POST   /api/business-registry/{id}/documents  probed=buyer status=404 anon=401
+  POST   /api/business-registry/{id}/reactivate  probed=buyer status=404 anon=401
+  POST   /api/business-registry/{id}/suspend  probed=buyer status=400 anon=401
+  POST   /api/business-registry/{id}/verify  probed=buyer status=400 anon=401
+  DELETE /api/business-registry/{id}  probed=buyer status=404 anon=401
+  GET    /api/business-registry/{id}  probed=buyer status=404 anon=401
+  PUT    /api/business-registry/{id}  probed=buyer status=403 anon=401
+=== api/catalog/campaigns ===
+  POST   /api/catalog/campaigns/{id}/cancel  probed=buyer status=403 anon=401
+  POST   /api/catalog/campaigns/{id}/complete  probed=buyer status=403 anon=401
+  POST   /api/catalog/campaigns/{id}/launch  probed=buyer status=403 anon=401
+  POST   /api/catalog/campaigns/{id}/pause  probed=buyer status=403 anon=401
+  POST   /api/catalog/campaigns/{id}/resume  probed=buyer status=403 anon=401
+  GET    /api/catalog/campaigns/{id}  probed=buyer status=404 anon=401
+  PUT    /api/catalog/campaigns/{id}  probed=buyer status=403 anon=401
+  GET    /api/catalog/campaigns  probed=buyer status=200 anon=401
+  POST   /api/catalog/campaigns  probed=buyer status=403 anon=401
+=== api/catalog/health ===
+  GET    /api/catalog/health/live  probed=buyer status=200 anon=200
+  GET    /api/catalog/health/metrics  probed=buyer status=200 anon=200
+  GET    /api/catalog/health/ready  probed=buyer status=200 anon=200
+  GET    /api/catalog/health/search  probed=buyer status=200 anon=200
+  GET    /api/catalog/health/version  probed=buyer status=200 anon=200
+  GET    /api/catalog/health  probed=buyer status=200 anon=200
+=== api/catalog/match ===
+  GET    /api/catalog/match/audit/{productId}  probed=admin status=200 anon=401
+  POST   /api/catalog/match/confirm/{confirmationId}  probed=buyer status=404 anon=401
+  GET    /api/catalog/match/pending  probed=buyer status=200 anon=401
+  POST   /api/catalog/match  probed=buyer status=200 anon=401
+=== api/catalog/pricing ===
+  POST   /api/catalog/pricing/calculate  probed=buyer status=400 anon=400
+  GET    /api/catalog/pricing/health/live  probed=buyer status=200 anon=200
+  GET    /api/catalog/pricing/health/ready  probed=buyer status=200 anon=200
+  GET    /api/catalog/pricing/health  probed=buyer status=200 anon=200
+=== api/catalog/products ===
+  POST   /api/catalog/products/{productId}/buy-box/compute  probed=buyer status=400 anon=400
+  GET    /api/catalog/products/{productId}/buy-box  probed=buyer status=200 anon=200
+=== api/catalog/sellers ===
+  POST   /api/catalog/sellers/{sellerId}/share-url  probed=seller status=200 anon=401
+  GET    /api/catalog/sellers/{sellerId}/storefront  probed=seller status=200 anon=200
+=== api/catalog/system ===
+  POST   /api/catalog/system/maintenance/cleanup/event-store/report  probed=admin status=404 anon=404
+  POST   /api/catalog/system/maintenance/cleanup/event-store  probed=admin status=404 anon=404
+  POST   /api/catalog/system/maintenance/cleanup/outbox/report  probed=admin status=404 anon=404
+  POST   /api/catalog/system/maintenance/cleanup/outbox  probed=admin status=404 anon=404
+=== api/catalog/v1 ===
+  DELETE /api/catalog/v1/admin/buy-box/anomaly-flags/{flagId}  probed=admin status=500 anon=401
+  GET    /api/catalog/v1/admin/buy-box/history/{productId}  probed=admin status=200 anon=401
+  POST   /api/catalog/v1/admin/buy-box/overrides  probed=admin status=400 anon=401
+  PUT    /api/catalog/v1/admin/buy-box/strategies/{categoryId}  probed=admin status=400 anon=401
+  GET    /api/catalog/v1/categories/{categoryId}/attributes  probed=buyer status=200 anon=200
+  DELETE /api/catalog/v1/categories/{id}  probed=buyer status=403 anon=401
+  PUT    /api/catalog/v1/categories/{id}  probed=buyer status=403 anon=401
+  GET    /api/catalog/v1/categories  probed=buyer status=200 anon=200
+  POST   /api/catalog/v1/categories  probed=buyer status=403 anon=401
+  GET    /api/catalog/v1/pricing/analytics  probed=buyer+admin status=200 anon=401
+  POST   /api/catalog/v1/pricing/bulk-update  probed=buyer status=403 anon=401
+  POST   /api/catalog/v1/pricing/calculate  probed=buyer status=200 anon=200
+  GET    /api/catalog/v1/pricing/rules  probed=buyer status=200 anon=200
+  POST   /api/catalog/v1/pricing/rules  probed=buyer status=403 anon=401
+  POST   /api/catalog/v1/pricing/validate-rule  probed=buyer status=200 anon=200
+  GET    /api/catalog/v1/products/{id}/analytics  probed=buyer+admin status=200 anon=401
+  PUT    /api/catalog/v1/products/{id}/category  probed=buyer status=403 anon=401
+  GET    /api/catalog/v1/products/{id}/media  probed=buyer status=404 anon=404
+  POST   /api/catalog/v1/products/{id}/media  probed=buyer status=403 anon=401
+  GET    /api/catalog/v1/products/{id}/metrics  probed=buyer+admin status=404 anon=401
+  POST   /api/catalog/v1/products/{id}/publish  probed=buyer status=403 anon=401
+  GET    /api/catalog/v1/products/{id}/reviews  probed=buyer status=200 anon=200
+  POST   /api/catalog/v1/products/{id}/reviews  probed=buyer status=400 anon=401
+  POST   /api/catalog/v1/products/{id}/unpublish  probed=buyer status=403 anon=401
+  DELETE /api/catalog/v1/products/{id}  probed=buyer status=403 anon=401
+  GET    /api/catalog/v1/products/{id}  probed=buyer status=404 anon=404
+  PUT    /api/catalog/v1/products/{id}  probed=buyer status=403 anon=401
+  PUT    /api/catalog/v1/products/{productId}/pricing  probed=buyer status=403 anon=401
+  DELETE /api/catalog/v1/products/bulk  probed=buyer status=403 anon=401
+  POST   /api/catalog/v1/products/bulk  probed=buyer status=403 anon=401
+  PUT    /api/catalog/v1/products/bulk  probed=buyer status=403 anon=401
+  POST   /api/catalog/v1/products/preview-description  probed=buyer status=403 anon=401
+  GET    /api/catalog/v1/products/search  probed=buyer status=200 anon=200
+  POST   /api/catalog/v1/products  probed=buyer status=403 anon=401
+  PUT    /api/catalog/v1/reviews/{reviewId}/moderate  probed=buyer status=403 anon=401
+  GET    /api/catalog/v1/search/analytics  probed=buyer status=200 anon=200
+  GET    /api/catalog/v1/search/popular  probed=buyer status=200 anon=200
+  GET    /api/catalog/v1/search/products  probed=buyer status=301 anon=301
+  GET    /api/catalog/v1/search/suggestions  probed=buyer status=200 anon=200
+  GET    /api/catalog/v1/search  probed=buyer status=301 anon=301
+  GET    /api/catalog/v1/sellers/{sellerId}/products  probed=seller status=200 anon=200
+=== api/chat/health ===
+  GET    /api/chat/health  probed=buyer status=200 anon=200
+=== api/chat/v1 ===
+  DELETE /api/chat/v1/admin/blocklist/domains/{domain}  probed=admin status=200 anon=401
+  GET    /api/chat/v1/admin/blocklist/domains  probed=admin status=200 anon=401
+  POST   /api/chat/v1/admin/blocklist/domains  probed=admin status=422 anon=401
+  DELETE /api/chat/v1/conversations/{id}/messages/{messageId}  probed=buyer status=404 anon=401
+  GET    /api/chat/v1/conversations/{id}/messages  probed=buyer+admin status=403 anon=401
+  POST   /api/chat/v1/conversations/{id}/messages  probed=buyer status=422 anon=401
+  DELETE /api/chat/v1/conversations/{id}/mute  probed=buyer status=403 anon=401
+  POST   /api/chat/v1/conversations/{id}/mute  probed=buyer status=403 anon=401
+  PUT    /api/chat/v1/conversations/{id}/read  probed=buyer status=403 anon=401
+  GET    /api/chat/v1/conversations/{id}  probed=buyer status=404 anon=401
+  GET    /api/chat/v1/conversations/search  probed=buyer status=422 anon=401
+  GET    /api/chat/v1/conversations  probed=buyer status=200 anon=401
+  POST   /api/chat/v1/conversations  probed=buyer status=422 anon=401
+  POST   /api/chat/v1/media/upload  probed=buyer status=422 anon=401
+  POST   /api/chat/v1/messages/{messageId}/report  probed=buyer status=422 anon=401
+  DELETE /api/chat/v1/users/{userId}/block  probed=buyer status=200 anon=401
+  POST   /api/chat/v1/users/{userId}/block  probed=buyer status=200 anon=401
+=== api/checkout/current ===
+  GET    /api/checkout/current  probed=buyer status=404 anon=401
+=== api/checkout/health ===
+  GET    /api/checkout/health/live  probed=buyer status=200 anon=200
+  GET    /api/checkout/health/ready  probed=buyer status=200 anon=200
+  GET    /api/checkout/health  probed=buyer status=200 anon=200
+=== api/checkout/initiate ===
+  POST   /api/checkout/initiate  probed=buyer status=400 anon=401
+=== api/checkout/items ===
+  DELETE /api/checkout/items  probed=buyer status=405 anon=401
+  PATCH  /api/checkout/items  probed=buyer status=405 anon=401
+  POST   /api/checkout/items  probed=buyer status=405 anon=401
+=== api/checkout/merge ===
+  POST   /api/checkout/merge  probed=buyer status=405 anon=401
+=== api/checkout/metrics ===
+  GET    /api/checkout/metrics  probed=buyer status=200 anon=200
+=== api/checkout/system ===
+  POST   /api/checkout/system/maintenance/cleanup/checkout-sessions/report  probed=admin status=401 anon=401
+  POST   /api/checkout/system/maintenance/cleanup/checkout-sessions  probed=admin status=401 anon=401
+=== api/checkout/{cartId} ===
+  DELETE /api/checkout/{cartId}  probed=buyer status=405 anon=401
+  GET    /api/checkout/{cartId}  probed=buyer status=404 anon=401
+=== api/checkout/{id} ===
+  POST   /api/checkout/{id}/confirm  probed=buyer status=404 anon=401
+  GET    /api/checkout/{id}  probed=buyer status=404 anon=401
+=== api/commission/calculate ===
+  POST   /api/commission/calculate  probed=buyer status=404 anon=404
+=== api/commission/health ===
+  GET    /api/commission/health/live  probed=buyer status=404 anon=404
+  GET    /api/commission/health/ready  probed=buyer status=404 anon=404
+  GET    /api/commission/health  probed=buyer status=404 anon=404
+=== api/commission/sellers ===
+  GET    /api/commission/sellers/{sellerId}/summary  probed=seller status=404 anon=404
+  GET    /api/commission/sellers/{sellerId}  probed=seller status=404 anon=404
+=== api/commission/{id} ===
+  PUT    /api/commission/{id}/approve  probed=buyer status=404 anon=404
+  GET    /api/commission/{id}  probed=buyer status=404 anon=404
+=== api/community/articles ===
+  POST   /api/community/articles/{articleId}/publish  probed=buyer status=404 anon=404
+  POST   /api/community/articles/{articleId}/reviews  probed=buyer status=404 anon=404
+  GET    /api/community/articles/{articleId}  probed=buyer status=404 anon=404
+  GET    /api/community/articles  probed=buyer status=404 anon=404
+  POST   /api/community/articles  probed=buyer status=404 anon=404
+=== api/community/challenges ===
+  POST   /api/community/challenges/{challengeId}/solutions  probed=buyer status=201 anon=401
+  GET    /api/community/challenges  probed=buyer status=200 anon=200
+  POST   /api/community/challenges  probed=buyer status=400 anon=401
+=== api/community/discover ===
+  GET    /api/community/discover  probed=buyer status=404 anon=401
+=== api/community/discussions ===
+  PATCH  /api/community/discussions/{threadId}/accept/{answerId}  probed=buyer status=200 anon=401
+  POST   /api/community/discussions/{threadId}/answers  probed=buyer status=400 anon=401
+  PATCH  /api/community/discussions/{threadId}/close  probed=buyer status=200 anon=401
+  GET    /api/community/discussions/{threadId}  probed=buyer status=200 anon=200
+  GET    /api/community/discussions  probed=buyer status=200 anon=200
+  POST   /api/community/discussions  probed=buyer status=400 anon=401
+=== api/community/expertise ===
+  POST   /api/community/expertise/validate  probed=buyer status=400 anon=401
+=== api/community/health ===
+  GET    /api/community/health  probed=buyer status=200 anon=200
+=== api/community/knowledge ===
+  POST   /api/community/knowledge/articles/{articleId}/publish  probed=buyer status=200 anon=401
+  POST   /api/community/knowledge/articles/{articleId}/reviews  probed=buyer status=201 anon=401
+  GET    /api/community/knowledge/articles/{articleId}  probed=buyer status=200 anon=200
+  GET    /api/community/knowledge/articles  probed=buyer status=200 anon=200
+  POST   /api/community/knowledge/articles  probed=buyer status=400 anon=401
+  POST   /api/community/knowledge/challenges/{challengeId}/solutions  probed=buyer status=404 anon=404
+  GET    /api/community/knowledge/challenges  probed=buyer status=404 anon=404
+  POST   /api/community/knowledge/challenges  probed=buyer status=404 anon=404
+  GET    /api/community/knowledge/discover  probed=buyer status=404 anon=404
+  POST   /api/community/knowledge/expertise/validate  probed=buyer status=404 anon=404
+=== api/community/metrics ===
+  GET    /api/community/metrics  probed=buyer status=200 anon=200
+=== api/community/posts ===
+  GET    /api/community/posts/{postId}/related  probed=buyer status=400 anon=400
+  GET    /api/community/posts/{postId}  probed=buyer status=400 anon=400
+  GET    /api/community/posts/authors/{authorId}  probed=buyer status=200 anon=200
+  GET    /api/community/posts/published  probed=buyer status=200 anon=200
+  GET    /api/community/posts/search  probed=buyer status=400 anon=400
+  GET    /api/community/posts/trending  probed=buyer status=200 anon=200
+  GET    /api/community/posts/users/{userId}/feed  probed=buyer status=200 anon=401
+  POST   /api/community/posts  probed=buyer status=400 anon=401
+=== api/community/system ===
+  POST   /api/community/system/maintenance/cleanup/outbox/report  probed=admin status=401 anon=401
+  POST   /api/community/system/maintenance/cleanup/outbox  probed=admin status=401 anon=401
+=== api/enabler/enablers ===
+  GET    /api/enabler/enablers/{enablerId}/earnings/summary  probed=enabler status=400 anon=401
+  GET    /api/enabler/enablers/{enablerId}/earnings  probed=enabler status=400 anon=401
+  GET    /api/enabler/enablers/{enablerId}/listings  probed=enabler status=400 anon=401
+  POST   /api/enabler/enablers/{enablerId}/listings  probed=enabler status=400 anon=401
+  GET    /api/enabler/enablers/{enablerId}/orders/{orderId}/commission  probed=enabler status=400 anon=401
+  GET    /api/enabler/enablers/{enablerId}/orders  probed=enabler status=400 anon=401
+  POST   /api/enabler/enablers/{enablerId}/orders  probed=enabler status=400 anon=401
+  POST   /api/enabler/enablers/{enablerId}/promotion-jobs/{jobId}/accept  probed=enabler status=400 anon=401
+  GET    /api/enabler/enablers/{enablerId}/promotion-jobs  probed=enabler status=400 anon=401
+  POST   /api/enabler/enablers/{enablerId}/referral-link/events  probed=enabler status=400 anon=401
+  GET    /api/enabler/enablers/{enablerId}/referral-link  probed=enabler status=400 anon=401
+  POST   /api/enabler/enablers/{enablerId}/referral-link  probed=enabler status=400 anon=401
+  POST   /api/enabler/enablers/{id}/approve  probed=enabler status=400 anon=401
+  GET    /api/enabler/enablers/{id}  probed=enabler status=500 anon=401
+  POST   /api/enabler/enablers/register  probed=enabler status=400 anon=401
+=== api/enabler/hub ===
+  GET    /api/enabler/hub/products  probed=enabler status=200 anon=401
+=== api/enabler/system ===
+  POST   /api/enabler/system/maintenance/cleanup/outbox/report  probed=admin status=401 anon=401
+  POST   /api/enabler/system/maintenance/cleanup/outbox  probed=admin status=401 anon=401
+=== api/governance/constitution ===
+  GET    /api/governance/constitution  probed=buyer status=404 anon=404
+=== api/governance/dashboard ===
+  GET    /api/governance/dashboard  probed=buyer status=404 anon=404
+=== api/governance/reports ===
+  GET    /api/governance/reports/latest  probed=buyer status=404 anon=404
+=== api/governance/runs ===
+  GET    /api/governance/runs/{runId}/evidence/{gateId}  probed=buyer status=404 anon=404
+  GET    /api/governance/runs/{runId}  probed=buyer status=404 anon=404
+  GET    /api/governance/runs  probed=buyer status=404 anon=404
+  POST   /api/governance/runs  probed=buyer status=404 anon=404
+=== api/governance/summary ===
+  GET    /api/governance/summary  probed=buyer status=404 anon=404
+=== api/inventory/analytics ===
+  GET    /api/inventory/analytics/stock-levels  probed=buyer status=200 anon=401
+=== api/inventory/health ===
+  GET    /api/inventory/health/live  probed=buyer status=200 anon=200
+  GET    /api/inventory/health/ready  probed=buyer status=200 anon=200
+  GET    /api/inventory/health  probed=buyer status=200 anon=200
+=== api/inventory/inventory-counts ===
+  PUT    /api/inventory/inventory-counts/{countId}  probed=buyer status=400 anon=401
+  POST   /api/inventory/inventory-counts  probed=buyer status=400 anon=401
+=== api/inventory/materials ===
+  PUT    /api/inventory/materials/{variantId}/warehouses/{warehouseId}  probed=buyer status=400 anon=401
+  GET    /api/inventory/materials/{variantId}  probed=buyer status=200 anon=401
+  GET    /api/inventory/materials  probed=buyer status=200 anon=401
+=== api/inventory/metrics ===
+  GET    /api/inventory/metrics  probed=buyer status=200 anon=200
+=== api/inventory/reservations ===
+  DELETE /api/inventory/reservations/{orderId}  probed=buyer status=400 anon=401
+  GET    /api/inventory/reservations/{orderId}  probed=buyer status=200 anon=401
+  POST   /api/inventory/reservations  probed=buyer status=400 anon=401
+=== api/inventory/stock ===
+  PUT    /api/inventory/stock/{variantId}/{warehouseId}  probed=buyer status=400 anon=401
+  GET    /api/inventory/stock/{variantId}  probed=buyer status=404 anon=401
+=== api/inventory/system ===
+  POST   /api/inventory/system/maintenance/cleanup/outbox/report  probed=admin status=401 anon=401
+  POST   /api/inventory/system/maintenance/cleanup/outbox  probed=admin status=401 anon=401
+=== api/inventory/warehouses ===
+  GET    /api/inventory/warehouses/{id}  probed=buyer status=404 anon=401
+  GET    /api/inventory/warehouses  probed=buyer status=200 anon=401
+=== api/kyc/admin ===
+  PATCH  /api/kyc/admin/{userId}  probed=admin status=400 anon=401
+=== api/kyc/status ===
+  GET    /api/kyc/status  probed=buyer status=200 anon=401
+=== api/kyc/submit ===
+  POST   /api/kyc/submit  probed=buyer status=400 anon=401
+=== api/logistics/api ===
+  PUT    /api/logistics/api/courier/{courierId}/status  probed=courier status=400 anon=401
+  GET    /api/logistics/api/courier/{courierId}  probed=courier status=200 anon=401
+  GET    /api/logistics/api/courier  probed=courier status=200 anon=401
+  GET    /api/logistics/api/v1/analytics/courier/{courierId}  probed=courier status=200 anon=401
+  GET    /api/logistics/api/v1/analytics/performance  probed=buyer status=200 anon=401
+  GET    /api/logistics/api/v1/analytics  probed=buyer status=200 anon=401
+  POST   /api/logistics/api/v1/cod/{deliveryId}/otp  probed=buyer status=400 anon=401
+  POST   /api/logistics/api/v1/cod/{deliveryId}/verify  probed=buyer status=400 anon=401
+  PUT    /api/logistics/api/v1/couriers/{courierId}/status  probed=courier status=400 anon=401
+  GET    /api/logistics/api/v1/couriers/{courierId}  probed=courier status=200 anon=401
+  GET    /api/logistics/api/v1/couriers  probed=courier status=200 anon=401
+  GET    /api/logistics/api/v1/deliveries/{deliveryId}/history  probed=buyer status=200 anon=401
+  POST   /api/logistics/api/v1/deliveries/{deliveryId}/status  probed=buyer status=400 anon=401
+  GET    /api/logistics/api/v1/deliveries/{deliveryId}  probed=buyer status=400 anon=401
+  GET    /api/logistics/api/v1/deliveries  probed=buyer status=200 anon=401
+  POST   /api/logistics/api/v1/deliveries  probed=buyer status=400 anon=401
+  POST   /api/logistics/api/v1/earnings/calculate  probed=buyer status=400 anon=401
+  GET    /api/logistics/api/v1/earnings/courier/{courierId}  probed=courier status=200 anon=401
+  GET    /api/logistics/api/v1/earnings/summary  probed=buyer status=200 anon=401
+  GET    /api/logistics/api/v1/earnings  probed=buyer status=200 anon=401
+  POST   /api/logistics/api/v1/earnings  probed=buyer status=400 anon=401
+  GET    /api/logistics/api/v1/engines/status  probed=buyer status=200 anon=401
+  GET    /api/logistics/api/v1/health  probed=buyer status=200 anon=401
+  GET    /api/logistics/api/v1/metrics  probed=buyer status=200 anon=401
+  GET    /api/logistics/api/v1/qa/architecture  probed=buyer status=200 anon=401
+  GET    /api/logistics/api/v1/qa/dashboard  probed=buyer status=200 anon=401
+  POST   /api/logistics/api/v1/qa/load-test  probed=buyer status=400 anon=401
+  GET    /api/logistics/api/v1/qa/performance  probed=buyer status=200 anon=401
+  GET    /api/logistics/api/v1/qa/security  probed=buyer status=200 anon=401
+  POST   /api/logistics/api/v1/routes/{routeId}/alternatives  probed=buyer status=400 anon=401
+  PUT    /api/logistics/api/v1/routes/{routeId}/progress  probed=buyer status=400 anon=401
+  GET    /api/logistics/api/v1/routes/{routeId}  probed=buyer status=404 anon=401
+  GET    /api/logistics/api/v1/routes/courier/{courierId}  probed=courier status=404 anon=401
+  POST   /api/logistics/api/v1/routes/optimize  probed=buyer status=400 anon=401
+  GET    /api/logistics/api/v1/routes  probed=buyer status=404 anon=401
+  GET    /api/logistics/api/v1/stats/performance  probed=buyer status=200 anon=401
+  GET    /api/logistics/api/v1/test/all-engines  probed=buyer status=200 anon=401
+  GET    /api/logistics/api/v1/tracking/{trackingNumber}  probed=buyer status=200 anon=401
+  GET    /api/logistics/api/v1/tracking/courier/{courierId}/history  probed=courier status=200 anon=401
+  POST   /api/logistics/api/v1/tracking/location  probed=buyer status=400 anon=401
+=== api/logistics/health ===
+  GET    /api/logistics/health/live  probed=buyer status=200 anon=200
+  GET    /api/logistics/health/ready  probed=buyer status=200 anon=200
+  GET    /api/logistics/health  probed=buyer status=200 anon=200
+=== api/logistics/system ===
+  POST   /api/logistics/system/maintenance/cleanup/outbox/report  probed=admin status=401 anon=401
+  POST   /api/logistics/system/maintenance/cleanup/outbox  probed=admin status=401 anon=401
+=== api/maps/geocoding ===
+  POST   /api/maps/geocoding/geocode  probed=buyer status=422 anon=422
+=== api/maps/health ===
+  GET    /api/maps/health/live  probed=buyer status=200 anon=200
+  GET    /api/maps/health/ready  probed=buyer status=200 anon=200
+  GET    /api/maps/health  probed=buyer status=200 anon=200
+=== api/maps/routing ===
+  POST   /api/maps/routing/calculate  probed=buyer status=422 anon=422
+=== api/notification/health ===
+  GET    /api/notification/health/live  probed=buyer status=200 anon=200
+  GET    /api/notification/health/ready  probed=buyer status=200 anon=200
+  GET    /api/notification/health  probed=buyer status=200 anon=200
+=== api/notification/health-summary ===
+  GET    /api/notification/health-summary  probed=buyer status=200 anon=200
+=== api/notification/notifications ===
+  POST   /api/notification/notifications/{id}/retry  probed=buyer status=404 anon=401
+  PATCH  /api/notification/notifications/{id}/status  probed=buyer status=404 anon=401
+  DELETE /api/notification/notifications/{id}  probed=buyer status=404 anon=401
+  GET    /api/notification/notifications/{id}  probed=buyer status=404 anon=401
+  POST   /api/notification/notifications/bulk  probed=buyer status=200 anon=401
+  POST   /api/notification/notifications/mark-all-read  probed=buyer status=200 anon=401
+  GET    /api/notification/notifications/unread-count  probed=buyer status=200 anon=401
+  GET    /api/notification/notifications  probed=buyer status=200 anon=401
+  POST   /api/notification/notifications  probed=buyer status=400 anon=401
+=== api/notification/preferences ===
+  POST   /api/notification/preferences/{userId}/opt-out  probed=buyer status=400 anon=401
+  GET    /api/notification/preferences/{userId}  probed=buyer status=200 anon=401
+  PUT    /api/notification/preferences/{userId}  probed=buyer status=400 anon=401
+=== api/notification/sms ===
+  GET    /api/notification/sms/health/live  probed=buyer status=200 anon=401
+  GET    /api/notification/sms/health/ready  probed=buyer status=200 anon=401
+  GET    /api/notification/sms/health  probed=buyer status=200 anon=401
+  POST   /api/notification/sms/retry/{messageId}  probed=buyer status=404 anon=401
+  POST   /api/notification/sms/retry/failed  probed=buyer status=200 anon=401
+  POST   /api/notification/sms/send  probed=buyer status=400 anon=401
+  GET    /api/notification/sms/statistics  probed=buyer status=200 anon=401
+  GET    /api/notification/sms/status/{messageId}  probed=buyer status=404 anon=401
+  POST   /api/notification/sms/webhook/africastalking  probed=buyer status=404 anon=401
+=== api/notification/system ===
+  POST   /api/notification/system/maintenance/cleanup/sms/report  probed=admin status=401 anon=401
+  POST   /api/notification/system/maintenance/cleanup/sms  probed=admin status=401 anon=401
+=== api/notification/templates ===
+  POST   /api/notification/templates/{id}/render  probed=buyer status=404 anon=401
+  DELETE /api/notification/templates/{id}  probed=buyer status=404 anon=401
+  GET    /api/notification/templates/{id}  probed=buyer status=404 anon=401
+  PUT    /api/notification/templates/{id}  probed=buyer status=400 anon=401
+  POST   /api/notification/templates  probed=buyer status=400 anon=401
+=== api/order/health ===
+  GET    /api/order/health/circuit-breakers  probed=buyer status=200 anon=200
+  GET    /api/order/health/detailed  probed=buyer status=200 anon=200
+  GET    /api/order/health/live  probed=buyer status=200 anon=200
+  GET    /api/order/health/metrics  probed=buyer status=200 anon=200
+  GET    /api/order/health/ping  probed=buyer status=200 anon=200
+  GET    /api/order/health/ready  probed=buyer status=200 anon=200
+  GET    /api/order/health  probed=buyer status=200 anon=200
+=== api/order/orders ===
+  POST   /api/order/orders/{id}/cancel  probed=buyer status=400 anon=401
+  POST   /api/order/orders/{id}/confirm-delivery  probed=buyer status=400 anon=401
+  POST   /api/order/orders/{id}/status  probed=buyer status=400 anon=401
+  DELETE /api/order/orders/{id}  probed=buyer status=400 anon=401
+  GET    /api/order/orders/{id}  probed=buyer status=404 anon=401
+  PUT    /api/order/orders/{id}  probed=buyer status=400 anon=401
+  GET    /api/order/orders/analytics/stats  probed=buyer status=200 anon=401
+  POST   /api/order/orders/cod/validate  probed=buyer status=400 anon=401
+  POST   /api/order/orders/disputes/{id}/resolve  probed=buyer status=400 anon=401
+  GET    /api/order/orders/search  probed=buyer status=200 anon=401
+  GET    /api/order/orders/tracking/{trackingNumber}  probed=buyer status=400 anon=401
+  GET    /api/order/orders  probed=buyer status=200 anon=401
+  POST   /api/order/orders  probed=buyer status=400 anon=401
+=== api/order/system ===
+  POST   /api/order/system/maintenance/cleanup/outbox/report  probed=admin status=401 anon=401
+  POST   /api/order/system/maintenance/cleanup/outbox  probed=admin status=401 anon=401
+=== api/payment/health ===
+  GET    /api/payment/health/live  probed=buyer status=200 anon=200
+  GET    /api/payment/health/ready  probed=buyer status=200 anon=200
+  GET    /api/payment/health  probed=buyer status=200 anon=200
+=== api/payment/metrics ===
+  GET    /api/payment/metrics  probed=buyer status=200 anon=200
+=== api/payment/payments ===
+  POST   /api/payment/payments/{id}/refund  probed=buyer status=400 anon=401
+  GET    /api/payment/payments/{id}/status  probed=buyer status=500 anon=401
+  GET    /api/payment/payments/{id}  probed=buyer status=500 anon=401
+  GET    /api/payment/payments/order/{orderId}  probed=buyer status=500 anon=401
+  POST   /api/payment/payments/webhooks/paymentGateway  probed=buyer status=404 anon=401
+  POST   /api/payment/payments  probed=buyer status=400 anon=401
+=== api/payment/system ===
+  POST   /api/payment/system/maintenance/cleanup/outbox/report  probed=admin status=401 anon=401
+  POST   /api/payment/system/maintenance/cleanup/outbox  probed=admin status=401 anon=401
+=== api/payment/webhooks ===
+  POST   /api/payment/webhooks/paymentGateway  probed=buyer status=404 anon=404
+=== api/payout/payouts ===
+  POST   /api/payout/payouts/{id}/cancel  probed=buyer status=404 anon=401
+  GET    /api/payout/payouts/{id}  probed=buyer status=404 anon=401
+  GET    /api/payout/payouts  probed=buyer status=200 anon=401
+  POST   /api/payout/payouts  probed=buyer status=403 anon=401 requiredRoles=seller+supplier+courier+enabler+system
+=== api/payout/system ===
+  POST   /api/payout/system/maintenance/cleanup/outbox/report  probed=admin status=401 anon=401
+  POST   /api/payout/system/maintenance/cleanup/outbox  probed=admin status=401 anon=401
+=== api/support/agents ===
+  PUT    /api/support/agents/{id}  probed=buyer status=403 anon=401
+  POST   /api/support/agents  probed=buyer status=403 anon=401
+=== api/support/disputes ===
+  POST   /api/support/disputes/{id}/escalate  probed=buyer status=403 anon=401
+  POST   /api/support/disputes/{id}/evidence  probed=buyer status=400 anon=401
+  GET    /api/support/disputes/{id}  probed=buyer status=404 anon=401
+  GET    /api/support/disputes  probed=buyer status=200 anon=401
+  POST   /api/support/disputes  probed=buyer status=400 anon=401
+=== api/support/system ===
+  POST   /api/support/system/maintenance/cleanup/outbox/report  probed=admin status=401 anon=401
+  POST   /api/support/system/maintenance/cleanup/outbox  probed=admin status=401 anon=401
+=== api/support/tickets ===
+  POST   /api/support/tickets/{id}/assign  probed=buyer status=403 anon=401
+  POST   /api/support/tickets/{id}/close  probed=buyer status=404 anon=401
+  POST   /api/support/tickets/{id}/messages  probed=buyer status=400 anon=401
+  POST   /api/support/tickets/{id}/resolve  probed=buyer status=403 anon=401
+  GET    /api/support/tickets/{id}  probed=buyer status=404 anon=401
+  GET    /api/support/tickets  probed=buyer status=200 anon=401
+  POST   /api/support/tickets  probed=buyer status=400 anon=401
+=== api/training/api ===
+  GET    /api/training/api/health  probed=buyer status=200 anon=200
+  GET    /api/training/api/v1/modules/{id}/content  probed=buyer status=404 anon=404
+  GET    /api/training/api/v1/modules/{id}  probed=buyer status=404 anon=404
+  GET    /api/training/api/v1/modules/badges/{learnerId}  probed=buyer status=200 anon=200
+  GET    /api/training/api/v1/modules/leaderboard  probed=buyer status=200 anon=200
+  GET    /api/training/api/v1/modules  probed=buyer status=200 anon=200
+  POST   /api/training/api/v1/training/{id}/complete  probed=buyer status=200 anon=401
+  POST   /api/training/api/v1/training/{id}/progress  probed=buyer status=200 anon=401
+  GET    /api/training/api/v1/training/available  probed=buyer status=200 anon=401
+  GET    /api/training/api/v1/training/eligibility/{learnerId}  probed=buyer status=200 anon=401
+  GET    /api/training/api/v1/training/progress/{learnerId}  probed=buyer status=200 anon=401
+  POST   /api/training/api/v1/training/start  probed=buyer status=201 anon=401
+=== api/training/metrics ===
+  GET    /api/training/metrics  probed=buyer status=200 anon=200
+=== api/user ===
+  POST   /api/user  probed=buyer status=400 anon=400
+=== api/user/health ===
+  GET    /api/user/health/live  probed=buyer status=200 anon=200
+  GET    /api/user/health/metrics  probed=buyer status=200 anon=200
+  GET    /api/user/health/ping  probed=buyer status=200 anon=200
+  GET    /api/user/health/ready  probed=buyer status=200 anon=200
+  GET    /api/user/health  probed=buyer status=200 anon=200
+=== api/user/lookup ===
+  GET    /api/user/lookup  probed=buyer+admin status=403 anon=403
+=== api/user/profile ===
+  GET    /api/user/profile  probed=buyer status=200 anon=401
+  PUT    /api/user/profile  probed=buyer status=200 anon=401
+=== api/user/request-password-reset ===
+  POST   /api/user/request-password-reset  probed=buyer status=400 anon=400
+=== api/user/reset-password ===
+  POST   /api/user/reset-password/{token}  probed=buyer status=400 anon=400
+=== api/user/search ===
+  GET    /api/user/search  probed=buyer+admin status=403 anon=403
+=== api/user/security ===
+  POST   /api/user/security/breaches/report  probed=buyer status=400 anon=401
+=== api/user/system ===
+  POST   /api/user/system/maintenance/cleanup/outbox/report  probed=admin status=401 anon=401
+  POST   /api/user/system/maintenance/cleanup/outbox  probed=admin status=401 anon=401
+=== api/user/verify-email ===
+  POST   /api/user/verify-email/{token}  probed=buyer status=400 anon=400
+=== api/user/{id} ===
+  POST   /api/user/{id}/2fa/setup  probed=buyer status=400 anon=401
+  POST   /api/user/{id}/password  probed=buyer status=400 anon=401
+  POST   /api/user/{id}/phone/verify  probed=buyer status=400 anon=401
+  POST   /api/user/{id}/role  probed=buyer status=400 anon=401
+  POST   /api/user/{id}/suspend  probed=buyer status=400 anon=401
+  DELETE /api/user/{id}  probed=buyer status=200 anon=401
+  GET    /api/user/{id}  probed=buyer status=200 anon=401
+  PUT    /api/user/{id}  probed=buyer status=200 anon=401
+=== api/user/{userId} ===
+  GET    /api/user/{userId}/cod-reputation  probed=buyer status=200 anon=401
+=== api/wallet/health ===
+  GET    /api/wallet/health/live  probed=buyer status=200 anon=200
+  GET    /api/wallet/health/ready  probed=buyer status=200 anon=200
+  GET    /api/wallet/health  probed=buyer status=200 anon=200
+=== api/wallet/system ===
+  POST   /api/wallet/system/maintenance/cleanup/idempotency/report  probed=admin status=401 anon=401
+  POST   /api/wallet/system/maintenance/cleanup/idempotency  probed=admin status=401 anon=401
+  POST   /api/wallet/system/maintenance/cleanup/outbox/report  probed=admin status=401 anon=401
+  POST   /api/wallet/system/maintenance/cleanup/outbox  probed=admin status=401 anon=401
+=== api/wallet/wallets ===
+  GET    /api/wallet/wallets/{userId}/balance  probed=buyer status=200 anon=401
+  POST   /api/wallet/wallets/{userId}/credit  probed=buyer status=400 anon=401
+  POST   /api/wallet/wallets/{userId}/debit  probed=buyer status=400 anon=401
+  POST   /api/wallet/wallets/{userId}/freeze  probed=buyer status=400 anon=401
+  POST   /api/wallet/wallets/{userId}/hold/{holdId}/capture  probed=buyer status=400 anon=401
+  POST   /api/wallet/wallets/{userId}/hold/{holdId}/release  probed=buyer status=400 anon=401
+  POST   /api/wallet/wallets/{userId}/hold  probed=buyer status=400 anon=401
+  GET    /api/wallet/wallets/{userId}/holds  probed=buyer status=200 anon=401
+  GET    /api/wallet/wallets/{userId}/payout  probed=buyer status=200 anon=401
+  POST   /api/wallet/wallets/{userId}/payout  probed=buyer status=403 anon=401
+  GET    /api/wallet/wallets/{userId}/statement  probed=buyer status=200 anon=401
+  POST   /api/wallet/wallets/{userId}/topup  probed=buyer status=400 anon=401
+  POST   /api/wallet/wallets/{userId}/transaction/{transactionId}/reverse  probed=buyer status=400 anon=401
+  GET    /api/wallet/wallets/{userId}/transactions  probed=buyer status=200 anon=401
+  POST   /api/wallet/wallets/{userId}/unfreeze  probed=buyer status=400 anon=401
+  GET    /api/wallet/wallets/{userId}  probed=buyer status=200 anon=401
+=== debug-sentry ===
+  GET    /debug-sentry  probed=buyer status=200 anon=200
+=== health ===
+  GET    /health  probed=buyer status=200 anon=200
+=== ready ===
+  GET    /ready  probed=buyer status=200 anon=200
+=== undefined ===
+  PATCH  /api/analytics/action-items/ai_DOES_NOT_EXIST/resolve  probed=admin status=undefined anon=undefined
+  POST   /api/auth/refresh  probed=buyer status=undefined anon=undefined
+  GET    /api/catalog/v1/products/search?q=test  probed=buyer status=undefined anon=undefined
+  DELETE /api/checkout/cart/chk_cart_01M1M5ZKXJ4GKYB4RDF9YADFKE  probed=buyer status=undefined anon=undefined
+  GET    /api/checkout/cart/current  probed=buyer status=undefined anon=undefined
+  POST   /api/checkout/cart/items  probed=buyer status=undefined anon=undefined
+  POST   /api/checkout/cart/merge  probed=buyer status=undefined anon=undefined
+  DELETE /api/checkout/chk_cart_01M1M5ZKXJ4GKYB4RDF9YADFKE  probed=buyer status=undefined anon=undefined
+  POST   /api/checkout/items  probed=buyer status=undefined anon=undefined
+  POST   /api/checkout/merge  probed=buyer status=undefined anon=undefined
+  GET    /api/enabler/enablers/enr_DOES_NOT_EXIST  probed=enabler status=undefined anon=undefined
+  GET    /api/enabler/enablers/me  probed=enabler status=undefined anon=undefined
+  GET    /api/enabler/enablers  probed=enabler status=undefined anon=undefined
+  GET    /api/payment/payments/order/MSR-ORD-20260903-204842-402F  probed=buyer status=undefined anon=undefined
+  GET    /api/payment/payments/pay_DOES_NOT_EXIST/status  probed=buyer status=undefined anon=undefined
+  GET    /api/payment/payments/pay_DOES_NOT_EXIST  probed=buyer status=undefined anon=undefined
+  GET    /api/payment/payments  probed=buyer status=undefined anon=undefined
+  GET    /api/user/lookup?email=buyer@maysar.co.tz  probed=admin status=undefined anon=undefined

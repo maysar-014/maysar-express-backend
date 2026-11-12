@@ -1,4 +1,13 @@
 
+###############################################################################
+# IMPORTANT: This Terraform module is an EXAMPLE for Oracle Cloud (OCI).
+#
+# Provider names appear here ONLY as an example. Maysar Express Backend is
+# infrastructure-agnostic — you can replace the OCI provider with any other
+# cloud provider by swapping the required_providers block and resource types.
+# No provider is mandated in system code.
+###############################################################################
+
 resource "oci_core_instance" "main" {
   availability_domain = var.availability_domain
   compartment_id      = var.compartment_id

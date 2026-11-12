@@ -76,6 +76,7 @@ const deliveryIdParamsSchema = Joi.object({
 const deliveriesQuerySchema = Joi.object({
   status: Joi.string().valid('assigned', 'picked_up', 'in_transit', 'delivered', 'cancelled').optional(),
   courierId: Joi.string().pattern(SYSTEM_ID_PATTERN).optional(),
+  orderId: Joi.string().optional(),
   page: Joi.number().integer().min(1).optional(),
   limit: Joi.number().integer().min(1).max(100).optional(),
 }).unknown(false);

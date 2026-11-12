@@ -20,8 +20,8 @@ const getRouteSignatures = (router: Router): string[] => {
 };
 
 describe('hub.routes', () => {
-  it('registers the enabler hub products endpoint', () => {
+  it('registers public catalog resolution and the authenticated enabler hub endpoint', () => {
     const signatures = getRouteSignatures(hubRoutes);
-    expect(signatures).toEqual(expect.arrayContaining(['GET /products']));
+    expect(signatures).toEqual(expect.arrayContaining(['GET /catalog/:publicCode', 'GET /products']));
   });
 });

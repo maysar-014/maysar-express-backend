@@ -46,6 +46,7 @@ import {
   createCodDeliveryFixture,
   waitForDeliveryOtp,
   deleteCodDeliveryFixture,
+  FIXTURE_DELIVERY_COORDS,
 } from './helpers/cod-delivery-fixture';
 
 // ---------------------------------------------------------------------------
@@ -55,8 +56,16 @@ import {
 /** TZS value safely within NEW_BUYER COD exposure limit (TZS 30,000). */
 const COD_AMOUNT = 15_000;
 
-/** Delivery GPS location used for COD verification (Dar es Salaam city centre). */
-const DELIVERY_LOCATION = { lat: -6.7924, lng: 39.2083 };
+/**
+ * Where the courier is standing when handing over the parcel.
+ *
+ * This is the fixture's delivery address, NOT a generic Dar es Salaam point.
+ * The settlement saga only settles when the courier is within 500 m of the
+ * stored delivery location, so verification must be attempted from the door.
+ * The old constant was the fixture's *pickup* coordinates ~8 km away, which the
+ * proximity gate rightly rejected.
+ */
+const DELIVERY_LOCATION = FIXTURE_DELIVERY_COORDS;
 
 /** How long to poll for a delivery to appear after placing an order (ms). */
 const DELIVERY_POLL_TIMEOUT_MS = 30_000;
@@ -428,22 +437,19 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
       // which is a different value and would have made this assertion vacuous.
       const issuedOtp = await waitForDeliveryOtp(deliveryId!);
 
-      const verifyRes = await requestJson(
-        `/api/logistics/api/v1/cod/${deliveryId}/verify`,
-        {
-          method: 'POST',
-          headers: { ...authHeader(courierToken), 'content-type': 'application/json', 'idempotency-key': createIdempotencyKey('e2e-api-logistics-api-v1-cod-deliveryId-veri') },
-          body: JSON.stringify({ otp: issuedOtp, location: DELIVERY_LOCATION }),
-        }
-      );
-      expect(verifyRes.status).toBe(200);
-      expect((verifyRes.body as Record<string, unknown>)['success']).toBe(true);
-
-      // A wrong code must be rejected — otherwise "200 on success" proves nothing.
-      // This MUST carry an idempotency key: without one, IdempotencyMiddleware
+      // 7a. A wrong code must be rejected — otherwise "200 on success" below proves
+      // nothing.
+      //
+      // Ordering is load-bearing: this MUST run BEFORE the correct code. Once
+      // verification succeeds the delivery is marked `codOtpVerified`, and the
+      // use case treats any later call as an idempotent retry and returns 200
+      // without re-checking the OTP. Run afterwards, this assertion observed that
+      // retry short-circuit rather than the OTP comparison — i.e. it passed for a
+      // reason unrelated to the thing it claimed to prove.
+      //
+      // It MUST also carry an idempotency key: without one, IdempotencyMiddleware
       // answers 400 "Missing idempotency key" before the OTP is ever checked, and
-      // the assertion would pass for a reason that has nothing to do with
-      // verification (which is exactly how it passed while the happy path was broken).
+      // the assertion would pass for the wrong reason again.
       const wrongRes = await requestJson(
         `/api/logistics/api/v1/cod/${deliveryId}/verify`,
         {
@@ -456,6 +462,30 @@ liveTestSuite('Full Checkout Saga — Flow Docs 02 + 05', () => {
       // Guard against the rejection coming from a missing idempotency key rather
       // than from the OTP check, which would make the assertion above vacuous.
       expect(String(wrongRes.text)).not.toContain('Missing idempotency key');
+      // Pin the *reason*: the code must be judged against the issued OTP, not
+      // rejected by some unrelated precondition that also yields a 4xx.
+      expect(String(wrongRes.text)).toMatch(/OTP/i);
+
+      // A rejected code must not have advanced the delivery or settled anything.
+      const afterWrongRes = await requestJson(
+        `/api/logistics/api/v1/deliveries/${deliveryId}`,
+        { headers: authHeader(courierToken) }
+      );
+      const afterWrongBody = (afterWrongRes.body as Record<string, unknown>)['data'] ??
+        afterWrongRes.body as Record<string, unknown>;
+      expect(String((afterWrongBody as Record<string, unknown>)['status'])).not.toBe('delivered');
+
+      // 7b. Now the real code, from at the delivery address.
+      const verifyRes = await requestJson(
+        `/api/logistics/api/v1/cod/${deliveryId}/verify`,
+        {
+          method: 'POST',
+          headers: { ...authHeader(courierToken), 'content-type': 'application/json', 'idempotency-key': createIdempotencyKey('e2e-api-logistics-api-v1-cod-deliveryId-veri') },
+          body: JSON.stringify({ otp: issuedOtp, location: DELIVERY_LOCATION }),
+        }
+      );
+      expect(verifyRes.status).toBe(200);
+      expect((verifyRes.body as Record<string, unknown>)['success']).toBe(true);
 
       // 8. Delivery must be 'delivered'
       const deliveryReadRes = await requestJson(

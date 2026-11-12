@@ -18,6 +18,7 @@
 
 import { makeOrderNumber } from '@shared/ids/human-readable-ids';
 import { QuoteValidationService } from '../../infrastructure/services/quote-validation.service';
+import type { EnablerLookup } from './initiate-checkout.use-case';
 
 export interface SellerQuoteMap {
   [sellerId: string]: { quoteId: string };
@@ -66,6 +67,7 @@ export class MultiSellerCheckoutUseCase {
   constructor(
     private readonly quoteValidationService: QuoteValidationService,
     private readonly eventBus?: { publish(type: string, data: any): Promise<void> },
+    private readonly enablerLookup?: EnablerLookup,
   ) {}
 
   async execute(
@@ -106,6 +108,24 @@ export class MultiSellerCheckoutUseCase {
         success: false,
         error: { code: 'CHECKOUT_SESSION_EMPTY', message: 'Session has no items' },
       };
+    }
+
+    // Revalidate approved scope at order placement. Checkout metadata is an
+    // attribution candidate list, never an authorization grant.
+    const enablerId = session.metadata?.enablerId || session.enablerId;
+    const enablerCode = session.metadata?.enablerCode || session.enablerCode;
+    let authorizedEnablerProductIds: string[] = [];
+    if (enablerId && enablerCode) {
+      if (!this.enablerLookup?.getAuthorizedProductIds) {
+        return {
+          success: false,
+          error: { code: 'ENABLER_AUTHORIZATION_UNAVAILABLE', message: 'Cannot confirm enabler authorization for this order' },
+        };
+      }
+      const candidates = Array.isArray(session.metadata?.enablerProductIds)
+        ? session.metadata.enablerProductIds.filter((id: unknown): id is string => typeof id === 'string')
+        : [];
+      authorizedEnablerProductIds = await this.enablerLookup.getAuthorizedProductIds(enablerId, candidates);
     }
 
     // ── Step 2: Group items by sellerId via catalog lookup ──────────────────
@@ -182,6 +202,13 @@ export class MultiSellerCheckoutUseCase {
             deliveryAddress: request.deliveryAddress,
             orderSource: 'DIRECT',
             quoteId: sellerQuotes[sellerId]?.quoteId,
+            ...(enablerId && enablerCode ? {
+              enablerId,
+              enablerCode,
+              enablerProductIds: sellerItems
+                .map((item: any) => String(item.productId))
+                .filter((productId: string) => authorizedEnablerProductIds.includes(productId)),
+            } : {}),
           });
 
           sellerOrderIds.push(placeResult.orderId);

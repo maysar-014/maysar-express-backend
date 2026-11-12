@@ -57,6 +57,44 @@ export class PrismaUserRepository implements IUserRepository {
   }
 
   /**
+   * Find users by a batch of IDs in a single database query.
+   *
+   * Only the current-schema (`user_User`) table is queried — legacy
+   * `users` records are intentionally skipped for bulk lookups because:
+   *   1. The name-resolution use case only needs `fullName`, `publicCode`,
+   *      and `role`, all of which are present on `user_User`.
+   *   2. The legacy `users` table has no `publicCode` column, so its
+   *      records would always produce an empty publicCode anyway.
+   *   3. A `$queryRaw` fallback for every missing ID would defeat the
+   *      purpose of a single-query batch fetch.
+   *
+   * If the `user_User` table is missing entirely (dev/CI environments
+   * without the migration), the method returns an empty array rather
+   * than throwing — the use case then maps every requested ID to `null`.
+   */
+  async findByIds(ids: string[]): Promise<User[]> {
+    if (!ids || ids.length === 0) {
+      return [];
+    }
+
+    try {
+      const rows = await this.prisma.user_User.findMany({
+        where: { id: { in: ids } },
+        include: { addresses: true }
+      });
+
+      return rows.map((row: any) => this.mapToDomainEntity(row));
+    } catch (error: any) {
+      if (this.isMissingCurrentSchemaTable(error)) {
+        logger.warn('user_User table missing — findByIds returning empty array', { idsCount: ids.length });
+        return [];
+      }
+      logger.error('Error finding users by IDs', { idsCount: ids.length, error: this.formatError(error) });
+      throw error;
+    }
+  }
+
+  /**
    * Find a user by their email address
    */
   async findByEmail(email: string): Promise<User | null> {

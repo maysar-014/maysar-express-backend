@@ -210,14 +210,19 @@ Milestone status writes go to logistics-service, which writes outbox events to `
 
 | Step | Actor/System | Action | Endpoint | Auth | Expected Response |
 |---|---|---|---|---|---|
-| 1 | Courier | Request OTP generation for delivery | `POST /api/logistics/v1/cod/:deliveryId/otp` | JWT (courier) | 200 `{ success: true, message: "OTP sent to buyer" }` |
+| 1 | Courier | Request OTP generation for delivery | `POST /api/logistics/api/v1/cod/:deliveryId/otp` | JWT (courier) + `idempotency-key` header | 200 `{ success: true, message: "OTP sent to buyer" }` |
 | 2 | logistics-service | Generates OTP; sends to buyer via notification-service | Internal | — | OTP delivered to buyer |
 | 3 | Buyer | Receives OTP via SMS/push | — | — | — |
 | 4 | Buyer → Courier | Buyer verbally shares OTP | — | — | — |
-| 5 | Courier | Enter OTP in app; submit verification | `POST /api/logistics/v1/cod/:deliveryId/verify` `{ otp: "XXXXXX" }` | JWT (courier) | 200 `{ success: true, message: "COD verified successfully" }` |
+| 5 | Courier | Enter OTP in app; submit verification | `POST /api/logistics/api/v1/cod/:deliveryId/verify` `{ otp: "XXXXXX", location: { lat, lng, address } }` | JWT (courier) | 200 `{ success: true, message: "COD verified successfully" }` |
 | 6 | logistics-service | Calls wallet-service `releaseCODCommitment(deliveryId)` | Internal | — | COD hold released; seller credited |
 | 7 | logistics-service | Publishes `Delivery.Success.v1` (outbox) | Internal | — | user-service updates buyer COD reputation |
 | 8 | Courier | Delivery confirmed as completed | — | — | Status transitions to `delivered` |
+
+> ⚠️ **FLW-003 + FLW-004 corrected 2026-11-06:**
+> - **Path corrected:** Both COD endpoints use `/api/logistics/api/v1/cod/` NOT `/api/logistics/v1/cod/`. Calling the old path returns 404.
+> - **Idempotency key required:** `POST .../otp` requires an `idempotency-key` header (e.g. `idempotency-key: otp-{deliveryId}`). Omitting it returns 400 "Missing idempotency key".
+> - **Verify body:** `POST .../verify` requires `location: { lat, lng, address }` in addition to `otp`.
 
 ### COD OTP Full Sequence Diagram
 
@@ -232,14 +237,14 @@ sequenceDiagram
     participant US as user-service
 
     Courier->>CA: Initiate COD OTP for deliveryId
-    CA->>LS: POST /api/logistics/v1/cod/:deliveryId/otp
+    CA->>LS: POST /api/logistics/api/v1/cod/:deliveryId/otp (+ idempotency-key header)
     LS->>NS: Send OTP to buyer phone number
     NS-->>Buyer: OTP via SMS / push notification
 
     Buyer-->>Courier: Share OTP verbally
 
     Courier->>CA: Enter OTP received from buyer
-    CA->>LS: POST /api/logistics/v1/cod/:deliveryId/verify {otp: "XXXXXX"}
+    CA->>LS: POST /api/logistics/api/v1/cod/:deliveryId/verify {otp: "XXXXXX", location: {lat, lng, address}}
 
     alt OTP valid and not expired
         LS->>WS: releaseCODCommitment(deliveryId)

@@ -118,7 +118,9 @@ export class AuthController {
 
         if (result.refreshToken) {
           res.cookie('refreshToken', result.refreshToken, cookieOptions);
-          delete (result as any).refreshToken;
+          // Keep refreshToken in the JSON body for API clients (mobile, lifecycle tests)
+          // that don't have cookie jars. The HTTP-only cookie is the primary mechanism
+          // for browser clients; the JSON field is a secondary path for non-browser consumers.
         }
 
         res.json(result);

@@ -1,8 +1,8 @@
 ﻿# Buyer Flows — Notification Service
 
-> **Verification status:** Partially Verified
-> **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` (September 2026); `docs/notification/NOTIFICATION_SERVICE_SYSTEM.md`
-> **Last updated:** September 2026
+> **Verification status:** Verified — Live-verified 2026-11-06 against `run-lifecycle-checks.mjs` (LC-24)
+> **Verification basis:** `scripts/verification/run-lifecycle-checks.mjs` LC-24 (2026-11-06); `docs/FLOWS/_verification/analysis-report.md` (September 2026)
+> **Last updated:** 2026-11-06 (corrected: FLW-001 mark-read path; FLW-002 unread-count path)
 
 ## Overview
 
@@ -16,8 +16,8 @@ Buyers do not initiate notification-service calls for their core notification ex
 |---|---|---|---|
 | 1 | Event-Driven Notifications Received | Partially Verified | Various platform events |
 | 2 | View In-App Notification Inbox | Partially Verified | `GET /api/notification/notifications` |
-| 3 | Mark Notification as Read | Partially Verified | `PATCH /api/notification/notifications/:id/read` |
-| 4 | Get Unread Count | Partially Verified | `GET /api/notification/notifications/count` |
+| 3 | Mark Notification as Read | Verified | `PATCH /api/notification/notifications/:id/status` |
+| 4 | Get Unread Count | Verified | `GET /api/notification/notifications/unread-count` |
 
 ---
 
@@ -92,7 +92,14 @@ Buyers receive notifications triggered automatically by platform events. The buy
 
 | Step | Actor/System | Action | Endpoint | Auth | Expected Response |
 |---|---|---|---|---|---|
-| 1 | Buyer | Mark notification read | `PATCH /api/notification/notifications/:id/read` | Bearer JWT | 200 — notification updated |
+| 1 | Buyer | Mark notification read | `PATCH /api/notification/notifications/:id/status` | Bearer JWT | 200 `{ success: true }` |
+
+**Request body:**
+```json
+{ "status": "read" }
+```
+
+> ⚠️ **FLW-001 corrected 2026-11-06:** The previous version of this doc used `PATCH /api/notification/notifications/:id/read` (no body). The live endpoint is `/status` with body `{ "status": "read" }`. Calling `/read` returns 404.
 
 ### Unhappy Path Branches
 
@@ -119,7 +126,9 @@ Buyers receive notifications triggered automatically by platform events. The buy
 
 | Step | Actor/System | Action | Endpoint | Auth | Expected Response |
 |---|---|---|---|---|---|
-| 1 | Buyer App | Fetch unread count | `GET /api/notification/notifications/count` | Bearer JWT | 200 `{ count: N }` |
+| 1 | Buyer App | Fetch unread count | `GET /api/notification/notifications/unread-count` | Bearer JWT | 200 `{ data: { unread: N } }` |
+
+> ⚠️ **FLW-002 corrected 2026-11-06:** Previous path was `GET /api/notification/notifications/count` (returns 404). Correct path is `/unread-count`. Response shape is `{ data: { unread: N } }`, not `{ count: N }`.
 
 ### Note on SMS Webhook
 

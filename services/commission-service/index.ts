@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { Module } from '../../src/core/module.interface';
 import commissionRoutes from './src/api/routes/commission.routes';
 import { healthRoutes } from './src/api/routes/health.routes';
+import { appLogger } from '../../shared/logger/logger';
 
 export const CommissionModule: Module = {
     // Canonical module name: the bootstrap derives the public mount path from it
@@ -9,7 +10,7 @@ export const CommissionModule: Module = {
     // contract, the flow docs and the E2E suite use.
     name: 'commission-service',
     initialize: async () => {
-        console.log('Initializing commission-service module');
+        appLogger.info('Initializing commission-service module');
     },
     routes: (() => {
         const router = Router();
@@ -18,6 +19,6 @@ export const CommissionModule: Module = {
         return router;
     })(),
     shutdown: async () => {
-        console.log('Shutting down commission-service module');
+        appLogger.info('Shutting down commission-service module');
     }
 };

@@ -29,6 +29,7 @@ import { SelcomPesaAdapter } from './src/infrastructure/providers/selcom-pesa.ad
 import { OrderPaymentRepository } from './src/infrastructure/repositories/order-payment.repository';
 import { PrismaCODTrustScoreRepository } from './src/infrastructure/repositories/prisma-cod-trust-score.repository';
 import { PrismaCODRestrictionRepository } from './src/infrastructure/repositories/prisma-cod-restriction.repository';
+import { PrismaEnablerAttributionRepository } from './src/infrastructure/repositories/prisma-enabler-attribution.repository';
 import { Payment, PaymentMethod, PaymentStatus } from './src/domain/entities/payment.entity';
 import { eventBus } from '../../shared/events/eventBus';
 import { EventIdempotency } from '../../shared/middleware/idempotency';
@@ -123,7 +124,10 @@ export const OrderModule: Module = {
                 codEligibilityEngine as any,
                 codCommitmentService,
                 walletServiceClient,
-                selcomPesaAdapter
+                selcomPesaAdapter,
+                undefined,
+                undefined,
+                new PrismaEnablerAttributionRepository(prisma),
             );
 
             const checkCODEligibilityUseCase = new CheckCODEligibilityUseCase(codEligibilityEngine as any);

@@ -150,7 +150,9 @@ https://maysar.co.tz/seller/{customSlug}
 ## Configuration
 
 ### Environment Variables
-- `BASE_URL` - Base URL for generating links (default: `https://maysar.co.tz`)
+- `STOREFRONT_BASE_URL` - Public web app origin for seller links (default: `https://maysar.co.tz`); keep this separate from the API origin.
+
+Seller data comes from active, verified, compliant business records. Product count includes public published products. Custom slugs are stored in `catalog_seller_storefronts`, must be globally unique, and resolve through the public storefront lookup endpoint. Link generation requires the seller account or an admin. The current schema has no seller rating source, so `stats.rating` is returned as `0`.
 
 ## Usage Examples
 
@@ -173,9 +175,9 @@ curl https://api.maysar.co.tz/api/catalog/api/v1/sellers/seller123/products
 
 ## Future Enhancements
 
-1. **Database Integration**
-   - Store custom slugs in database
-   - Track URL analytics (clicks, scans)
+1. **Analytics**
+   - Track URL visits and QR scans
+   - Track storefront conversions
    - Seller preferences for URL format
 
 2. **Advanced Features**
@@ -208,20 +210,8 @@ curl https://api.maysar.co.tz/api/catalog/api/v1/sellers/seller123/products
 - Rate limiting (inherited from service-level middleware)
 - No sensitive data in URLs
 
-## Status
+## Backend behavior
 
-✅ Implementation Complete
-✅ Unit Tests Created
-✅ Integration Tests Created
-✅ E2E Tests Created
-✅ API Documentation Updated
-✅ Routes Integrated
-✅ Dependencies Installed
-
-## Next Steps
-
-1. Run full test suite to validate
-2. Deploy to staging environment
-3. Test with real seller data
-4. Monitor performance metrics
-5. Gather user feedback
+- `GET /api/catalog/api/v1/sellers/:sellerId/storefront` accepts either a seller ID or a saved custom slug and returns only a public verified seller.
+- `POST /api/catalog/api/v1/sellers/:sellerId/share-url` lets the seller or an admin generate links, optionally save a custom slug, and optionally include a QR code.
+- The frontend must serve `/seller/:slug` and `/s/:slug` on the configured storefront host. The catalog API provides the slug lookup data; it does not serve the web pages or perform a frontend redirect.

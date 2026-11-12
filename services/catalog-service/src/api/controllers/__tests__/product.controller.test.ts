@@ -500,6 +500,50 @@ describe('ProductController', () => {
 
       expect(res.status).toHaveBeenCalledWith(200);
     });
+
+    it('should use the stored slug in seller.shareUrl, not the raw sellerId', async () => {
+      const mockSlugDb = {
+        sellerStorefront: {
+          findUnique: jest.fn(async () => ({ sellerId: 'usr_SELLER1', slug: 'my-store' })),
+          upsert: jest.fn(async ({ where, create, update }: any) => ({
+            sellerId: where.sellerId,
+            slug: update.slug ?? create.slug
+          }))
+        }
+      };
+
+      mockGetProductsBySellerUseCase.execute.mockResolvedValue({
+        status: 'success',
+        products: [],
+        total: 0,
+      });
+
+      const controllerWithDb = new ProductController(
+        mockCreateProductUseCase as any,
+        mockGetProductUseCase as any,
+        mockGetProductsBySellerUseCase as any,
+        mockSearchProductsUseCase as any,
+        mockProductMapper as any,
+        mockLoadCategoryAttributesUseCase as any,
+        mockPreviewGeneratedDescriptionUseCase as any,
+        undefined,  // createProductWithMatchingUseCase
+        mockListCategoriesUseCase as any,
+        mockCreateCategoryUseCase as any,
+        mockUpdateCategoryUseCase as any,
+        mockDeleteCategoryUseCase as any,
+        mockSlugDb as any   // db
+      );
+
+      const req = makeReq({ params: { sellerId: 'usr_SELLER1' }, query: {} });
+      const res = makeRes();
+
+      await controllerWithDb.getProductsBySeller(req as any, res as any);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const body = res.json.mock.calls[0]?.[0];
+      expect(body?.seller?.shareUrl).toContain('/seller/my-store');
+      expect(body?.seller?.shareUrl).not.toContain('usr_SELLER1');
+    });
   });
 
   describe('searchProducts', () => {

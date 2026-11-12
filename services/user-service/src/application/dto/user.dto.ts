@@ -220,6 +220,48 @@ export interface BulkUserOperationDto {
 }
 
 /**
+ * User DTO for the display-name response of the bulk name resolution endpoint.
+ *
+ * Contains ONLY the three fields needed for display labels. Deliberately
+ * excludes email, phoneNumber, dateOfBirth, KYC fields, addresses, metadata,
+ * businessId, passwordHash, and any other PII. Display names are already
+ * semi-public (visible on reviews, chat, order receipts) so this surface is
+ * safe for any authenticated caller.
+ */
+export interface DisplayNameDto {
+  fullName: string;
+  publicCode: string;
+  role: string;
+}
+
+/**
+ * User DTO for the request body of the bulk name resolution endpoint.
+ *
+ * `ids` must be a non-empty array of user ID strings, deduplicated by the
+ * use case. Maximum 100 unique IDs per request (enforced by the route
+ * validation schema, not the type).
+ */
+export interface ResolveNamesRequestDto {
+  ids: string[];
+}
+
+/**
+ * User DTO for display name resolution — PII-minimal response containing only the three fields needed for display
+ */
+export interface DisplayNameDto {
+  fullName: string;
+  publicCode: string;
+  role: string;
+}
+
+/**
+ * User DTO for resolving user IDs to display names in a single batch request
+ */
+export interface ResolveNamesRequestDto {
+  ids: string[];
+}
+
+/**
  * User DTO for user statistics
  */
 export interface UserStatisticsDto {

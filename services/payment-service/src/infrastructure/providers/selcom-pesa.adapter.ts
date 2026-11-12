@@ -26,14 +26,20 @@ interface SelcomPesaAdapterConfig {
 /**
  * Selcom Pesa adapter — one instance per payment-method channel.
  *
+ * IMPORTANT: This file references Selcom Pesa ONLY as an example payment
+ * provider. Maysar Express Backend is provider-agnostic — you can replace this
+ * implementation with any other payment provider (Stripe, PayPal, Flutterwave,
+ * Razorpay, custom, etc.) by implementing the IPaymentProvider interface.
+ * No provider is mandated in system code.
+ *
  * Every supported method keeps its own isolated adapter instance with its own
  * provider-scoped credentials (never shared across channels), so enabling,
  * testing, disabling, or moving one provider to live cannot affect another.
  *
  * The live external payment integration is intentionally non-networked for now
  * so the payment service can ship without a third-party payment API dependency
- * until the Selcom Pesa contract is finalized. Contract/test requests still
- * exercise the full lifecycle (initiate → response → callback → verify).
+ * until the contract is finalized. Contract/test requests still exercise the
+ * full lifecycle (initiate → response → callback → verify).
  */
 export class SelcomPesaAdapter implements IPaymentProvider {
   private readonly merchantCode?: string;

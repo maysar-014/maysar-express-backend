@@ -19,7 +19,7 @@ import {
   normaliseError,
 } from '../../../../../shared/errors/api-errors';
 import { ManageSellerLocationsUseCase } from '../../application/use-cases/manage-seller-locations.use-case';
-import { ManageProductInventoryUseCase } from '../../application/use-cases/manage-product-inventory.use-case';
+import { generatePdfReport } from '../../../../../shared/utils/pdf-writer';
 
 // ── Helper: extract sellerId from authenticated request ──────────────────────
 function getSellerId(req: Request): string {
@@ -49,14 +49,65 @@ function ok(res: Response, data: unknown, status = 200): void {
   res.status(status).json({ success: true, data });
 }
 
+// ── CSV helpers ──────────────────────────────────────────────────────────────
+function escapeCsv(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  const s = String(value);
+  if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+function buildLocationsCsv(locations: any[]): string {
+  const headers = [
+    'locationId', 'sellerId', 'name', 'type', 'status', 'locationCode',
+    'contactName', 'contactPhone', 'staffCount', 'deliveryCoverageRadiusKm',
+    'street', 'ward', 'district', 'region', 'postalCode', 'country',
+    'locality', 'directions', 'latitude', 'longitude', 'isPrimary', 'isActive',
+    'fulfillmentCapabilities', 'operatingHours', 'createdAt', 'updatedAt',
+  ];
+
+  const lines: string[] = [headers.join(',')];
+  for (const loc of locations) {
+    const addr = loc.address || {};
+    const row = [
+      escapeCsv(loc.id),
+      escapeCsv(loc.sellerId),
+      escapeCsv(loc.name),
+      escapeCsv(loc.type),
+      escapeCsv(loc.status),
+      escapeCsv(loc.locationCode),
+      escapeCsv(loc.contactName),
+      escapeCsv(loc.contactPhone),
+      escapeCsv(loc.staffCount),
+      escapeCsv(loc.deliveryCoverageRadiusKm),
+      escapeCsv(addr.street),
+      escapeCsv(addr.ward),
+      escapeCsv(addr.district),
+      escapeCsv(addr.region),
+      escapeCsv(addr.postalCode),
+      escapeCsv(addr.country),
+      escapeCsv(addr.locality),
+      escapeCsv(addr.directions),
+      escapeCsv(loc.latitude),
+      escapeCsv(loc.longitude),
+      escapeCsv(loc.isPrimary),
+      escapeCsv(loc.isActive),
+      escapeCsv(Array.isArray(loc.fulfillmentCapabilities) ? loc.fulfillmentCapabilities.join(';') : ''),
+      escapeCsv(loc.operatingHours ? JSON.stringify(loc.operatingHours) : ''),
+      escapeCsv(loc.createdAt),
+      escapeCsv(loc.updatedAt),
+    ];
+    lines.push(row.join(','));
+  }
+  return lines.join('\n');
+}
+
 export class SellerLocationController {
-  constructor(
-    private readonly locationUseCase: ManageSellerLocationsUseCase,
-    private readonly inventoryUseCase: ManageProductInventoryUseCase,
-  ) {}
+  constructor(private readonly locationUseCase: ManageSellerLocationsUseCase) {}
 
   // ── Locations ────────────────────────────────────────────────────────────
-
   async createLocation(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const sellerId = getSellerId(req);
@@ -72,11 +123,23 @@ export class SellerLocationController {
         region: req.body.region,
         postalCode: req.body.postalCode,
         country: req.body.country ?? 'Tanzania',
+        countryId: req.body.countryId,
+        regionId: req.body.regionId,
+        districtId: req.body.districtId,
+        wardId: req.body.wardId,
+        streetId: req.body.streetId,
+        locality: req.body.locality,
+        directions: req.body.directions,
         latitude: Number(req.body.latitude),
         longitude: Number(req.body.longitude),
+        fulfillmentCapabilities: req.body.fulfillmentCapabilities,
         isPrimary: req.body.isPrimary,
         operatingHours: req.body.operatingHours,
         notes: req.body.notes,
+        contactName: req.body.contactName,
+        contactPhone: req.body.contactPhone,
+        staffCount: req.body.staffCount,
+        deliveryCoverageRadiusKm: req.body.deliveryCoverageRadiusKm,
       });
       ok(res, this.toDto(location), 201);
     } catch (err) {
@@ -94,6 +157,9 @@ export class SellerLocationController {
       const locations = await this.locationUseCase.listLocations(sellerId);
       ok(res, locations.map(l => this.toDto(l)));
     } catch (err) {
+      if (err instanceof Error && !(err as any).httpStatus) {
+        try { classifyError(err); } catch (classified) { return next(classified); }
+      }
       next(err);
     }
   }
@@ -117,23 +183,35 @@ export class SellerLocationController {
       const location = await this.locationUseCase.updateLocation(
         req.params.locationId,
         sellerId,
-        req.body,
+        {
+          name: req.body.name,
+          type: req.body.type,
+          street: req.body.street,
+          ward: req.body.ward,
+          district: req.body.district,
+          region: req.body.region,
+          postalCode: req.body.postalCode,
+          countryId: req.body.countryId,
+          regionId: req.body.regionId,
+          districtId: req.body.districtId,
+          wardId: req.body.wardId,
+          streetId: req.body.streetId,
+          locality: req.body.locality,
+          directions: req.body.directions,
+          latitude: req.body.latitude !== undefined ? Number(req.body.latitude) : undefined,
+          longitude: req.body.longitude !== undefined ? Number(req.body.longitude) : undefined,
+          fulfillmentCapabilities: req.body.fulfillmentCapabilities,
+          isPrimary: req.body.isPrimary,
+          operatingHours: req.body.operatingHours,
+          notes: req.body.notes,
+          isActive: req.body.isActive,
+          contactName: req.body.contactName,
+          contactPhone: req.body.contactPhone,
+          staffCount: req.body.staffCount,
+          deliveryCoverageRadiusKm: req.body.deliveryCoverageRadiusKm,
+        },
       );
       ok(res, this.toDto(location));
-    } catch (err) {
-      if (err instanceof Error && !(err as any).httpStatus) {
-        try { classifyError(err); } catch (classified) { return next(classified); }
-      }
-      next(err);
-    }
-  }
-
-  async deleteLocation(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      // Admin-only — requireRole(['admin']) is enforced at the route level.
-      // No seller ownership check — admin can delete any seller's location.
-      await this.locationUseCase.adminDeleteLocation(req.params.locationId);
-      res.status(204).end();
     } catch (err) {
       if (err instanceof Error && !(err as any).httpStatus) {
         try { classifyError(err); } catch (classified) { return next(classified); }
@@ -176,58 +254,10 @@ export class SellerLocationController {
     }
   }
 
-  // ── Product inventory ────────────────────────────────────────────────────
-
-  async attachProduct(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async deleteLocation(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const sellerId = getSellerId(req);
-      const qty = Number(req.body.quantityAvailable ?? 0);
-      if (isNaN(qty) || qty < 0) throw new ValidationError('quantityAvailable must be a non-negative integer');
-
-      const pl = await this.inventoryUseCase.attachProduct({
-        productId: req.params.productId,
-        locationId: req.params.locationId,
-        sellerId,
-        quantityAvailable: qty,
-      });
-      ok(res, this.toInventoryDto(pl), 201);
-    } catch (err) {
-      if (err instanceof Error && !(err as any).httpStatus) {
-        try { classifyError(err); } catch (classified) { return next(classified); }
-      }
-      next(err);
-    }
-  }
-
-  async adjustStock(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const sellerId = getSellerId(req);
-      const delta = Number(req.body.delta);
-      if (isNaN(delta)) throw new ValidationError('delta must be a number (positive = add, negative = reduce)');
-
-      const pl = await this.inventoryUseCase.adjustStock({
-        productId: req.params.productId,
-        locationId: req.params.locationId,
-        sellerId,
-        delta,
-      });
-      ok(res, this.toInventoryDto(pl));
-    } catch (err) {
-      if (err instanceof Error && !(err as any).httpStatus) {
-        try { classifyError(err); } catch (classified) { return next(classified); }
-      }
-      next(err);
-    }
-  }
-
-  async detachProduct(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const sellerId = getSellerId(req);
-      await this.inventoryUseCase.detachProduct(
-        req.params.productId,
-        req.params.locationId,
-        sellerId,
-      );
+      await this.locationUseCase.deleteLocation(req.params.locationId, sellerId);
       res.status(204).end();
     } catch (err) {
       if (err instanceof Error && !(err as any).httpStatus) {
@@ -237,26 +267,10 @@ export class SellerLocationController {
     }
   }
 
-  async transferStock(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async deleteLocationAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const sellerId = getSellerId(req);
-      const { productId, fromLocationId, toLocationId, quantity, notes } = req.body;
-      if (!productId) throw new ValidationError('productId is required');
-      if (!fromLocationId) throw new ValidationError('fromLocationId is required');
-      if (!toLocationId) throw new ValidationError('toLocationId is required');
-      const qty = Number(quantity);
-      if (!qty || qty <= 0) throw new ValidationError('quantity must be a positive integer');
-
-      await this.inventoryUseCase.transferStock({
-        sellerId,
-        productId,
-        fromLocationId,
-        toLocationId,
-        quantity: qty,
-        notes,
-        initiatedBy: (req as any).user?.userId,
-      });
-      ok(res, { message: 'Stock transfer completed' });
+      await this.locationUseCase.adminDeleteLocation(req.params.locationId);
+      res.status(204).end();
     } catch (err) {
       if (err instanceof Error && !(err as any).httpStatus) {
         try { classifyError(err); } catch (classified) { return next(classified); }
@@ -265,18 +279,94 @@ export class SellerLocationController {
     }
   }
 
-  async getProductLocations(req: Request, res: Response, next: NextFunction): Promise<void> {
+  // ── Location summary metrics ──────────────────────────────────────────────
+  async getLocationMetrics(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const sellerId = getSellerId(req);
-      const pls = await this.inventoryUseCase.getProductLocations(req.params.productId, sellerId);
-      ok(res, pls.map(pl => this.toInventoryDto(pl)));
+      const metrics = await this.locationUseCase.getLocationMetrics(req.params.locationId, sellerId);
+      ok(res, metrics);
+    } catch (err) {
+      if (err instanceof Error && !(err as any).httpStatus) {
+        try { classifyError(err); } catch (classified) { return next(classified); }
+      }
+      next(err);
+    }
+  }
+
+  // ── Location detail panel ─────────────────────────────────────────────────
+  async getLocationDetail(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const sellerId = getSellerId(req);
+      const detail = await this.locationUseCase.getLocationDetail(req.params.locationId, sellerId);
+      ok(res, detail);
+    } catch (err) {
+      if (err instanceof Error && !(err as any).httpStatus) {
+        try { classifyError(err); } catch (classified) { return next(classified); }
+      }
+      next(err);
+    }
+  }
+
+  // ── Location report (PDF) ─────────────────────────────────────────────────
+  async getLocationReportPdf(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const sellerId = getSellerId(req);
+      const detail = await this.locationUseCase.getLocationDetail(req.params.locationId, sellerId);
+
+      const pdfBuffer = generatePdfReport(detail);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="location-${req.params.locationId}-report.pdf"`,
+      );
+      res.setHeader('Content-Length', String(pdfBuffer.length));
+      res.end(pdfBuffer);
+    } catch (err) {
+      if (err instanceof Error && !(err as any).httpStatus) {
+        try { classifyError(err); } catch (classified) { return next(classified); }
+      }
+      next(err);
+    }
+  }
+
+  // ── Location search ───────────────────────────────────────────────────────
+  async searchLocations(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const sellerId = getSellerId(req);
+      const result = await this.locationUseCase.searchLocations(
+        sellerId,
+        req.query.q as string | undefined,
+        req.query.type as any,
+        req.query.status as string | undefined,
+        req.query.isActive === 'true' ? true : req.query.isActive === 'false' ? false : undefined,
+        req.query.regionId as string | undefined,
+        req.query.districtId as string | undefined,
+        req.query.wardId as string | undefined,
+        req.query.streetId as string | undefined,
+        req.query.page ? Number(req.query.page) : 1,
+        req.query.pageSize ? Number(req.query.pageSize) : 20,
+      );
+
+      // CSV export
+      if (req.query.export === 'csv') {
+        const csv = buildLocationsCsv(result.locations);
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader(
+          'Content-Disposition',
+          'attachment; filename="seller-locations.csv"',
+        );
+        res.end(csv);
+        return;
+      }
+
+      ok(res, result);
     } catch (err) {
       next(err);
     }
   }
 
   // ── DTO mappers ──────────────────────────────────────────────────────────
-
   private toDto(location: any) {
     return {
       id: location.id,
@@ -284,7 +374,22 @@ export class SellerLocationController {
       name: location.name,
       type: location.type,
       status: location.status,
-      address: location.address,
+      address: {
+        ...location.address,
+        countryId: location.address?.countryId,
+        regionId: location.address?.regionId,
+        districtId: location.address?.districtId,
+        wardId: location.address?.wardId,
+        streetId: location.address?.streetId,
+        locality: location.address?.locality,
+        directions: location.address?.directions,
+      },
+      fulfillmentCapabilities: location.fulfillmentCapabilities ?? [],
+      locationCode: location.locationCode ?? null,
+      contactName: location.contactName ?? null,
+      contactPhone: location.contactPhone ?? null,
+      staffCount: location.staffCount ?? null,
+      deliveryCoverageRadiusKm: location.deliveryCoverageRadiusKm ?? null,
       coordinates: {
         latitude: location.latitude,
         longitude: location.longitude,
@@ -296,20 +401,6 @@ export class SellerLocationController {
       displayAddress: location.displayAddress,
       createdAt: location.createdAt,
       updatedAt: location.updatedAt,
-    };
-  }
-
-  private toInventoryDto(pl: any) {
-    return {
-      id: pl.id,
-      productId: pl.productId,
-      locationId: pl.locationId,
-      sellerId: pl.sellerId,
-      quantityAvailable: pl.quantityAvailable,
-      quantityReserved: pl.quantityReserved,
-      netAvailable: pl.netAvailable,
-      isAvailable: pl.isAvailable,
-      updatedAt: pl.updatedAt,
     };
   }
 }

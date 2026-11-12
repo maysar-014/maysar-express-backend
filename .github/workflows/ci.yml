@@ -96,6 +96,12 @@ jobs:
         # BLG-001 / BLG-014 / BLG-021.
         run: npx jest --selectProjects contract-scripts --runInBand
 
+      - name: OpenAPI contract ratchet (prevent breaking API changes)
+        run: node scripts/contract/ratchet.js
+      - name: Dependency vulnerability scan
+        run: npm audit --production --audit-level=high
+
+
       - name: Unit and integration tests
         run: npm run test -- --runInBand --passWithNoTests
         env:
@@ -105,6 +111,68 @@ jobs:
           JWT_SECRET: TEST_JWT_SECRET
           USER_SERVICE_JWT_SECRET: TEST_USER_SERVICE_JWT_SECRET
           AUTH_SERVICE_SESSION_SECRET: TEST_AUTH_SESSION_SECRET
+
+  production-preflight:
+    name: Production Preflight Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Run preflight on prod branch pushes and manual dispatch
+    if: github.ref == 'refs/heads/prod' || github.event_name == 'workflow_dispatch'
+    needs: quality-gates
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run Production Preflight Gate
+        id: preflight
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          # Load production-like environment variables for preflight validation
+          export NODE_ENV=production
+          export PORT=3000
+          export HOST=0.0.0.0
+          export DATABASE_URL="${{ secrets.DATABASE_URL || 'postgresql://maysar_ci:maysar_ci_password@localhost:5432/maysar_ci' }}"
+          export REDIS_URL="${{ secrets.REDIS_URL || 'redis://localhost:6379' }}"
+          export JWT_SECRET="${{ secrets.JWT_SECRET || 'CI_TEST_JWT_SECRET_DO_NOT_USE_IN_PROD' }}"
+          export JWT_EXPIRES_IN=7d
+          export PAYMENT_GATEWAY_URL="${{ secrets.PAYMENT_GATEWAY_URL || 'https://ci.payment-gateway.example.com' }}"
+          export MEILI_MASTER_KEY="${{ secrets.MEILI_MASTER_KEY || 'CI_TEST_MEILI_KEY_DO_NOT_USE_IN_PROD' }}"
+          export LOG_LEVEL=info
+          
+          npx tsx scripts/production/preflight-env.ts
+        env:
+          ENV_FILE: .env.production
+
+      - name: Fail on preflight failure
+        if: steps.preflight.outcome == 'failure'
+        run: |
+          echo "::error::Production preflight gate failed. DO NOT DEPLOY TO PRODUCTION."
+          echo "::error::Resolve all critical findings in ENGINEERING_REMEDIATION_PLAN.md before deploying."
+          exit 1
+
+      - name: Upload preflight results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-preflight-results
+          path: |
+            *.log
+          retention-days: 30
+
 
   openapi-validation:
     name: OpenAPI Validation

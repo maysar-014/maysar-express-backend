@@ -508,17 +508,34 @@ model Product {
   /// never duplicated by the Enabler domain.
   enablerScopes         Enabler_SellerAuthorizationScope[]
   enablerDraftItems     Enabler_OrderDraftItem[]
+  /// MSLE listing drafts referencing this product (Path A — sell existing)
+  listingDrafts         Catalog_ListingDraft[]
+  /// MUVA Phase 1 Foundation — Configuration Definition domain model (ENH-006)
+  configurationDefinitions Catalog_ConfigurationDefinition[]
+  /// Seller offers — ENH-001: seller commercial terms separate from product identity
+  sellerOffers          Catalog_SellerOffer[]
 
   @@unique([categoryId, fingerprint])
-  @@unique([sellerId, slug])
+  @@unique([slug])
   @@index([gtin])
   @@index([mpn])
   @@index([isbn])
   @@index([brand, model, categoryId])
-  @@index([slug])
+  @@index([sellerId, slug])
   @@index([supplierLocationId])
   @@index([lifecycleState])
   @@map("catalog_products")
+}
+
+/// Public storefront URL identity for a seller. The seller ID is the owning
+/// user ID used by catalog products; slugs are globally unique.
+model SellerStorefront {
+  sellerId  String   @id @db.VarChar(64)
+  slug      String   @unique @db.VarChar(80)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @db.Timestamp(6)
+
+  @@map("catalog_seller_storefronts")
 }
 
 model BuyBox {
@@ -1351,6 +1368,9 @@ model Inventory_Warehouse {
   status             Inventory_WarehouseStatus     @default(active)
   capacity           Json?
   operatingHours     Json?
+  /// Catalog location ownership is metadata only. Stock itself lives in inventory.
+  sellerId           String?                       @db.VarChar(64)
+  sellerLocationId   String?                       @unique @db.VarChar(64)
   createdAt          DateTime                      @default(now()) @db.Timestamp(6)
   updatedAt          DateTime                      @updatedAt @db.Timestamp(6)
   inventoryCounts    Inventory_InventoryCount[]
@@ -1368,6 +1388,8 @@ model Inventory_StockItem {
   sku                 String                         @unique @db.VarChar(100)
   quantityAvailable   Int                            @default(0)
   quantityReserved    Int                            @default(0)
+  quantityUnavailable Int                            @default(0)  // damaged, expired, blocked
+  quantityInTransit   Int                            @default(0)  // being transferred between locations
   quantityDamaged     Int                            @default(0)
   quantityOnOrder     Int                            @default(0)
   reorderPoint        Int                            @default(0)
@@ -1432,6 +1454,60 @@ model Inventory_InventoryMovement {
   @@index([productVariantId, warehouseId])
   @@index([createdAt])
   @@map("inventory_movements")
+}
+
+/// A physical stock reduction whose commercial record was not available at the
+/// time the stock left the seller's location. It can be reconciled exactly once.
+model Inventory_PendingStockOut {
+  id                String   @id @default(cuid()) @db.VarChar(64)
+  sellerId          String   @db.VarChar(64)
+  warehouseId       String   @db.VarChar(64)
+  productVariantId  String   @db.VarChar(64)
+  movementId        String   @unique @db.VarChar(64)
+  quantity          Int
+  remainingQuantity Int
+  reason            String   @db.VarChar(255)
+  occurredAt        DateTime @db.Timestamp(6)
+  performedBy       String   @db.VarChar(64)
+  status            String   @default("PENDING") @db.VarChar(32)
+  createdAt         DateTime @default(now()) @db.Timestamp(6)
+  updatedAt         DateTime @updatedAt @db.Timestamp(6)
+  allocations       Inventory_StockOutAllocation[]
+
+  @@index([sellerId, status, occurredAt])
+  @@index([warehouseId, productVariantId])
+  @@map("inventory_pending_stock_outs")
+}
+
+/// Links an already-deducted stock-out to the one direct-sale order line that
+/// accounts for it. A unique pending stock-out/line pair prevents replay.
+model Inventory_StockOutAllocation {
+  id                String                    @id @default(cuid()) @db.VarChar(64)
+  pendingStockOutId String                    @db.VarChar(64)
+  orderId           String                    @db.VarChar(64)
+  orderItemId       String                    @db.VarChar(64)
+  quantity          Int
+  createdAt         DateTime                  @default(now()) @db.Timestamp(6)
+  pendingStockOut   Inventory_PendingStockOut @relation(fields: [pendingStockOutId], references: [id], onDelete: Restrict)
+
+  @@unique([pendingStockOutId, orderItemId])
+  @@index([orderId])
+  @@map("inventory_stock_out_allocations")
+}
+
+/// Database-backed idempotency for stock-out creation and reconciliation. Redis
+/// is an optimization; it is not the source of financial replay protection.
+model Inventory_ReconciliationRequest {
+  id             String   @id @default(cuid()) @db.VarChar(64)
+  sellerId       String   @db.VarChar(64)
+  idempotencyKey String   @db.VarChar(128)
+  operation      String   @db.VarChar(32)
+  resourceId     String?  @db.VarChar(64)
+  orderId        String?  @db.VarChar(64)
+  createdAt      DateTime @default(now()) @db.Timestamp(6)
+
+  @@unique([sellerId, idempotencyKey])
+  @@map("inventory_reconciliation_requests")
 }
 
 model Inventory_InventoryCount {
@@ -1846,6 +1922,10 @@ model Order_Order {
   requestQuoteId         String?             @unique @db.VarChar(64)
   /// The seller location chosen as fulfillment pickup point at checkout
   fulfillmentLocationId  String?             @db.VarChar(64)
+  /// Direct sales reconciled from pending stock-outs have already reduced
+  /// physical inventory and must never enter the delivery stock-deduction path.
+  isInventoryPreDeducted Boolean             @default(false)
+  stockReconciledAt      DateTime?           @db.Timestamp(6)
   createdAt              DateTime            @default(now())
   updatedAt              DateTime            @updatedAt
   version                Int                 @default(0)
@@ -2452,7 +2532,13 @@ model User_UserAddress {
   userId     String @db.VarChar(64)
   type       User_AddressType @default(HOME)
   street     String
-  // Tanzania geographic hierarchy (preferred)
+  // Tanzania geographic hierarchy — stable references to frontend-provided geography
+  countryId  String?          @db.VarChar(64)
+  regionId   String?          @db.VarChar(64)
+  districtId String?          @db.VarChar(64)
+  wardId     String?          @db.VarChar(64)
+  streetId   String?          @db.VarChar(64)
+  // Denormalized display strings (validated against geography IDs)
   ward       String?          // most precise unit — e.g. "Kivukoni"
   district   String?          // e.g. "Ilala Cbd"
   region     String?          // e.g. "Dar es Salaam"
@@ -3083,6 +3169,7 @@ model Enabler_SellerAuthorization {
   id               String                      @id @default(cuid()) @db.VarChar(64)
   enablerId        String                      @db.VarChar(64)
   sellerId         String                      @db.VarChar(64)
+  promotionOfferId String?                     @db.VarChar(64)
   status           Enabler_AuthorizationStatus @default(PENDING)
   /// ALL_PRODUCTS | CATEGORY | PRODUCT — when not ALL_PRODUCTS the concrete
   /// allow-list lives in Enabler_SellerAuthorizationScope.
@@ -3104,13 +3191,38 @@ model Enabler_SellerAuthorization {
   createdAt        DateTime                    @default(now()) @db.Timestamp(6)
   updatedAt        DateTime                    @updatedAt @db.Timestamp(6)
   enabler          Enabler_Profile             @relation(fields: [enablerId], references: [id], onDelete: Cascade)
+  promotionOffer   Enabler_PromotionOffer?     @relation(fields: [promotionOfferId], references: [id], onDelete: SetNull)
   scopes           Enabler_SellerAuthorizationScope[]
 
   @@unique([enablerId, sellerId])
   @@index([enablerId])
   @@index([sellerId])
+  @@index([promotionOfferId, status])
   @@index([status])
   @@map("enabler_seller_authorizations")
+}
+
+/// Seller-owned promotion program settings. Enabler applications are represented
+/// by pending Enabler_SellerAuthorization rows linked to this offer; approved
+/// authorizations consume one of the seller's requested spots.
+model Enabler_PromotionOffer {
+  id                    String                      @id @default(cuid()) @db.VarChar(64)
+  sellerId              String                      @unique @db.VarChar(64)
+  status                String                      @default("OPEN") @db.VarChar(20)
+  scopeType             Enabler_ScopeType           @default(ALL_PRODUCTS)
+  earningRuleType       Enabler_EarningRuleType     @default(PERCENTAGE_OF_ITEM_SUBTOTAL)
+  earningRuleValue      Decimal                     @db.Decimal(10, 4)
+  currency              String                      @default("TZS") @db.VarChar(10)
+  requiredEnablerCount  Int                         @default(1)
+  productIds            String[]
+  categoryIds           String[]
+  createdAt             DateTime                    @default(now()) @db.Timestamp(6)
+  updatedAt             DateTime                    @updatedAt @db.Timestamp(6)
+  closedAt              DateTime?                   @db.Timestamp(6)
+  authorizations        Enabler_SellerAuthorization[]
+
+  @@index([status])
+  @@map("enabler_promotion_offers")
 }
 
 /// Concrete product/category allow-list entry for a seller authorization.
@@ -4622,11 +4734,88 @@ enum Catalog_LocationStatus {
   SUSPENDED
 }
 
-enum Catalog_StockTransferStatus {
-  PENDING
-  IN_TRANSIT
-  COMPLETED
-  CANCELLED
+enum Geography_EntityType {
+  COUNTRY
+  REGION
+  DISTRICT
+  WARD
+  STREET
+}
+
+/// Geographic reference data — Country level (Tanzania).
+/// Provided by frontend; backend stores canonical copy for authoritative lookups.
+model Geography_Country {
+  id        String   @id @db.VarChar(64)
+  code      String   @unique @db.VarChar(4)   // e.g. "TZ"
+  name      String   @db.VarChar(100)
+  regions   Geography_Region[]
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @db.Timestamp(6)
+
+  @@map("geography_countries")
+}
+
+/// Geographic reference data — Region level.
+/// Belongs to a country; parent of districts.
+model Geography_Region {
+  id        String   @id @db.VarChar(64)
+  countryId String   @db.VarChar(64)
+  code      String   @db.VarChar(10)   // e.g. "DSM"
+  name      String   @db.VarChar(100)
+  country   Geography_Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  districts Geography_District[]
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @db.Timestamp(6)
+
+  @@index([countryId])
+  @@map("geography_regions")
+}
+
+/// Geographic reference data — District level.
+/// Belongs to a region; parent of wards.
+model Geography_District {
+  id        String   @id @db.VarChar(64)
+  regionId  String   @db.VarChar(64)
+  code      String   @db.VarChar(10)
+  name      String   @db.VarChar(100)
+  region    Geography_Region @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  wards     Geography_Ward[]
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @db.Timestamp(6)
+
+  @@index([regionId])
+  @@map("geography_districts")
+}
+
+/// Geographic reference data — Ward level.
+/// Belongs to a district; parent of streets.
+model Geography_Ward {
+  id        String   @id @db.VarChar(64)
+  districtId String  @db.VarChar(64)
+  code      String   @db.VarChar(10)
+  name      String   @db.VarChar(100)
+  district  Geography_District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  streets   Geography_Street[]
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @db.Timestamp(6)
+
+  @@index([districtId])
+  @@map("geography_wards")
+}
+
+/// Geographic reference data — Street level.
+/// Belongs to a ward; leaf of the administrative hierarchy.
+model Geography_Street {
+  id        String   @id @db.VarChar(64)
+  wardId    String   @db.VarChar(64)
+  code      String   @db.VarChar(10)
+  name      String   @db.VarChar(200)
+  ward      Geography_Ward @relation(fields: [wardId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @db.Timestamp(6)
+
+  @@index([wardId])
+  @@map("geography_streets")
 }
 
 /// A seller-owned physical location (shop, warehouse, pickup point).
@@ -4637,13 +4826,26 @@ model Catalog_SellerLocation {
   name           String                    @db.VarChar(255)
   type           Catalog_LocationType      @default(SHOP)
   status         Catalog_LocationStatus    @default(ACTIVE)
-  // Tanzania canonical address
+  // Fulfillment capabilities
+  fulfillmentCapabilities Json?       @default("[]") // e.g. ["pickup", "delivery", "shipping"]
+  // Human-readable location code (e.g. LOC-ARU-001)
+  locationCode      String?           @unique @db.VarChar(32)
+  // Tanzania canonical address — stable references to frontend-provided geography
+  countryId      String?                 @db.VarChar(64)
+  regionId       String?                 @db.VarChar(64)
+  districtId     String?                 @db.VarChar(64)
+  wardId         String?                 @db.VarChar(64)
+  streetId       String?                 @db.VarChar(64)
+  // Display strings (denormalized for convenience; validated against geography IDs)
   street         String
   ward           String?
   district       String?
   region         String
   postalCode     String?
   country        String                    @default("Tanzania")
+  // Manual locality / practical directions fallback when official street data is unavailable
+  locality       String?                   // free-text locality name (e.g. "Kisiwa Panza")
+  directions     String?                   // free-text practical directions (e.g. "Behind the mosque near the market")
   // Accurate geocoordinates (required)
   latitude       Decimal                   @db.Decimal(10, 7)
   longitude      Decimal                   @db.Decimal(10, 7)
@@ -4652,63 +4854,26 @@ model Catalog_SellerLocation {
   isActive       Boolean                   @default(true)
   operatingHours Json?
   notes          String?
+  // Location contact (E4-1): courier/buyer point of contact
+  contactName    String?                   @db.VarChar(255)
+  contactPhone   String?                   @db.VarChar(32)
+  // Staff headcount for metrics + capacity planning (E4-2)
+  staffCount     Int?
+  // Delivery coverage radius in km (null = no restriction)
+  deliveryCoverageRadiusKm Decimal?  @db.Decimal(8, 3)
   createdAt      DateTime                  @default(now()) @db.Timestamp(6)
   updatedAt      DateTime                  @updatedAt @db.Timestamp(6)
 
-  productLocations    Catalog_ProductLocation[]
-  stockTransfersFrom  Catalog_StockTransfer[]   @relation("TransferFrom")
-  stockTransfersTo    Catalog_StockTransfer[]   @relation("TransferTo")
   fulfillmentSelections Catalog_FulfillmentSelection[]
 
   @@index([sellerId])
   @@index([sellerId, status])
   @@index([latitude, longitude])
+  @@index([regionId])
+  @@index([districtId])
+  @@index([wardId])
+  @@index([streetId])
   @@map("catalog_seller_locations")
-}
-
-/// Inventory of a product at a specific seller location.
-/// Products do NOT store addresses — this join table owns inventory.
-model Catalog_ProductLocation {
-  id                 String                 @id @db.VarChar(64)
-  productId          String                 @db.VarChar(64)
-  locationId         String                 @db.VarChar(64)
-  sellerId           String                 @db.VarChar(64)
-  quantityAvailable  Int                    @default(0)
-  quantityReserved   Int                    @default(0)
-  isAvailable        Boolean                @default(true)
-  createdAt          DateTime               @default(now()) @db.Timestamp(6)
-  updatedAt          DateTime               @updatedAt @db.Timestamp(6)
-
-  location           Catalog_SellerLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
-
-  @@unique([productId, locationId])
-  @@index([productId])
-  @@index([locationId])
-  @@index([sellerId])
-  @@map("catalog_product_locations")
-}
-
-/// Records stock movement between a seller's own locations.
-model Catalog_StockTransfer {
-  id             String                       @id @db.VarChar(64)
-  sellerId       String                       @db.VarChar(64)
-  productId      String                       @db.VarChar(64)
-  fromLocationId String                       @db.VarChar(64)
-  toLocationId   String                       @db.VarChar(64)
-  quantity       Int
-  status         Catalog_StockTransferStatus  @default(PENDING)
-  notes          String?
-  initiatedBy    String?                      @db.VarChar(64)
-  completedAt    DateTime?                    @db.Timestamp(6)
-  createdAt      DateTime                     @default(now()) @db.Timestamp(6)
-  updatedAt      DateTime                     @updatedAt @db.Timestamp(6)
-
-  fromLocation   Catalog_SellerLocation       @relation("TransferFrom", fields: [fromLocationId], references: [id])
-  toLocation     Catalog_SellerLocation       @relation("TransferTo",   fields: [toLocationId],   references: [id])
-
-  @@index([sellerId])
-  @@index([productId])
-  @@map("catalog_stock_transfers")
 }
 
 /// Audit log: which location was selected at checkout and why.
@@ -5422,34 +5587,8 @@ model Logistics_PoolOptimizationRun {
 }
 
 // ── Product Intelligence Engine ──────────────────────────────────────────────
-
-/// Seller-specific offer data, decoupled from the canonical product record.
-/// A product can have one offer per seller (marketplace model).
-model Catalog_SellerOffer {
-  id                      String   @id @db.VarChar(64)
-  productId               String   @db.VarChar(64)
-  sellerId                String   @db.VarChar(64)
-  price                   Decimal  @db.Decimal(12, 2) @default(0)
-  currency                String   @db.VarChar(10) @default("TZS")
-  minimumOrderQuantity    Int      @default(1)
-  codAccepted             Boolean  @default(false)
-  freeDelivery            Boolean  @default(false)
-  deliveryTerms           String?
-  condition               String   @db.VarChar(20) @default("new")
-  enablerEnabled          Boolean  @default(false)
-  enablerCommissionRate   Decimal? @db.Decimal(5, 4)
-  supplierLocationId      String?  @db.VarChar(64)
-  supplierLocationDisplay String?
-  isActive                Boolean  @default(true)
-  createdAt               DateTime @default(now()) @db.Timestamp(6)
-  updatedAt               DateTime @updatedAt @db.Timestamp(6)
-
-  @@unique([productId, sellerId])
-  @@index([productId])
-  @@index([sellerId])
-  @@index([productId, isActive])
-  @@map("catalog_seller_offers")
-}
+// NOTE: Catalog_SellerOffer was relocated to the MUVA Phase 3 section below
+// (full model with lifecycle status, fulfillment policy, configuration coverage).
 
 /// Named semantic section of a generated product description.
 /// Stored separately to allow per-section regeneration and independent rendering.
@@ -5752,4 +5891,227 @@ model Request_AuditLog {
 
   @@index([requestId, createdAt])
   @@map("request_audit_logs")
+}
+
+// ─── MUVA Phase 1 Foundation — ENH-006: Configuration Definition Domain Model ─
+
+/// Configuration definition lifecycle status
+enum Catalog_ConfigurationStatus {
+  draft
+  active
+  archived
+}
+
+/// Configuration dimension selection type
+enum Catalog_SelectionType {
+  selectable
+  customer_defined
+}
+
+/// Configuration dimension selection mode
+enum Catalog_SelectionMode {
+  single
+  multiple
+}
+
+/// Configuration dependency type
+enum Catalog_DependencyType {
+  conditional
+  dependent
+  mutually_exclusive
+  required
+  optional
+}
+
+/// Configuration constraint type
+enum Catalog_ConstraintType {
+  requires
+  excludes
+  compatible_with
+  incompatible_with
+}
+
+/// Formal definition of how a product can be configured.
+/// Owns dimensions, options, dependencies, constraints (stored as JSON aggregates)
+/// and links to ConfigurationCombination rows for sparse combination enforcement.
+model Catalog_ConfigurationDefinition {
+  id                    String                        @id @default(cuid()) @db.VarChar(64)
+  productId             String                        @db.VarChar(64)
+  version               Int                           @default(1)
+  status                Catalog_ConfigurationStatus   @default(draft)
+  predecessorVersionId  String?                       @db.VarChar(64)
+  /// Serialized ConfigurationDimension array as JSON
+  dimensions            Json
+  /// Serialized ConfigurationOption array as JSON
+  options               Json
+  /// Serialized ConfigurationDependency array as JSON
+  dependencies          Json
+  /// Serialized ConfigurationConstraint array as JSON
+  constraints           Json
+  createdAt             DateTime                      @default(now()) @db.Timestamp(6)
+  updatedAt             DateTime                      @updatedAt @db.Timestamp(6)
+  product               Product                       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  combinations          Catalog_ConfigurationCombination[]
+
+  @@unique([productId, version])
+  @@index([productId])
+  @@index([status])
+  @@index([predecessorVersionId])
+  @@map("catalog_configuration_definitions")
+}
+
+/// An explicitly defined valid permutation of option selections for a
+/// ConfigurationDefinition. Only combinations stored here may be purchased
+/// (sparse matrix enforcement).
+model Catalog_ConfigurationCombination {
+  id                          String                              @id @default(cuid()) @db.VarChar(64)
+  configurationDefinitionId   String                              @db.VarChar(64)
+  /// Map of dimensionId → array of optionIds, stored as JSON
+  optionSelections             Json
+  /// Deterministic 64-character lowercase hex SHA-256 fingerprint
+  fingerprint                 String                              @db.VarChar(64)
+  active                      Boolean                             @default(true)
+  createdAt                   DateTime                            @default(now()) @db.Timestamp(6)
+  configurationDefinition     Catalog_ConfigurationDefinition     @relation(fields: [configurationDefinitionId], references: [id], onDelete: Cascade)
+
+  @@unique([configurationDefinitionId, fingerprint])
+  @@index([configurationDefinitionId])
+  @@index([fingerprint])
+  @@index([active])
+  @@map("catalog_configuration_combinations")
+}
+
+// ─── ENH-001: Seller Offer Domain Model ───────────────────────────────────────
+
+/// Seller offer lifecycle status
+enum Catalog_SellerOfferStatus {
+  draft
+  active
+  suspended
+  archived
+}
+
+/// Product condition for seller offers
+enum Catalog_ProductCondition {
+  new
+  used
+  refurbished
+  damaged
+}
+
+/// Fulfillment policy type
+enum Catalog_FulfillmentPolicy {
+  seller_fulfilled
+  platform_fulfilled
+  dropship
+}
+
+/// A seller's commercial commitment to supply a product or specific configuration.
+/// Separate from Product and ProductVariant — multiple sellers may offer the same product.
+model Catalog_SellerOffer {
+  id                    String                        @id @default(cuid()) @db.VarChar(64)
+  productId             String                        @db.VarChar(64)
+  sellerId              String                        @db.VarChar(64)
+  sellerSku             String?                       @db.VarChar(100)
+  price                 Decimal                       @db.Decimal(12, 2)
+  currency              String                        @default("TZS") @db.VarChar(3)
+  stockAvailable        Int                           @default(0)
+  condition             Catalog_ProductCondition      @default(new)
+  fulfillmentPolicy     Catalog_FulfillmentPolicy     @default(seller_fulfilled)
+  warranty              String?                       @db.VarChar(255)
+  returnConditions      String?                       @db.VarChar(255)
+  minimumOrderQuantity  Int                           @default(1)
+  leadTimeDays          Int                           @default(0)
+  status                Catalog_SellerOfferStatus     @default(draft)
+  /// null = universal coverage (all configurations); string[] = specific fingerprints
+  configurationCoverage  Json?
+  createdAt             DateTime                      @default(now()) @db.Timestamp(6)
+  updatedAt             DateTime                      @updatedAt @db.Timestamp(6)
+  product               Product                       @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, sellerId])
+  @@index([productId])
+  @@index([sellerId])
+  @@index([status])
+  @@map("catalog_seller_offers")
+}
+
+/// ENH-005: MSLE Seller Listing Draft — persists progressive listing journey state
+/// so sellers can save, resume, and recover interrupted sessions (Constitution §16).
+model Catalog_ListingDraft {
+  id                String                      @id @default(cuid()) @db.VarChar(64)
+  sellerId          String                      @db.VarChar(64)
+  /// Path A = sell existing product, Path B = introduce new product (Constitution §12)
+  entryPath         Catalog_ListingEntryPath     @default(PATH_A)
+  /// Current stage in the progressive journey: identify, describe, configure, offer, publish (§13)
+  currentStage      Catalog_ListingStage         @default(identify)
+  /// For Path A: the matched catalog product ID
+  productId         String?                     @db.VarChar(64)
+  /// For Path B: seller-provided product identity fields
+  productDraft      Json?
+  /// Configuration definition draft (dimensions, options)
+  configurationDraft Json?
+  /// Seller offer draft (price, stock, condition, fulfillment)
+  offerDraft        Json?
+  /// Validation results from last validation attempt
+  validationResults Json?
+  /// Publication state: draft, validating, publishable, published, rejected (§16)
+  publicationState  Catalog_ListingPublicationState @default(draft)
+  /// When published, references the resulting offer/product records
+  publishedOfferId  String?                     @db.VarChar(64)
+  publishedProductId String?                    @db.VarChar(64)
+  createdAt         DateTime                    @default(now()) @db.Timestamp(6)
+  updatedAt         DateTime                    @updatedAt @db.Timestamp(6)
+  /// Back-relation to Product (Path A)
+  product           Product?                    @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([sellerId, publicationState])
+  @@index([sellerId, currentStage])
+  @@map("catalog_listing_drafts")
+}
+
+/// ENH-005: Listing publication audit record — immutable trail of publication events
+model Catalog_ListingPublicationRecord {
+  id              String                      @id @default(cuid()) @db.VarChar(64)
+  draftId         String                      @db.VarChar(64)
+  sellerId        String                      @db.VarChar(64)
+  productId       String?                     @db.VarChar(64)
+  offerId         String?                     @db.VarChar(64)
+  /// published, rejected, withdrawn
+  action          String                      @db.VarChar(20)
+  /// Summary snapshot at publication time
+  summary         Json?
+  /// Validation errors if rejected
+  validationErrors Json?
+  publishedAt     DateTime                    @default(now()) @db.Timestamp(6)
+
+  @@index([draftId])
+  @@index([sellerId, action])
+  @@map("catalog_listing_publication_records")
+}
+
+/// MSLE listing entry paths (Constitution §12)
+enum Catalog_ListingEntryPath {
+  /// Sell an existing catalog product
+  PATH_A
+  /// Introduce a genuinely new product
+  PATH_B
+}
+
+/// MSLE progressive listing stages (Constitution §13)
+enum Catalog_ListingStage {
+  identify
+  describe
+  configure
+  offer
+  publish
+}
+
+/// MSLE listing publication states (Constitution §16)
+enum Catalog_ListingPublicationState {
+  draft
+  validating
+  publishable
+  published
+  rejected
 }

@@ -1,8 +1,13 @@
-﻿# Seller Flows — Analytics Service
+﻿> **Corrected by flow audit:** October 2026
+> - Flow Index table corrected: `/api/analytics/dashboard` → `/api/analytics/seller-profitability/dashboard`
+> - Flow Index: `GET /api/analytics/action-items` → `GET /api/analytics/sellers/:sellerId/dashboard/action-center`
+> - Flow 3 body: standalone `/api/analytics/action-items` route does not exist; action items are returned under `actionCenter` key from the dashboard, or via the dedicated action-center sub-route
 
-> **Verification status:** Partially Verified (read endpoints); Fixed (`PATCH /api/analytics/action-items/{actionId}/resolve` → accurate 404 on unknown id, DEF-003)
-> **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` (September 2026); `docs/analytics/ANALYTICS_SERVICE_SYSTEM.md`
-> **Last updated:** September 2026
+# Seller Flows — Analytics Service
+
+> **Verification status:** Verified (October 2026 live lifecycle run — 52/52 steps pass)
+> **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` (September 2026); October 2026 lifecycle verification run
+> **Last updated:** October 2026
 
 ## Overview
 
@@ -14,10 +19,12 @@ This document covers analytics-service flows from the seller's perspective: view
 
 | # | Flow Name | Verification Status | Primary Endpoint |
 |---|---|---|---|
-| 1 | View Seller Dashboard | Partially Verified | `GET /api/analytics/dashboard` (seller-scoped) |
-| 2 | View SLA Metrics | Partially Verified | `GET /api/analytics/sellers/:sellerId/sla` |
-| 3 | View Action Items | Partially Verified | `GET /api/analytics/action-items` |
+| 1 | View Seller Dashboard | ✅ Verified | `GET /api/analytics/sellers/:sellerId/dashboard` |
+| 2 | View SLA Metrics | ✅ Verified | `GET /api/analytics/sellers/:sellerId/sla` |
+| 3 | View Action Items | ✅ Verified | `GET /api/analytics/sellers/:sellerId/dashboard/action-center` |
 | 4 | Resolve Action Item | ✅ Verified | `PATCH /api/analytics/action-items/:actionId/resolve` |
+| 5 | View Profitability Dashboard | ✅ Verified | `GET /api/analytics/seller-profitability/dashboard` |
+| 6 | View Revenue Health | ✅ Verified | `GET /api/analytics/seller-profitability/revenue-health` |
 
 ---
 
@@ -31,14 +38,15 @@ This document covers analytics-service flows from the seller's perspective: view
 | Trigger | Seller opens their sales analytics dashboard |
 | Preconditions | Authenticated (Bearer JWT, seller role) |
 | Terminal states | 200 — seller-scoped metrics |
-| Verification status | Partially Verified |
+| Verification status | ✅ Verified |
 
 ### Happy Path
 
 | Step | Actor/System | Action | Endpoint | Auth | Expected Response |
 |---|---|---|---|---|---|
-| 1 | Seller | Fetch dashboard data | `GET /api/analytics/seller-profitability/dashboard` | Bearer JWT | 200 — profitability metrics, GMV, conversion |
-| 2 | Seller | Fetch revenue health | `GET /api/analytics/seller-profitability/revenue-health` | Bearer JWT | 200 — revenue health signals |
+| 1 | Seller | Fetch full dashboard (includes GMV, orders, action items) | `GET /api/analytics/sellers/:sellerId/dashboard` | Bearer JWT | 200 — metrics, actionCenter, liveOrders |
+| 2 | Seller | Fetch profitability dashboard | `GET /api/analytics/seller-profitability/dashboard` | Bearer JWT | 200 — profitability metrics, GMV, conversion |
+| 3 | Seller | Fetch revenue health | `GET /api/analytics/seller-profitability/revenue-health` | Bearer JWT | 200 — revenue health signals |
 
 ---
 
@@ -73,13 +81,16 @@ This document covers analytics-service flows from the seller's perspective: view
 | Trigger | Seller checks for platform-generated action items |
 | Preconditions | Authenticated (Bearer JWT, seller role) |
 | Terminal states | 200 — list of open action items |
-| Verification status | Partially Verified |
+| Verification status | ✅ Verified |
 
 ### Happy Path
 
 | Step | Actor/System | Action | Endpoint | Auth | Expected Response |
 |---|---|---|---|---|---|
-| 1 | Seller | Fetch action items | `GET /api/analytics/action-items` | Bearer JWT | 200 `{ actionItems[] }` |
+| 1 | Seller | Fetch action items via dedicated sub-route | `GET /api/analytics/sellers/:sellerId/dashboard/action-center` | Bearer JWT | 200 `{ actionCenter[] }` |
+| alt | Seller | Action items are also embedded in the full dashboard | `GET /api/analytics/sellers/:sellerId/dashboard` | Bearer JWT | 200 — dashboard includes `actionCenter` array |
+
+> **Note:** There is no standalone `GET /api/analytics/action-items` route. The October 2026 audit confirmed action items are served either via the full dashboard response (`data.actionCenter`) or the dedicated sub-route `/dashboard/action-center`. The `PATCH /action-items/:actionId/resolve` endpoint is separate and works independently.
 
 ---
 

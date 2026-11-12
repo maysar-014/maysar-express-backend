@@ -47,12 +47,24 @@ export class OrderFulfillmentSaga {
       });
 
       // Step 3: Request order creation
+      const enablerProductIds = Array.isArray(session.metadata?.enablerProductIds)
+        ? session.metadata.enablerProductIds
+        : [];
+      const attributedEnablerId = session.enablerId || session.metadata?.enablerId;
       await this.eventBus.publish('OrderCreationRequested', {
         checkoutId,
         userId: session.userId,
         items: session.items,
         totalAmount: session.totalAmount,
-        ...(session.enablerId ? { enablerId: session.enablerId, enablerCode: session.enablerCode } : {})
+        ...(attributedEnablerId ? {
+          enablerId: attributedEnablerId,
+          enablerCode: session.enablerCode || session.metadata?.enablerCode,
+          // Product-level scope keeps mixed carts from attributing unrelated
+          // items to the enabler. Order creation must persist attribution only
+          // for these authorized lines.
+          enablerProductIds,
+          enablerAttributionScope: 'PRODUCTS',
+        } : {})
       });
 
       // Step 4: Clear cart

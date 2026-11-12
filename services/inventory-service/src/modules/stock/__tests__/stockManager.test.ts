@@ -256,7 +256,7 @@ describe('StockManager', () => {
         },
       ];
 
-      await expect(stockManager.updateStock(updates)).rejects.toThrow('Cannot reduce stock below reserved quantity');
+      await expect(stockManager.updateStock(updates)).rejects.toThrow('Insufficient available stock');
     });
 
     it('should record inventory movement', async () => {

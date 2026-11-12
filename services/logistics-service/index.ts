@@ -172,6 +172,84 @@ export const LogisticsModule: Module = {
             logger.warn('SettlementLifecycleService initialization failed (non-fatal):', err?.message);
         }
 
+        // ── Subscribe to order.seller_verified → auto-create delivery ─────────
+        // When a seller verifies an order, logistics creates a delivery record
+        // so the buyer can track it and the courier can pick it up.
+        try {
+            const { eventBus } = await import('../../shared/events/eventBus');
+            const { CreateDeliveryUseCase } = await import('./src/application/use-cases/create-delivery.use-case');
+            const { PrismaCourierRepository } = await import('./src/infrastructure/repositories/prisma-courier.repository');
+            const { LogisticsEngine } = await import('./src/domain/engines/logistics.engine');
+            const { CourierAssignmentPolicy } = await import('./src/domain/policies/courier-assignment.policy');
+            const { CourierSelectionEngine } = await import('./src/domain/engines/courier-selection.engine');
+
+            const prisma = (globalThis as any).prisma;
+            const courierRepo = new PrismaCourierRepository(prisma);
+            const logisticsEngine = new LogisticsEngine();
+            const courierSelection = new CourierSelectionEngine(courierRepo, new CourierAssignmentPolicy());
+            const createDelivery = new CreateDeliveryUseCase(courierRepo, logisticsEngine, courierSelection);
+
+            eventBus.subscribe('order.seller_verified', {
+                name: 'logistics-order-verified-create-delivery',
+                handler: async (envelope: any) => {
+                    const data = envelope?.data ?? envelope?.payload ?? envelope;
+                    const orderId = data?.orderId;
+                    if (!orderId) return;
+
+                    try {
+                        // Fetch order details to get addresses
+                        const order = await prisma.order_Order.findUnique({
+                            where: { id: orderId },
+                            select: {
+                                id: true,
+                                buyerId: true,
+                                sellerId: true,
+                                deliveryAddress: true,
+                                totalWeight: true,
+                                logisticsEstimate: true,
+                            },
+                        });
+                        if (!order) return;
+
+                        // Check if delivery already exists for this order
+                        const existing = await prisma.logistics_Delivery?.findFirst?.({
+                            where: { orderId },
+                            select: { id: true },
+                        });
+                        if (existing) return; // idempotent
+
+                        // Parse delivery address (stored as JSON)
+                        const addr = typeof order.deliveryAddress === 'string'
+                            ? JSON.parse(order.deliveryAddress)
+                            : order.deliveryAddress || {};
+
+                        await createDelivery.execute({
+                            orderId,
+                            pickupLocation: {
+                                lat: -6.7924,
+                                lng: 39.2083,
+                                address: 'Seller location, Dar es Salaam',
+                            },
+                            deliveryLocation: {
+                                lat: Number(addr.latitude ?? addr.lat ?? -6.8235),
+                                lng: Number(addr.longitude ?? addr.lng ?? 39.2695),
+                                address: addr.street || addr.city || 'Dar es Salaam',
+                            },
+                            weight: Number(order.totalWeight ?? 1.0),
+                            priority: 'standard',
+                        });
+
+                        logger.info(`Delivery auto-created for verified order ${orderId}`);
+                    } catch (err: any) {
+                        logger.warn(`Auto-delivery creation failed for order ${orderId}`, { error: err?.message });
+                    }
+                },
+            });
+            logger.info('Order-verified → delivery subscriber registered');
+        } catch (err: any) {
+            logger.warn('Order-verified subscriber initialization failed (non-fatal):', err?.message);
+        }
+
         // ── Start the PoolOptimizationJob (Phase 5 §5.3) ─────────────────────
         // Scheduled scan of the shipment opportunity pool (configurable
         // interval, default 5 min). Non-fatal on failure; stopped on shutdown.
@@ -200,8 +278,114 @@ export const LogisticsModule: Module = {
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const { publicQuoteRouter, internalQuoteRouter } = require('./src/api/routes/quote.routes');
 
-            router.use('/api/v1', requireAuth, logisticsRoutes);
+        router.use('/api/v1', requireAuth, logisticsRoutes);
             router.use('/api/courier', requireAuth, courierRoutes);
+
+            // Admin: seed a COD delivery directly (for testing / lifecycle verification).
+            // POST /api/logistics/admin/cod-delivery
+            // Requires: admin role. Creates a logistics_Delivery row with isCOD:true.
+            router.post('/admin/cod-delivery', requireAuth, requireRoleOrService(['admin']), async (req, res) => {
+                const prisma = (globalThis as any).prisma;
+                if (!prisma?.logistics_Delivery) {
+                    res.status(503).json({ success: false, error: 'logistics_Delivery model not available' });
+                    return;
+                }
+                try {
+                    const {
+                        orderId,
+                        courierId = 'usr_01KRFZ1E7W4JDR9N9PMGYDD77S', // seeded courier
+                        buyerId,
+                        sellerId,
+                        codAmount = 15000,
+                    } = req.body;
+                    if (!orderId || !buyerId || !sellerId) {
+                        res.status(400).json({ success: false, error: 'orderId, buyerId, sellerId are required' });
+                        return;
+                    }
+                    // Deterministic ID based on orderId so this is idempotent.
+                    const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+                    let state = 0x811c9dc5 >>> 0;
+                    const seedStr = `cod_${orderId}`;
+                    for (let i = 0; i < seedStr.length; i++) {
+                        state ^= seedStr.charCodeAt(i);
+                        state = Math.imul(state, 0x01000193) >>> 0;
+                    }
+                    let suffix = '';
+                    for (let i = 0; i < 26; i++) {
+                        state = (Math.imul(state ^ (state >>> 15), 0x2545f491) + i * 0x9e3779b1) >>> 0;
+                        suffix += CROCKFORD[state % CROCKFORD.length];
+                    }
+                    const deliveryId = `log_del_${suffix}`;
+
+                    const data = {
+                        orderId,
+                        courierId,
+                        buyerId,
+                        sellerId,
+                        status: 'assigned',
+                        isCOD: true,
+                        codAmount,
+                        codCurrency: 'TZS',
+                        codCommitmentHoldId: null,
+                        pickupStreet: 'Uhuru Street 1',
+                        pickupCity: 'Dar es Salaam',
+                        pickupRegion: 'Dar es Salaam',
+                        pickupLatitude: -6.7924,
+                        pickupLongitude: 39.2083,
+                        pickupContactName: 'Lifecycle Pickup',
+                        pickupContactPhone: '+255700000001',
+                        deliveryStreet: 'Kariakoo Market',
+                        deliveryCity: 'Dar es Salaam',
+                        deliveryRegion: 'Dar es Salaam',
+                        deliveryLatitude: -6.81,
+                        deliveryLongitude: 39.28,
+                        deliveryContactName: 'Lifecycle Delivery',
+                        deliveryContactPhone: '+255700000002',
+                        packageWeight: 1.0,
+                        packageValue: codAmount,
+                        estimatedDeliveryTime: new Date(Date.now() + 2 * 60 * 60 * 1000),
+                        otp: null,
+                        otpExpiresAt: null,
+                    };
+
+                    await prisma.logistics_Delivery.upsert({
+                        where: { id: deliveryId },
+                        update: { ...data, updatedAt: new Date() },
+                        create: { id: deliveryId, ...data, createdAt: new Date(), updatedAt: new Date() },
+                    });
+
+                    res.status(201).json({ success: true, data: { deliveryId, isCOD: true } });
+                } catch (err: any) {
+                    res.status(500).json({ success: false, error: err?.message ?? 'Failed to create COD delivery' });
+                }
+            });
+
+            // Admin: read OTP for a delivery (non-production only, for lifecycle verification).
+            // GET /api/logistics/admin/deliveries/:deliveryId/otp
+            router.get('/admin/deliveries/:deliveryId/otp', requireAuth, requireRoleOrService(['admin']), async (req, res) => {
+                if (process.env.NODE_ENV === 'production') {
+                    res.status(403).json({ success: false, error: 'Not available in production' });
+                    return;
+                }
+                const prisma = (globalThis as any).prisma;
+                if (!prisma?.logistics_Delivery) {
+                    res.status(503).json({ success: false, error: 'logistics_Delivery model not available' });
+                    return;
+                }
+                try {
+                    const row = await prisma.logistics_Delivery.findUnique({
+                        where: { id: req.params.deliveryId },
+                        select: { otp: true, otpExpiresAt: true, status: true, isCOD: true },
+                    });
+                    if (!row) {
+                        res.status(404).json({ success: false, error: 'Delivery not found' });
+                        return;
+                    }
+                    res.json({ success: true, data: { otp: row.otp, otpExpiresAt: row.otpExpiresAt, status: row.status, isCOD: row.isCOD } });
+                } catch (err: any) {
+                    res.status(500).json({ success: false, error: err?.message ?? 'Failed to read OTP' });
+                }
+            });
 
             // Delivery quote endpoints
             // Full path: POST /api/logistics/v1/quote  (module is mounted at /api/logistics by app.ts)

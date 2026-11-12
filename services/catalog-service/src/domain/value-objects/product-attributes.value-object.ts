@@ -13,6 +13,19 @@ import { DomainError } from '../errors/domain.error';
  */
 export type AttributePriority = 'HIGH' | 'MEDIUM' | 'LOW';
 
+/**
+ * The four constitutional attribute classifications (§4.2).
+ *
+ * - descriptive:  Explain what a product is.
+ * - filterable:   Help customers discover products.
+ * - configurable: Allow customers to choose a purchasable configuration.
+ * - operational:  Support fulfillment, storage, compliance, or internal operations.
+ *
+ * Classifications must remain independent. A `filterable` boolean being true
+ * does NOT automatically mean the attribute is `configurable`.
+ */
+export type AttributeClassification = 'descriptive' | 'filterable' | 'configurable' | 'operational';
+
 export interface CategoryAttributeSchema {
   id: string;
   name: string;
@@ -39,6 +52,18 @@ export interface CategoryAttributeSchema {
   displayGroup?: string;
   /** Whether this attribute contributes to the canonical product identity for deduplication. */
   identityRelevant?: boolean;
+
+  // ── Attribute Classification (§4.2) ──────────────────────────────────────────
+  /**
+   * The authoritative role classification for this attribute.
+   * When present, this field is the sole determinant of the attribute's role.
+   * Boolean flags (filterable, searchable, etc.) must NOT be used to infer
+   * or override this classification.
+   *
+   * Optional during the transition period — existing schemas without this
+   * field are still valid but will be flagged by AttributeClassificationPolicy.
+   */
+  classification?: AttributeClassification;
 }
 
 export class StructuredProductAttributes {

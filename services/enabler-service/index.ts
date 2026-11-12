@@ -33,7 +33,15 @@ export const EnablerModule: Module = {
             eventBus.subscribe('OrderDelivered', async (envelope: any) => {
                 try {
                     const data = envelope?.data || envelope?.payload || envelope;
-                    const { orderId, enablerId, totalAmount } = data;
+                    const { orderId, totalAmount } = data;
+                    let enablerId = data.enablerId;
+                    if (!enablerId && orderId) {
+                        const earning = await prisma.enabler_Earning.findUnique({
+                            where: { orderId },
+                            select: { enablerId: true },
+                        });
+                        enablerId = earning?.enablerId;
+                    }
 
                     // Only process orders that have an enablerId attribution
                     if (!orderId || !enablerId) return;
@@ -109,7 +117,7 @@ export const EnablerModule: Module = {
             appLogger.info('Enabler-service event listeners registered');
         } catch (error) {
             // Log but don't crash — routes are still served even if event wiring fails
-            appLogger.error('Enabler-service initialization error (non-fatal)', { error });
+            appLogger.error(`Enabler-service initialization error (non-fatal): ${error instanceof Error ? error.message : String(error)}`, { errDetail: error instanceof Error ? { name: error.name, stack: error.stack?.split('\n').slice(0, 4).join(' | ') } : String(error) });
         }
     },
     routes: apiRouter,

@@ -28,6 +28,8 @@ export interface CartRepository {
 
 export interface EnablerLookup {
   findByCode(code: string, shortCode?: string): Promise<{ id: string; userId: string; status: string } | null>;
+  /** Returns only products covered by a currently approved seller authorization. */
+  getAuthorizedProductIds?(enablerId: string, productIds: string[]): Promise<string[]>;
 }
 
 export interface EventBus {
@@ -274,6 +276,29 @@ export class InitiateCheckoutUseCase {
         }
       }
 
+      // A valid referral code alone is not permission to earn on a purchase.
+      // Re-check current seller scope for the actual cart and carry only the
+      // authorized product IDs into the checkout/order attribution metadata.
+      let attributedProductIds: string[] = [];
+      let cartProductIds: string[] = [];
+      if (resolvedEnabler) {
+        if (!this.enablerLookup?.getAuthorizedProductIds) {
+          return {
+            success: false,
+            errors: [{ field: 'enablerCode', message: 'Enabler seller-authorization service is unavailable' }],
+          };
+        }
+        cartProductIds = [...new Set(cartItems.map((item) => String(item.productId)))];
+        attributedProductIds = await this.enablerLookup.getAuthorizedProductIds(resolvedEnabler.id, cartProductIds);
+        // A stale or out-of-scope code must never create attribution. The buyer
+        // can still complete checkout without enabler attribution.
+        if (!attributedProductIds.length) resolvedEnabler = undefined;
+      }
+      const wholeCartAttributed = Boolean(
+        resolvedEnabler && cartProductIds.length > 0
+        && cartProductIds.every((productId) => attributedProductIds.includes(productId))
+      );
+
       // ── Pricing calculation ──────────────────────────────────────────────────
       const cart = new Cart({ items: cartItems });
 
@@ -304,7 +329,9 @@ export class InitiateCheckoutUseCase {
         id: checkoutId,
         cartId,
         userId,
-        ...(resolvedEnabler
+        // Keep legacy order-level attribution only when every distinct cart
+        // product is approved. Mixed carts use metadata product scope below.
+        ...(resolvedEnabler && wholeCartAttributed
           ? { enablerId: resolvedEnabler.id, enablerCode: resolvedEnabler.code }
           : {}),
         shippingAddressId,
@@ -327,11 +354,12 @@ export class InitiateCheckoutUseCase {
           items,
           orderSource: isDirect ? 'DIRECT' : 'CART',
           ...(deliveryWindowPreference ? { deliveryWindowPreference } : {}),
-          ...(resolvedEnabler
+          ...(resolvedEnabler && attributedProductIds.length
             ? {
               enablerId: resolvedEnabler.id,
               enablerCode: resolvedEnabler.code,
               enablerCodeShort: resolvedEnabler.shortCode,
+              enablerProductIds: attributedProductIds,
             }
             : {}),
         },

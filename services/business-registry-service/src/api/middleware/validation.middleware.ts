@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
 import { BusinessType } from '../../domain/types/business.types';
-import { joiId } from '@shared/validation/id';
+import { joiId, isSystemId } from '@shared/validation/id';
 
 const isContractTestRequest = (req: Request): boolean =>
   String(req.headers['x-contract-test'] || '').trim() === '1' && process.env.NODE_ENV !== 'production';
@@ -89,8 +89,30 @@ const createComplianceRecordSchema = Joi.object({
   notes: Joi.string().max(1000).optional()
 });
 
+/**
+ * Business ID validator — accepts both ULID-format system IDs and the legacy
+ * `BIZ-*` human-readable format used by seeded businesses.
+ *
+ * Examples:
+ *   ULID:   biz_01M5YT3QK6T9H0W5CZ2W6XC1VR  ✓
+ *   Legacy: BIZ-MVQTR1YR-DAVN6TLFV           ✓
+ */
+function isBusinessId(value: unknown): boolean {
+  if (typeof value !== 'string' || !value.trim()) return false;
+  // Accept system IDs (ULID-prefixed, UUID, CUID)
+  if (isSystemId(value)) return true;
+  // Accept legacy BIZ-* format: BIZ-[A-Z0-9]+-[A-Z0-9]+
+  return /^BIZ-[A-Z0-9]+-[A-Z0-9]+$/.test(value);
+}
+
 const businessIdParamSchema = Joi.object({
-  id: joiId().required()
+  id: Joi.string()
+    .custom((value, helpers) => {
+      if (isBusinessId(value)) return value;
+      return helpers.error('any.invalid');
+    })
+    .messages({ 'any.invalid': 'Invalid ID format' })
+    .required()
 });
 
 const sellerIdParamSchema = Joi.object({

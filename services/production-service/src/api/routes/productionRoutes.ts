@@ -101,6 +101,12 @@ export const createProductionRoutes = (controller: ProductionController): Router
     );
 
     router.get(
+        '/plans',
+        requireAuth,
+        (req, res) => controller.listPlans(req, res)
+    );
+
+    router.get(
         '/plans/:id',
         requireAuth,
         (req, res) => controller.getPlan(req, res)

@@ -32,6 +32,15 @@ export class Order {
   public sellerId: string;
   public enablerId?: string;
   public enablerCode?: string;
+  /** Product-scoped attribution used for seller orders that contain mixed eligibility. */
+  public enablerAttributionEnablerId?: string;
+  public enablerAttributionCode?: string;
+  public enablerAttributionProductIds: string[] = [];
+  public enablerAttributionAuthorizationId?: string;
+  public enablerAttributionBaseAmount?: number;
+  public enablerAttributionRate?: number;
+  public enablerAttributionAmount?: number;
+  public enablerAttributionRuleType?: string;
   public items: OrderItem[];
   public totalAmount: Money;
   public totalWeight: number;
@@ -92,6 +101,16 @@ export class Order {
     this.sellerId = data.sellerId;
     this.enablerId = data.enablerId;
     this.enablerCode = data.enablerCode;
+    this.enablerAttributionEnablerId = data.enablerAttributionEnablerId;
+    this.enablerAttributionCode = data.enablerAttributionCode;
+    this.enablerAttributionProductIds = Array.isArray(data.enablerAttributionProductIds)
+      ? data.enablerAttributionProductIds
+      : [];
+    this.enablerAttributionAuthorizationId = data.enablerAttributionAuthorizationId;
+    this.enablerAttributionBaseAmount = data.enablerAttributionBaseAmount;
+    this.enablerAttributionRate = data.enablerAttributionRate;
+    this.enablerAttributionAmount = data.enablerAttributionAmount;
+    this.enablerAttributionRuleType = data.enablerAttributionRuleType;
     this.items = data.items || [];
     this.totalAmount = new Money(data.totalAmount, data.currency || 'TZS');
     this.totalWeight = data.totalWeight;

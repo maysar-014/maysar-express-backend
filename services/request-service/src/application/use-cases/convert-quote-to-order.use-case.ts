@@ -111,7 +111,6 @@ export class ConvertQuoteToOrderUseCase {
         await tx.order_Order?.create?.({
           data: {
             id: orderId,
-            trackingNumber: null,
             buyerId: request.customerId,
             sellerId: maysarResellerSellerId(),
             status: 'PENDING',

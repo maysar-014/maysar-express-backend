@@ -1,13 +1,22 @@
 ﻿# Buyer Flows — Order Service
 
-> **Verification status:** Verified
-> **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` (September 2026); `docs/order/ORDER_SERVICE_SYSTEM.md`
-> **Canonical source:** `docs/FLOWS/order/user-flow/buyer-flows.md`
-> **Corresponding frontend guide:** `docs/FLOWS/order/frontend-guide/buyer-guide.md`
+> **Verification status:** Verified — Live-verified 2026-11-06 against `run-lifecycle-checks.mjs` (LC-03, LC-04, LC-18)
+> **Verification basis:** `scripts/verification/run-lifecycle-checks.mjs` LC-03/LC-04/LC-18 (2026-11-06); MUVA/MSLE Phase 3 implementation (2026-11-10)
+> **Last updated:** 2026-11-10 (added Order Snapshot Structure — ENH-008)
 
 ## Overview
 
-This document covers order-service flows from the buyer's perspective: viewing order details, cancelling an order before it ships, and browsing order history. The order lifecycle is `PENDING → CONFIRMED → PROCESSING → SHIPPED → DELIVERED → COMPLETED`, with `CANCELLED` and `REFUNDED` as terminal branches available before `SHIPPED`. All flows require a valid buyer JWT. COD-specific flows (eligibility check, dispute) are documented in the role lifecycle overview at `docs/FLOWS/role-overviews/buyer-lifecycle.md`.
+This document covers order-service flows from the buyer's perspective: viewing order details, cancelling an order before it ships, and browsing order history. The **actual order lifecycle** as verified in production is:
+
+```
+PENDING_SELLER_VERIFICATION → SELLER_VERIFIED → [delivery assigned] → DELIVERED → COMPLETED
+                            ↘ SELLER_DECLINED (seller refuses, funds restored)
+                            ↘ VERIFICATION_OVERDUE (timeout, funds restored)
+                                                              ↘ CANCELLED (any pre-ship state)
+                                                              ↘ REFUNDED (post-cancel terminal)
+```
+
+> ⚠️ **FLW-008 corrected 2026-11-06:** The previous lifecycle diagram `PENDING → CONFIRMED → PROCESSING → SHIPPED → DELIVERED → COMPLETED` does not match live behaviour. Orders created by buyers enter `PENDING_SELLER_VERIFICATION` immediately. After the seller calls `/verify`, they move to `SELLER_VERIFIED`. The states `CONFIRMED`, `PROCESSING`, and `SHIPPED` are not used in the current implementation.
 
 ---
 
@@ -46,10 +55,24 @@ This document covers order-service flows from the buyer's perspective: viewing o
 ### Order Status Lifecycle
 
 ```
-PENDING → CONFIRMED → PROCESSING → SHIPPED → DELIVERED → COMPLETED
-       ↘ CANCELLED (available before SHIPPED)
-       ↘ REFUNDED (post-cancellation wallet restoration terminal)
+PENDING_SELLER_VERIFICATION → SELLER_VERIFIED → DELIVERED → COMPLETED
+                            ↘ SELLER_DECLINED (seller refuses; funds restored)
+                            ↘ VERIFICATION_OVERDUE (timeout; funds restored)
+                            ↘ CANCELLED (from any pre-delivery state)
+                            ↘ REFUNDED (terminal after wallet restoration)
 ```
+
+> **FLW-008 (2026-11-06):** The UI should map these states to buyer-friendly labels:
+> | API status | Buyer-facing label |
+> |---|---|
+> | `PENDING_SELLER_VERIFICATION` | "Awaiting seller confirmation" |
+> | `SELLER_VERIFIED` | "Confirmed — preparing for delivery" |
+> | `SELLER_DECLINED` | "Declined by seller — funds refunded" |
+> | `VERIFICATION_OVERDUE` | "Seller did not respond — funds refunded" |
+> | `DELIVERED` | "Delivered" |
+> | `COMPLETED` | "Completed" |
+> | `CANCELLED` | "Cancelled" |
+> | `REFUNDED` | "Refunded" |
 
 ### Service Interaction Chain
 
@@ -172,3 +195,58 @@ request. A decision attempted with no pending request returns 409
 | No orders match filters | 200 with empty `orders: []` | 200 | — |
 | Invalid status filter value | 400 | 400 | `VALIDATION_ERROR` |
 | JWT expired or missing | 401 | 401 | `UNAUTHORIZED` |
+
+---
+
+## Order Snapshot Structure & Historical Immutability
+
+> **Added 2026-11-10 — MUVA/MSLE Phase 3 (ENH-008)**
+> When an order is placed, the backend captures an immutable snapshot of the product configuration, price, and fulfillment terms at that moment. This snapshot is frozen — even if the catalog product is later modified, the seller changes their price, or the configuration definition is versioned, the order record retains the exact state that was purchased.
+
+### What is Captured
+
+Each order item includes three immutable snapshots:
+
+**Configuration Snapshot**
+- `productId` — the product identity at purchase time
+- `productName` — the product display name
+- `productImage` — the primary image URL
+- `variantId` — the specific variant (if discrete)
+- `selectedConfiguration` — human-readable option values (e.g., `{ "Colour": "Black", "Storage": "128 GB" }`)
+- `configurationDefinitionVersion` — which version of the configuration definition was used
+- `configurationFingerprint` — the deterministic canonical identifier for the exact configuration
+
+**Price Snapshot**
+- `unitPrice` — the resolved price per unit at checkout
+- `currency` — TZS or other
+- `quantity` — number of units ordered
+- `totalLinePrice` — `unitPrice * quantity`
+- `sellerOfferId` — which seller offer was used (or `null` for catalog default)
+- `sellerId` — the seller's user ID
+- `priceSource` — which precedence level was used (`promotion`, `seller_offer`, `catalog_default`)
+- `appliedDiscount` — promotion discount amount if applicable
+- `originalPrice` — pre-promotion price if applicable
+
+**Fulfillment Snapshot**
+- `fulfillmentPolicy` — seller-fulfilled, platform-fulfilled, etc.
+- `leadTimeDays` — expected lead time
+- `deliveryMethod` — standard, express, pickup
+- `shippingCost` — the committed shipping cost
+- `estimatedDeliveryDate` — the delivery estimate at order time
+- `fulfillmentLocation` — where the item ships from
+
+### Why This Matters
+
+- **Catalog changes are safe** — if a seller removes a product variant, updates a configuration definition, or changes their price, past orders still show what was actually purchased. The buyer's receipt remains accurate.
+- **Price disputes are resolved** — the `priceSource` and `originalPrice` fields provide a full audit trail of how the final price was calculated.
+- **Configuration is preserved** — the `configurationFingerprint` and `configurationDefinitionVersion` together guarantee that the exact product configuration the buyer selected is what gets fulfilled, even if the definition evolves later.
+
+### How It Works at Checkout
+
+1. `CheckoutTransactionBoundaryPolicy.validate()` runs the 6-step validation sequence
+2. On success, it produces an `OrderItemSnapshot` containing all three snapshots
+3. The checkout confirmation flow persists this snapshot alongside the order item
+4. The snapshot is immutable — no subsequent operation modifies it
+
+The buyer does not interact with the snapshot directly. It is a backend guarantee that historical orders remain interpretable.
+

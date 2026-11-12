@@ -35,4 +35,29 @@
 - ⚠️ **Partially Verified**: Working endpoints verified; peripheral or cross-service events pending.
 - ❌ **Missing**: Route-level 404 (service routes not registered in Express monolith).
 - 🛑 **Failing**: Endpoints returning unhandled 500 errors.
-- — : Role does not interact with this service directly.
+---
+
+## October 2026 — Post-Sweep Verification Corrections
+
+> Corrective entries only; the September 2026 sweep rows stand otherwise. Verified live by the October probe pass.
+
+| Service / Role | Cell in September matrix | Correction | Evidence |
+|---|---|---|---|
+| commission / seller | ❌ `commission/user-flow/seller-flows.md` | ✅ Verified live | `/api/commission/*` live at DEF-006; seller flow docs current; approved rate ≤ 25% |
+| commission / enabler | 🔄 `commission/user-flow/enabler-flows.md` | ✅ Verified | Commission reads at `GET /api/commission/sellers/:sellerId` |
+| wallet / supplier | — | ✅ Verified (by exclusion) | Wallet service excludes suppliers (403 `FORBIDDEN`) — exclusion docs per flow, no HTTP surface |
+| wallet / enabler | — | ✅ Verified (by exclusion) | Wallet service excludes enablers (403); earnings via payout-service |
+| enabler / admin | ⚠ `enabler/user-flow/admin-flows.md` | ✅ Verified | Admin approval gate live; `GET /api/enabler/enablers/{id}` → accurate 404 (DEF-002 resolved) |
+| kyc / supplier | ⚠ `kyc/user-flow/supplier-flows.md` | ✅ Verified | No `/api/kyc/*` routes; in-process `requireKycLevel(N)` middleware; listing cap 5 (`KYC_LISTING_CAP_REACHED`); payout KYC ≥ 2 (`KYC_LEVEL_INSUFFICIENT`) |
+| support / agent | ⚠️ `support/user-flow/support-agent-flows.md` | ✅ Verified | Inbox on `GET /api/support/tickets` (not legacy `/admin/tickets`); `SUP-AGT-01` corrected in doc |
+| support / admin | ⚠️ `support/user-flow/admin-flows.md` | ✅ Verified | Legacy `/admin/*` paths (`/tickets`, `/kyc/:userId`, `/disputes/:id/resolve`) return 404; outbox cleanup needs JWT + `x-service-key` |
+
+---
+
+## Remaining Open Coverage (for the next pass)
+
+| Role | Service | Status |
+|---|---|---|
+| Supplier | maps | No maps documentation yet (maps service is internal-only); coverage deferred to logistics/order-facing supplier docs |
+| Admin | support | admin-flows.md corrected (legacy phantom paths removed); support-agent-flows.md corrected |
+

@@ -272,8 +272,8 @@ export class PrismaConversationRepository implements ConversationRepository {
             u."firstName"  AS first_name,
             u."lastName"   AS last_name,
             a.email        AS email
-          FROM "user_User" u
-          LEFT JOIN auth_users a ON a.id = u.id
+          FROM "users" u
+          LEFT JOIN "auth_users" a ON a.id = u.id
           WHERE u.id = ANY(${otherUserIds}::text[])
         `;
         for (const row of userRows) {

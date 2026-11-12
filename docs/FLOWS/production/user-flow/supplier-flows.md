@@ -1,8 +1,8 @@
 ﻿# Supplier Flows — Production Service
 
-> **Verification status:** Partially Verified (plan lifecycle endpoints verified from service docs; inter-service event subscriptions unconfirmed)
-> **Verification basis:** `docs/production/PRODUCTION_SERVICE_SYSTEM.md`; `docs/SERVICE_DEPENDENCY_MAP.md`
-> **Last updated:** September 2026
+> **Verification status:** Verified — Live-verified 2026-11-06 against `run-lifecycle-checks.mjs` (LC-16)
+> **Verification basis:** `scripts/verification/run-lifecycle-checks.mjs` LC-16 (2026-11-06); `docs/production/PRODUCTION_SERVICE_SYSTEM.md`
+> **Last updated:** 2026-11-06 (corrected: GAP-012 — Flow 2/3 use `PUT /plans/:id/status`, not `POST /schedule` or `POST /start`)
 
 ## Overview
 
@@ -16,12 +16,12 @@ This document covers production-service flows from the supplier's perspective: c
 
 | # | Flow Name | Verification Status | Primary Endpoint |
 |---|---|---|---|
-| 1 | Create Production Plan | Partially Verified | `POST /api/production/plans` |
-| 2 | Schedule Plan | Partially Verified | `POST /api/production/plans/:planId/schedule` |
-| 3 | Start Production | Partially Verified | `POST /api/production/plans/:planId/start` |
+| 1 | Create Production Plan | Verified | `POST /api/production/plans` |
+| 2 | Schedule Plan | Verified | `PUT /api/production/plans/:planId/status` |
+| 3 | Start Production | Verified | `PUT /api/production/plans/:planId/status` |
 | 4 | Record Quality Checkpoint | Partially Verified | `POST /api/production/plans/:planId/checkpoints/:checkpointId` |
 | 5 | Complete Plan | Partially Verified | `POST /api/production/plans/:planId/complete` |
-| 6 | View / List Plans | Partially Verified | `GET /api/production/plans`, `GET /api/production/plans/:planId` |
+| 6 | View / List Plans | Verified | `GET /api/production/plans`, `GET /api/production/plans/:planId` |
 
 ---
 
@@ -46,34 +46,40 @@ DRAFT → SCHEDULED → IN_PRODUCTION → QUALITY_CHECK → READY | REJECTED
 
 | Field | Value |
 |---|---|
-| Actor | Supplier |
-| Trigger | Supplier initiates a new production run |
-| Preconditions | Authenticated (Bearer JWT, supplier role) |
+| Actor | Admin / Supplier |
+| Trigger | Admin or supplier initiates a new production run |
+| Preconditions | Authenticated (Bearer JWT, admin or supplier role) |
 | Terminal states | 201 — plan created in `DRAFT` status |
-| Verification status | Partially Verified |
+| Verification status | Verified |
 
 ### Happy Path
 
 | Step | Actor/System | Action | Endpoint | Auth | Expected Response |
 |---|---|---|---|---|---|
-| 1 | Supplier | Create plan | `POST /api/production/plans` | Bearer JWT | 201 `{ planId, status: "DRAFT" }` |
+| 1 | Admin | Create plan | `POST /api/production/plans` | Bearer JWT | 200/201 `{ id, status: "DRAFT" }` |
 
 ### Request Body
 
 ```json
 {
-  "productId": "prod_01...",
-  "plannedQuantity": 500,
-  "targetCompletionDate": "2026-10-01",
-  "notes": "Q4 restock run"
+  "supplierId": "usr_01...",
+  "name": "Q4 Restock Run",
+  "description": "Production plan for Q4 inventory restock",
+  "targetQuantity": 10,
+  "startDate": "2026-12-01T00:00:00Z",
+  "endDate": "2026-12-31T00:00:00Z",
+  "priority": "MEDIUM"
 }
 ```
+
+> ⚠️ **GAP-012 corrected 2026-11-06:** Request body uses `supplierId`, `name`, `targetQuantity`, `startDate`, `endDate` — NOT `productId`, `plannedQuantity`, `targetCompletionDate`. The old field names return 400 validation errors.
 
 ### Unhappy Path Branches
 
 | Trigger | System Response | Error Code |
 |---|---|---|
-| Invalid `productId` | 422 | `VALIDATION_ERROR` |
+| Invalid or missing `supplierId` | 400/422 | `VALIDATION_ERROR` |
+| `startDate` after `endDate` | 400/422 | `VALIDATION_ERROR` |
 | JWT missing | 401 | `UNAUTHORIZED` |
 
 ---
@@ -84,17 +90,21 @@ DRAFT → SCHEDULED → IN_PRODUCTION → QUALITY_CHECK → READY | REJECTED
 
 | Field | Value |
 |---|---|
-| Actor | Supplier |
-| Trigger | Supplier commits to a production start date |
-| Preconditions | Plan in `DRAFT` status; supplier JWT |
+| Actor | Admin |
+| Trigger | Admin commits the plan to a scheduled production run |
+| Preconditions | Plan in `DRAFT` status |
 | Terminal states | Plan transitions to `SCHEDULED` |
-| Verification status | Partially Verified |
+| Verification status | Verified |
 
 ### Happy Path
 
 | Step | Actor/System | Action | Endpoint | Auth | Expected Response |
 |---|---|---|---|---|---|
-| 1 | Supplier | Schedule plan | `POST /api/production/plans/:planId/schedule` | Bearer JWT | 200 `{ planId, status: "SCHEDULED", scheduledStartDate }` |
+| 1 | Admin | Transition plan to SCHEDULED | `PUT /api/production/plans/:planId/status` | Bearer JWT | 200/201 `{ id, status: "SCHEDULED" }` |
+
+**Request body:** `{ "status": "SCHEDULED" }`
+
+> ⚠️ **GAP-012 corrected 2026-11-06:** Endpoint is `PUT /api/production/plans/:planId/status` with a body specifying the target status. `POST /api/production/plans/:planId/schedule` does not exist and returns 404.
 
 ---
 
@@ -104,17 +114,21 @@ DRAFT → SCHEDULED → IN_PRODUCTION → QUALITY_CHECK → READY | REJECTED
 
 | Field | Value |
 |---|---|
-| Actor | Supplier |
-| Trigger | Supplier begins the production run |
+| Actor | Admin |
+| Trigger | Admin starts the production run |
 | Preconditions | Plan in `SCHEDULED` status |
-| Terminal states | Plan transitions to `IN_PRODUCTION` |
-| Verification status | Partially Verified |
+| Terminal states | Plan transitions to `IN_PROGRESS` |
+| Verification status | Verified |
 
 ### Happy Path
 
 | Step | Actor/System | Action | Endpoint | Auth | Expected Response |
 |---|---|---|---|---|---|
-| 1 | Supplier | Start production | `POST /api/production/plans/:planId/start` | Bearer JWT | 200 `{ planId, status: "IN_PRODUCTION", startedAt }` |
+| 1 | Admin | Transition plan to IN_PROGRESS | `PUT /api/production/plans/:planId/status` | Bearer JWT | 200/201 `{ id, status: "IN_PROGRESS" }` |
+
+**Request body:** `{ "status": "IN_PROGRESS" }`
+
+> ⚠️ **GAP-012 corrected 2026-11-06:** The status value is `IN_PROGRESS`, not `IN_PRODUCTION`. `POST /api/production/plans/:planId/start` does not exist and returns 404.
 
 ---
 

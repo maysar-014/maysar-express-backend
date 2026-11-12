@@ -5,11 +5,12 @@ import { createHealthRoutes } from './src/api/routes/health.routes';
 import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
 import { requireRoleOrService } from '@shared/middleware/auth-context.middleware';
 import { errorMiddleware } from './src/api/middleware/error.middleware';
+import { appLogger } from '../../shared/logger/logger';
 
 export const BusinessRegistryModule: Module = {
     name: 'business-registry-service',
     initialize: async () => {
-        console.log('Initializing business-registry-service module');
+        appLogger.info('Initializing business-registry-service module');
     },
     routes: (() => {
         const router = Router();
@@ -22,7 +23,7 @@ export const BusinessRegistryModule: Module = {
         return router;
     })(),
     shutdown: async () => {
-        console.log('Shutting down business-registry-service module');
+        appLogger.info('Shutting down business-registry-service module');
     }
 };
 

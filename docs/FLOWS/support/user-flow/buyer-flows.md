@@ -1,9 +1,8 @@
 ﻿# Buyer Flows — Support Service
 
-> **Verification status:** Verified
-> **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` — support-service section; `docs/support/SUPPORT_SERVICE_SYSTEM.md`
-> **Canonical source:** `docs/FLOWS/support/user-flow/buyer-flows.md`
-> **Corresponding frontend guide:** `docs/FLOWS/support/frontend-guide/buyer-guide.md`
+> **Verification status:** Verified — Live-verified 2026-11-06 against `run-lifecycle-checks.mjs` (LC-07)
+> **Verification basis:** `scripts/verification/run-lifecycle-checks.mjs` LC-07 (2026-11-06); `docs/FLOWS/_verification/analysis-report.md` — support-service section
+> **Last updated:** 2026-11-06 (added MSS-006: SUP-BUY-05 Close Ticket)
 
 ---
 
@@ -15,6 +14,7 @@
 | SUP-BUY-02 | Add Message to Ticket | Verified | `POST /api/support/tickets/:ticketId/messages` |
 | SUP-BUY-03 | View Ticket Status | Verified | `GET /api/support/tickets/:ticketId` |
 | SUP-BUY-04 | Open COD Dispute | Verified | `POST /api/support/disputes` |
+| SUP-BUY-05 | Close Ticket | Verified | `POST /api/support/tickets/:ticketId/close` |
 
 ---
 
@@ -203,3 +203,43 @@ When an agent later resolves the dispute via `POST /api/support/disputes/:id/res
 | Invalid or non-existent `orderId` | 422 validation error | — | No dispute created |
 | Dispute already open for this order | 409 conflict — duplicate dispute | — | No new dispute created |
 | No JWT or expired token | 401 unauthorized | — | No dispute created |
+
+---
+
+## Flow SUP-BUY-05: Close Ticket
+
+> ✅ **MSS-006 — Added 2026-11-06:** This flow was exercised but not documented. `POST /api/support/tickets/:ticketId/close` is verified in LC-07 and passes.
+
+| Field | Value |
+|-------|-------|
+| **Actor** | Buyer (or Admin) |
+| **Trigger** | Issue resolved; buyer wants to close the ticket |
+| **Preconditions** | Authenticated. Ticket exists and is not already `CLOSED`. |
+| **Terminal states** | Ticket transitions to `CLOSED`; no further messages may be added |
+| **Verification status** | Verified |
+
+### Happy Path
+
+| Step | Actor/System | Action | Endpoint Method + Path | Auth | Expected Response |
+|------|-------------|--------|------------------------|------|-------------------|
+| 1 | Buyer | Close the ticket | `POST /api/support/tickets/:ticketId/close` | Buyer JWT | 200 `{ data: { ticketId, status: "CLOSED" } }` |
+
+**Request body:**
+```jsonc
+{
+  "reason": "Issue resolved, thank you."
+}
+```
+
+### Service Interaction Chain
+
+`CloseTicketUseCase` validates the ticket belongs to the caller (buyer) or that the caller is an admin. Ticket transitions to `CLOSED`. Once closed, `AddTicketMessageUseCase` will reject any new messages with 409.
+
+### Unhappy Path Branches
+
+| Trigger | System Response | Error Code | Terminal State |
+|---------|----------------|------------|----------------|
+| Ticket already `CLOSED` | 400 | `INVALID_STATUS_TRANSITION` | No change |
+| `:ticketId` not found | 404 | — | No change |
+| Authenticated user is not ticket owner or admin | 403 | `FORBIDDEN` | No change |
+| No JWT or expired token | 401 | — | No change |

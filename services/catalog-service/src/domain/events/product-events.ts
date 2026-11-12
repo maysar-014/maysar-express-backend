@@ -11,20 +11,49 @@ export abstract class ProductDomainEvent {
   public readonly aggregateId: ProductId;
   public readonly occurredAt: Date;
   public readonly eventVersion: number;
+  /** Correlation ID for tracing a request or workflow across multiple events. */
+  public readonly correlationId?: string;
 
   constructor(
     eventId: string,
     aggregateId: ProductId,
     occurredAt: Date = new Date(),
-    eventVersion: number = 1
+    eventVersion: number = 1,
+    correlationId?: string,
   ) {
     this.eventId = eventId;
     this.aggregateId = aggregateId;
     this.occurredAt = occurredAt;
     this.eventVersion = eventVersion;
+    this.correlationId = correlationId;
   }
 
   abstract get eventType(): string;
+
+  /**
+   * Returns a JSON-serializable representation of this event.
+   * Subclasses inherit this and it captures all public fields.
+   * ENH-016: Explicit serialization contract for domain events.
+   */
+  toJSON(): Record<string, unknown> {
+    return {
+      eventId: this.eventId,
+      eventType: this.eventType,
+      eventVersion: this.eventVersion,
+      aggregateId: this.aggregateId.toString(),
+      occurredAt: this.occurredAt.toISOString(),
+      correlationId: this.correlationId ?? null,
+      ...this.getPayload(),
+    };
+  }
+
+  /**
+   * Override in subclasses to include event-specific payload fields.
+   * Defaults to an empty object — subclasses may override for explicit control.
+   */
+  protected getPayload(): Record<string, unknown> {
+    return {};
+  }
 }
 
 export class ProductCreatedEvent extends ProductDomainEvent {

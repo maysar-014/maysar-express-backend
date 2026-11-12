@@ -12,15 +12,17 @@ import { CartController } from './src/api/controllers/cart.controller';
 import { CheckoutController } from './src/api/controllers/checkout.controller';
 import { QuoteValidationService } from './src/infrastructure/services/quote-validation.service';
 import { CatalogPriceValidatorService } from './src/infrastructure/services/catalog-price-validator.service';
+import { PrismaEnablerLookupRepository } from './src/infrastructure/repositories/enabler-lookup.repository';
 import { MultiSellerCheckoutUseCase } from './src/application/use-cases/multi-seller-checkout.use-case';
 import { register as metricsRegistry } from './src/infrastructure/monitoring/metrics';
 import { prisma } from './src/infrastructure/database/prisma-client';
 import { requireAuth, requireRoleOrService } from '@shared/middleware/auth-context.middleware';
+import { appLogger } from '../../shared/logger/logger';
 
 export const CheckoutModule: Module = {
     name: 'checkout-service',
     initialize: async () => {
-        console.log('Initializing checkout-service module');
+        appLogger.info('Initializing checkout-service module');
 
         const cartRepository = new PrismaCartRepository(prisma);
         const checkoutRepository = new PrismaCheckoutRepository(prisma);
@@ -28,11 +30,13 @@ export const CheckoutModule: Module = {
         const eventBus = new EventBusAdapter();
         const quoteValidationService = new QuoteValidationService();
         const catalogPriceValidator = new CatalogPriceValidatorService();
+        const enablerLookup = new PrismaEnablerLookupRepository(prisma);
 
         // Multi-seller checkout use case — exposed globally for checkout controller
         const multiSellerCheckoutUseCase = new MultiSellerCheckoutUseCase(
             quoteValidationService,
             eventBus,
+            enablerLookup,
         );
         (globalThis as any).__multiSellerCheckoutUseCase = multiSellerCheckoutUseCase;
 
@@ -41,33 +45,33 @@ export const CheckoutModule: Module = {
             checkoutRepository,
             eventBus,
             cartRepository,
-            undefined,
+            enablerLookup,
             checkoutOrderRepository,
             quoteValidationService,
             catalogPriceValidator,
         );
         new CheckoutEventHandlers(eventBus, checkoutRepository, checkoutOrderRepository);
 
-        const router = Router();
-        router.use('/health', healthRoutes);
-        router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
-        router.get('/metrics', async (_req, res) => {
+        // Add all routes to the pre-declared router that app.ts already mounted.
+        const checkoutRouter = CheckoutModule.routes!;
+        checkoutRouter.use('/health', healthRoutes);
+        checkoutRouter.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
+        checkoutRouter.get('/metrics', async (_req, res) => {
             res.set('Content-Type', metricsRegistry.contentType);
             res.end(await metricsRegistry.metrics());
         });
-        router.use(requireAuth);
-        router.use('/', createCheckoutRoutes(cartController, checkoutController));
+        checkoutRouter.use(requireAuth);
+        checkoutRouter.use('/', createCheckoutRoutes(cartController, checkoutController));
 
         const aliasRouter = Router();
         aliasRouter.use(requireAuth);
         aliasRouter.use('/', createCartRoutes(cartController));
 
-        CheckoutModule.routes = router;
         CheckoutModule.routeAliases = [{ path: '/api/cart', router: aliasRouter }];
     },
     routes: Router(),
     routeAliases: [],
     shutdown: async () => {
-        console.log('Shutting down checkout-service module');
+        appLogger.info('Shutting down checkout-service module');
     }
 };

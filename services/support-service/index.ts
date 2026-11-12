@@ -14,7 +14,7 @@ import { requireAuth, requireRoleOrService } from '@shared/middleware/auth-conte
 export const SupportModule: Module = {
     name: 'support-service',
     initialize: async () => {
-        console.log('Initializing support-service module');
+        logger.info('Initializing support-service module');
         const subscriber = container.get<SupportEventSubscriber>(TYPES.SupportEventSubscriber);
         await subscriber.initialize();
 
@@ -34,18 +34,9 @@ export const SupportModule: Module = {
                 pollIntervalMs: 60 * 1000
             });
             sagaRecoveryWorker.start();
-
-            if (logger) {
-                logger.info('✅ Saga Recovery Worker initialized with 1 registered saga type');
-            } else {
-                console.log('✅ Saga Recovery Worker initialized with 1 registered saga type');
-            }
+            logger.info('✅ Saga Recovery Worker initialized with 1 registered saga type');
         } catch (error) {
-            if (logger) {
-                logger.warn('⚠️ Failed to initialize Saga Recovery Worker', { error });
-            } else {
-                console.warn('⚠️ Failed to initialize Saga Recovery Worker', error);
-            }
+            logger.warn('⚠️ Failed to initialize Saga Recovery Worker', { error });
         }
     },
     routes: (() => {
@@ -57,7 +48,7 @@ export const SupportModule: Module = {
         return router;
     })(),
     shutdown: async () => {
-        console.log('Shutting down support-service module');
+        logger.info('Shutting down support-service module');
         // Cleanup connections if needed
     }
 };

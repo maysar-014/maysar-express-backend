@@ -35,6 +35,19 @@ export interface IUserRepository {
   findById(id: string): Promise<User | null>;
 
   /**
+   * Find users by a batch of IDs in a single database query.
+   *
+   * Returns the subset of users that exist (unknown IDs are simply absent
+   * from the result — callers map any missing ID to `null`). The returned
+   * array has no guaranteed ordering; callers that need stable ordering
+   * should re-sort by the requested `ids` order.
+   *
+   * Used by the bulk name resolution endpoint to resolve display names
+   * without issuing N individual `findById` queries.
+   */
+  findByIds(ids: string[]): Promise<User[]>;
+
+  /**
    * Find user by email
    */
   findByEmail(email: string): Promise<User | null>;

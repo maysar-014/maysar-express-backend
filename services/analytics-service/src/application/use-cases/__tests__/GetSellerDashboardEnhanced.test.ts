@@ -1,4 +1,5 @@
 const mockScoreExecute = jest.fn();
+const mockInventoryHealthExecute = jest.fn();
 
 const mockPrisma = {
   order_Order: {
@@ -29,6 +30,9 @@ const mockPrisma = {
   },
   analytics_SellerInventoryHealth: {
     groupBy: jest.fn()
+  },
+  order_OrderItem: {
+    groupBy: jest.fn()
   }
 };
 
@@ -40,6 +44,13 @@ jest.mock('../../../infrastructure/database/prisma', () => ({
 jest.mock('../CalculateProfitabilityScore', () => ({
   CalculateProfitabilityScore: jest.fn().mockImplementation(() => ({
     execute: mockScoreExecute
+  }))
+}));
+
+// Fix: dashboard Section 6 now calls CalculateInventoryHealth live instead of groupBy snapshot
+jest.mock('../CalculateInventoryHealth', () => ({
+  CalculateInventoryHealth: jest.fn().mockImplementation(() => ({
+    execute: mockInventoryHealthExecute
   }))
 }));
 
@@ -93,12 +104,11 @@ function seedPrisma({
     revenue: 999
   });
   mockPrisma.product.findUnique.mockResolvedValue({ title: 'Top Product' });
+  mockPrisma.order_OrderItem.groupBy.mockResolvedValue([]); // fallback not triggered when analytics table has data
   mockPrisma.analytics_SellerActionItem.findMany.mockResolvedValue([{ id: 'action-1' }]);
-  mockPrisma.analytics_SellerInventoryHealth.groupBy.mockResolvedValue([
-    { stockStatus: 'IN_STOCK', _count: { id: 10 } },
-    { stockStatus: 'LOW_STOCK', _count: { id: 2 } },
-    { stockStatus: 'OUT_OF_STOCK', _count: { id: 1 } }
-  ]);
+  // Fix: inventory health now comes from live CalculateInventoryHealth, not stale snapshot groupBy
+  mockInventoryHealthExecute.mockResolvedValue({ inStock: 10, lowStock: 2, outOfStock: 1 });
+  mockPrisma.analytics_SellerInventoryHealth.groupBy.mockResolvedValue([]);
   mockPrisma.order_Order.findMany.mockResolvedValue([
     {
       createdAt: new Date('2026-01-01T10:00:00.000Z'),

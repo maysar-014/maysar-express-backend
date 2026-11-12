@@ -301,9 +301,9 @@ export const ChatModule: Module = {
         markReadUseCase.execute(conversationId, userId),
     );
 
-    // Router
-    const router = Router();
-    router.use(
+    // Router — add to the pre-declared router that app.ts already mounted
+    const chatRouter = ChatModule.routes!;
+    chatRouter.use(
       "/v1",
       createChatRoutes(
         conversationCtrl,
@@ -313,9 +313,8 @@ export const ChatModule: Module = {
         adminCtrl,
       ),
     );
-    router.use("/health", healthRoutes);
+    chatRouter.use("/health", healthRoutes);
 
-    ChatModule.routes = router;
     (ChatModule as any)._wsGateway = wsGateway;
 
     // Background jobs

@@ -334,5 +334,14 @@ export class EventBus implements IEventBus {
   }
 }
 
-export const eventBus = new EventBus();
+// Store the singleton on globalThis so it survives tsx hot-reloads.
+// Without this, every tsx reload creates a new EventBus instance, breaking
+// cross-module subscriptions: modules loaded before a reload keep the old
+// instance while modules loaded after get a fresh one with no subscribers.
+const g = globalThis as unknown as { __sharedEventBus?: EventBus };
+if (!g.__sharedEventBus) {
+  g.__sharedEventBus = new EventBus();
+}
+
+export const eventBus = g.__sharedEventBus;
 export const inMemoryEventBus = eventBus;

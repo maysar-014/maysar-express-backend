@@ -16,6 +16,7 @@ POSTGRES_PORT="${POSTGRES_PORT:-5432}"
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
 POSTGRES_DB="${POSTGRES_DB:-maysar}"
 BACKUP_DIR="${BACKUP_DIR:-/backups/postgres}"
+ENCRYPTION_KEY="${ENCRYPTION_KEY:-}"
 
 BACKUP_FILE="${1:-}"
 TARGET_DB="${2:-$POSTGRES_DB}"
@@ -26,7 +27,7 @@ if [ -z "${PGPASSWORD:-}" ]; then
 fi
 
 if [ -z "$BACKUP_FILE" ]; then
-  BACKUP_FILE="$(ls -1t "$BACKUP_DIR"/*.sql.gz 2>/dev/null | head -n 1 || true)"
+  BACKUP_FILE="$(ls -1t "$BACKUP_DIR"/*.sql.gz "$BACKUP_DIR"/*.sql.gz.enc 2>/dev/null | head -n 1 || true)"
 fi
 
 if [ -z "$BACKUP_FILE" ]; then
@@ -88,12 +89,41 @@ if ! db_exists "$TARGET_DB"; then
 fi
 
 echo "Restoring '$BACKUP_FILE' into '$TARGET_DB'..."
-gunzip -c "$BACKUP_FILE" | psql \
-  --set=ON_ERROR_STOP=1 \
+
+# Decrypt if encrypted
+DECRYPTED_FILE=""
+if [ "$(echo "$BACKUP_FILE" | sed 's/.*\.//')" = "enc" ]; then
+  if [ -z "$ENCRYPTION_KEY" ]; then
+    echo "ERROR: Backup file is encrypted but ENCRYPTION_KEY is not set."
+    exit 1
+  fi
+  echo "Decrypting backup file..."
+  DECRYPTED_FILE="$(mktemp)"
+  openssl enc -d -aes-256-cbc -pbkdf2 -in "$BACKUP_FILE" -out "$DECRYPTED_FILE" -pass pass:"$ENCRYPTION_KEY"
+  RESTORE_SOURCE="$DECRYPTED_FILE"
+else
+  RESTORE_SOURCE="$BACKUP_FILE"
+fi
+
+# Decompress
+DECOMPRESSED_FILE="$(mktemp)"
+echo "Decompressing backup file..."
+gunzip -c "$RESTORE_SOURCE" > "$DECOMPRESSED_FILE"
+
+# Restore using pg_restore (custom format from pg_dump -Fc)
+pg_restore \
   --host="$POSTGRES_HOST" \
   --port="$POSTGRES_PORT" \
   --username="$POSTGRES_USER" \
   --dbname="$TARGET_DB" \
-  >/dev/null
+  --no-owner \
+  --no-privileges \
+  "$DECOMPRESSED_FILE" || true
+
+# Clean up temp files
+rm -f "$DECOMPRESSED_FILE"
+if [ -n "$DECRYPTED_FILE" ]; then
+  rm -f "$DECRYPTED_FILE"
+fi
 
 echo "Restore completed successfully for database '$TARGET_DB'."

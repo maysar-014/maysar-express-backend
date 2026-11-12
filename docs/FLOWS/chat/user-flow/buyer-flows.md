@@ -1,12 +1,12 @@
 ﻿# Buyer Flows — Chat Service
 
-> **Verification status:** Partially Verified
-> **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` (September 2026); `docs/chat/CHAT_SERVICE_SYSTEM.md`
-> **Last updated:** September 2026
+> **Verification status:** Verified — Live-verified 2026-11-06 against `run-lifecycle-checks.mjs` (LC-08)
+> **Verification basis:** `scripts/verification/run-lifecycle-checks.mjs` LC-08 (2026-11-06)
+> **Last updated:** 2026-11-06 (corrected: conversation create body fields; mark-read endpoint verified)
 
 ## Overview
 
-This document covers chat-service flows from the buyer's perspective: starting a conversation with a seller about a product, sending and receiving messages, and understanding conversation archival after order completion. WebSocket connection is required for real-time message delivery.
+This document covers chat-service flows from the buyer's perspective: starting a conversation with a seller about a product, sending and receiving messages, and marking conversations as read. WebSocket connection is required for real-time message delivery.
 
 ---
 
@@ -14,10 +14,12 @@ This document covers chat-service flows from the buyer's perspective: starting a
 
 | # | Flow Name | Verification Status | Primary Endpoint |
 |---|---|---|---|
-| 1 | Start Buyer-Seller Conversation | Partially Verified | `POST /api/chat/v1/conversations` |
-| 2 | Send Message | Partially Verified | `POST /api/chat/v1/conversations/:id/messages` |
-| 3 | View Message History | Partially Verified | `GET /api/chat/v1/conversations/:id/messages` |
-| 4 | Conversation Archival (Event-Driven) | Partially Verified | Triggered by `OrderDelivered` / `OrderCancelled` events |
+| 1 | Start Buyer-Seller Conversation | Verified | `POST /api/chat/v1/conversations` |
+| 2 | Send Message | Verified | `POST /api/chat/v1/conversations/:id/messages` |
+| 3 | View Message History | Verified | `GET /api/chat/v1/conversations/:id/messages` |
+| 4 | Mark Conversation as Read | Verified | `PUT /api/chat/v1/conversations/:id/read` |
+| 5 | List Conversations | Verified | `GET /api/chat/v1/conversations` |
+| 6 | Conversation Archival (Event-Driven) | Partially Verified | Triggered by `OrderDelivered` / `OrderCancelled` events |
 
 ---
 
@@ -45,11 +47,15 @@ This document covers chat-service flows from the buyer's perspective: starting a
 
 ```json
 {
-  "type": "BUYER_SELLER",
   "recipientId": "seller-user-id",
-  "productId": "optional-product-id"
+  "initiatorRole": "BUYER",
+  "recipientRole": "SELLER",
+  "type": "BUYER_SELLER",
+  "relatedProductId": "optional-product-id"
 }
 ```
+
+> ⚠️ **Corrected 2026-11-06:** Previous body used `{ type, recipientId, productId }`. The live endpoint requires `initiatorRole` and `recipientRole` fields. The product field is `relatedProductId`, not `productId`.
 
 ### Service Interaction Chain
 
@@ -151,3 +157,25 @@ Real-time message delivery requires a WebSocket connection. The buyer app must:
 1. Connect to the WebSocket gateway after starting a conversation
 2. Subscribe to `chat:conv:{conversationId}` on the Redis channel
 3. Handle disconnection and reconnection gracefully — missed messages can be fetched via `GET .../messages`
+
+---
+
+## Flow 4: Mark Conversation as Read
+
+> ✅ Verified in LC-08 (2026-11-06).
+
+| Step | Actor/System | Action | Endpoint | Auth | Expected Response |
+|---|---|---|---|---|---|
+| 1 | Buyer | Mark conversation as read | `PUT /api/chat/v1/conversations/:conversationId/read` | Bearer JWT | 200 |
+
+Note: Method is `PUT`, not `POST` or `PATCH`.
+
+---
+
+## Flow 5: List Conversations
+
+> ✅ Verified in LC-08 (2026-11-06).
+
+| Step | Actor/System | Action | Endpoint | Auth | Expected Response |
+|---|---|---|---|---|---|
+| 1 | Buyer | List all conversations | `GET /api/chat/v1/conversations` | Bearer JWT | 200 `{ data: [...], count }` |

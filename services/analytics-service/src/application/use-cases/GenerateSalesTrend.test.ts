@@ -35,7 +35,7 @@ describe('GenerateSalesTrend', () => {
       where: {
         sellerId: 'seller-1',
         createdAt: { gte: expect.any(Date) },
-        status: 'DELIVERED'
+        status: { in: expect.arrayContaining(['CONFIRMED', 'PROCESSING', 'ASSIGNED', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED', 'COMPLETED']) }
       },
       select: { createdAt: true, totalAmount: true }
     });

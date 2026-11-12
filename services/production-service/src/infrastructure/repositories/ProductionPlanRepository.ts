@@ -48,6 +48,14 @@ export class ProductionPlanRepository implements IProductionRepository {
         return this.toEntity(data);
     }
 
+    async findAll(limit = 50): Promise<ProductionPlan[]> {
+        const data = await this.planDelegate.findMany({
+            orderBy: { createdAt: 'desc' },
+            take: limit,
+        });
+        return data.map((d: any) => this.toEntity(d));
+    }
+
     async findBySupplierId(supplierId: string): Promise<ProductionPlan[]> {
         const data = await this.planDelegate.findMany({ where: { supplierId } });
         return data.map((d: any) => this.toEntity(d));

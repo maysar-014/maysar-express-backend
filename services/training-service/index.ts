@@ -6,11 +6,12 @@ import { createHealthRoutes } from './src/api/routes/health.routes';
 import { register as metricsRegistry } from './src/infrastructure/monitoring/metrics';
 import { Container } from './src/infrastructure/container';
 import { errorHandlerMiddleware } from './src/api/middleware/error-handler.middleware';
+import { appLogger } from '../../shared/logger/logger';
 
 export const TrainingModule: Module = {
     name: 'training-service',
     initialize: async () => {
-        console.log('Initializing training-service module');
+        appLogger.info('Initializing training-service module');
     },
     routes: (() => {
         const router = Router();
@@ -33,6 +34,6 @@ export const TrainingModule: Module = {
         return router;
     })(),
     shutdown: async () => {
-        console.log('Shutting down training-service module');
+        appLogger.info('Shutting down training-service module');
     }
 };

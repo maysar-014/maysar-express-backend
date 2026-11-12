@@ -358,6 +358,17 @@ export class Container {
                     return;
                 }
                 const { orderId, buyerId, sellerId, amount, currency, holdId, courierId } = parsed;
+                const earning = await this.prisma.enabler_Earning.findUnique({
+                    where: { orderId },
+                    include: { enabler: { select: { userId: true } } }
+                });
+                const enablerAmount = earning && ['PENDING', 'ATTRIBUTED', 'QUALIFIED', 'AVAILABLE'].includes(String(earning.status))
+                    ? Number(earning.amount)
+                    : 0;
+                const enablerUserId = enablerAmount > 0 ? earning?.enabler?.userId : undefined;
+                if (enablerAmount > amount * 0.85) {
+                    throw new Error(`Enabler commission exceeds seller proceeds for COD order ${orderId}`);
+                }
                 await codSettlementSaga.start({
                     orderId,
                     buyerId,
@@ -368,8 +379,107 @@ export class Container {
                     deliveryStatus: 'SUCCESS',
                     sellerAmount: amount * 0.85,
                     courierId: courierId || 'system',
-                    courierAmount: amount * 0.15
+                    courierAmount: amount * 0.15,
+                    ...(enablerUserId && enablerAmount > 0 ? {
+                        enablerUserId,
+                        enablerAmount,
+                        enablerEarningId: earning!.id,
+                    } : {}),
                 }, envelope.correlationId ?? getMetadataString(envelope.metadata, 'correlationId') ?? orderId);
+                if (earning && enablerUserId && enablerAmount > 0) {
+                    const walletTransaction = await this.prisma.wallet_Transaction.findUnique({
+                        where: { idempotencyKey: `enabler_commission_credit_${orderId}` },
+                        select: { id: true },
+                    });
+                    await this.prisma.enabler_Earning.update({
+                        where: { id: earning.id },
+                        data: {
+                            status: 'AVAILABLE',
+                            qualifiedAt: new Date(),
+                            availableAt: new Date(),
+                            walletTransactionId: walletTransaction?.id ?? undefined,
+                        }
+                    });
+                }
+            }
+        });
+
+        // Digital orders use the same order-delivery qualification point. COD
+        // is settled by the saga above so its seller and enabler shares remain
+        // part of one idempotent payout workflow.
+        this.eventBus.subscribe('OrderDelivered', {
+            name: 'enabler-commission-wallet-credit',
+            handler: async (envelope: EventEnvelope) => {
+                const payload = asRecord(envelope.data);
+                const orderId = getString(payload.orderId);
+                if (!orderId) return;
+                const order = await this.prisma.order_Order.findUnique({
+                    where: { id: orderId },
+                    select: { paymentMethod: true, sellerId: true, totalAmount: true, currency: true, enablerEarnings: { select: { id: true, enablerId: true, amount: true, currency: true, status: true, enabler: { select: { userId: true } } } } }
+                });
+                if (!order || String(order.paymentMethod).toUpperCase() === 'COD') return;
+                const earning = order.enablerEarnings?.[0];
+                if (!earning || !['PENDING', 'ATTRIBUTED', 'QUALIFIED'].includes(String(earning.status))) return;
+                const amount = Number(earning.amount);
+                if (!(amount > 0)) return;
+                const correlationId = envelope.correlationId ?? getMetadataString(envelope.metadata, 'correlationId') ?? orderId;
+                const paymentMethod = String(order.paymentMethod).toUpperCase();
+                // Seller-verification orders can be paid outside Maysar escrow;
+                // their earning remains pending until a funded settlement event.
+                if (paymentMethod === 'SELLER_VERIFICATION') return;
+                const gross = Number(order.totalAmount);
+                const providerFeeRate = paymentMethod === 'CARD' ? 0.029
+                    : ['MOBILE_MONEY', 'MPESA', 'AIRTEL_MONEY', 'TIGO_PESA', 'HALOPESA'].includes(paymentMethod) ? 0.015
+                    : paymentMethod === 'BANK_TRANSFER' ? 0.01
+                    : paymentMethod === 'WALLET' ? 0
+                    : 0.02;
+                const platformFee = Math.round(gross * 0.02 * 100) / 100;
+                const providerFee = Math.round(gross * providerFeeRate * 100) / 100;
+                const sellerProceedsBeforeEnabler = Math.round((gross - platformFee - providerFee) * 100) / 100;
+                if (amount > sellerProceedsBeforeEnabler) throw new Error(`Enabler commission exceeds seller proceeds for order ${orderId}`);
+                const sellerNet = Math.round((sellerProceedsBeforeEnabler - amount) * 100) / 100;
+                const sellerCredit = await creditUseCase.execute({
+                    userId: order.sellerId,
+                    amount: sellerNet,
+                    currency: order.currency,
+                    description: `Sale proceeds after enabler commission - Order ${orderId}`,
+                    referenceType: 'order_sale_settlement',
+                    referenceId: orderId,
+                    idempotencyKey: `seller_sale_credit_${orderId}`,
+                    correlationId,
+                    metadata: { orderId, enablerEarningId: earning.id, gross, platformFee, providerFee, enablerCommission: amount },
+                    auditInfo: AuditInfo.create({
+                        actor: 'wallet-service',
+                        actorType: ActorType.SYSTEM,
+                        action: 'SELLER_SALE_CREDIT',
+                        reason: `Sale proceeds after enabler commission for order ${orderId}`,
+                        metadata: { orderId, enablerEarningId: earning.id }
+                    })
+                });
+                if (!sellerCredit.success) throw new Error(`Seller wallet credit failed for order ${orderId}`);
+                const result = await creditUseCase.execute({
+                    userId: earning.enabler.userId,
+                    amount,
+                    currency: earning.currency,
+                    description: `Enabler commission - Order ${orderId}`,
+                    referenceType: 'enabler_commission',
+                    referenceId: earning.id,
+                    idempotencyKey: `enabler_commission_credit_${orderId}`,
+                    correlationId,
+                    metadata: { orderId, earningId: earning.id },
+                    auditInfo: AuditInfo.create({
+                        actor: 'wallet-service',
+                        actorType: ActorType.SYSTEM,
+                        action: 'ENABLER_COMMISSION_CREDIT',
+                        reason: `Enabler commission for delivered order ${orderId}`,
+                        metadata: { orderId, earningId: earning.id }
+                    })
+                });
+                if (!result.success || !result.transactionId) throw new Error(`Wallet credit failed for enabler earning ${earning.id}`);
+                await this.prisma.enabler_Earning.update({
+                    where: { id: earning.id },
+                    data: { status: 'AVAILABLE', qualifiedAt: new Date(), availableAt: new Date(), walletTransactionId: result.transactionId }
+                });
             }
         });
 

@@ -699,6 +699,61 @@
   },
   {
    "file": "catalog-service/src/api/routes/seller-location.routes.ts",
+   "method": "GET",
+   "path": "/geography/regions",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 65
+  },
+  {
+   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
+   "method": "GET",
+   "path": "/geography/districts",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 66
+  },
+  {
+   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
+   "method": "GET",
+   "path": "/geography/wards",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 67
+  },
+  {
+   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
+   "method": "GET",
+   "path": "/geography/streets",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 68
+  },
+  {
+   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
+   "method": "GET",
+   "path": "/geography/validate",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 69
+  },
+  {
+   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
    "method": "POST",
    "path": "/",
    "auth": {
@@ -706,7 +761,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 54
+   "line": 73
   },
   {
    "file": "catalog-service/src/api/routes/seller-location.routes.ts",
@@ -717,7 +772,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 55
+   "line": 74
   },
   {
    "file": "catalog-service/src/api/routes/seller-location.routes.ts",
@@ -728,7 +783,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 56
+   "line": 75
   },
   {
    "file": "catalog-service/src/api/routes/seller-location.routes.ts",
@@ -739,7 +794,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 57
+   "line": 76
   },
   {
    "file": "catalog-service/src/api/routes/seller-location.routes.ts",
@@ -750,7 +805,7 @@
     "authorize": true,
     "adminish": false
    },
-   "line": 60
+   "line": 79
   },
   {
    "file": "catalog-service/src/api/routes/seller-location.routes.ts",
@@ -761,73 +816,51 @@
     "authorize": true,
     "adminish": false
    },
-   "line": 61
-  },
-  {
-   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
-   "method": "PUT",
-   "path": "/:locationId/products/:productId",
-   "auth": {
-    "authenticate": false,
-    "authorize": false,
-    "adminish": false
-   },
-   "line": 71
-  },
-  {
-   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
-   "method": "PATCH",
-   "path": "/:locationId/products/:productId/stock",
-   "auth": {
-    "authenticate": false,
-    "authorize": false,
-    "adminish": false
-   },
-   "line": 72
-  },
-  {
-   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
-   "method": "DELETE",
-   "path": "/:locationId/products/:productId",
-   "auth": {
-    "authenticate": false,
-    "authorize": false,
-    "adminish": false
-   },
-   "line": 73
-  },
-  {
-   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
-   "method": "POST",
-   "path": "/transfers",
-   "auth": {
-    "authenticate": false,
-    "authorize": false,
-    "adminish": false
-   },
-   "line": 76
+   "line": 80
   },
   {
    "file": "catalog-service/src/api/routes/seller-location.routes.ts",
    "method": "GET",
-   "path": "/products/:productId",
+   "path": "/:locationId/metrics",
    "auth": {
     "authenticate": false,
     "authorize": false,
     "adminish": false
    },
-   "line": 79
+   "line": 90
   },
   {
    "file": "catalog-service/src/api/routes/seller-location.routes.ts",
-   "method": "POST",
-   "path": "/internal/select-fulfillment",
+   "method": "GET",
+   "path": "/:locationId/detail",
    "auth": {
     "authenticate": false,
     "authorize": false,
     "adminish": false
    },
-   "line": 82
+   "line": 93
+  },
+  {
+   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
+   "method": "GET",
+   "path": "/:locationId/report/pdf",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 96
+  },
+  {
+   "file": "catalog-service/src/api/routes/seller-location.routes.ts",
+   "method": "GET",
+   "path": "/search",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 100
   },
   {
    "file": "catalog-service/src/api/routes/seller-storefront.routes.ts",
@@ -906,7 +939,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 160
+   "line": 162
   },
   {
    "file": "chat-service/src/api/routes/chat.routes.ts",
@@ -917,7 +950,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 167
+   "line": 169
   },
   {
    "file": "chat-service/src/api/routes/chat.routes.ts",
@@ -928,7 +961,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 168
+   "line": 170
   },
   {
    "file": "chat-service/src/api/routes/chat.routes.ts",
@@ -939,7 +972,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 169
+   "line": 171
   },
   {
    "file": "chat-service/src/api/routes/chat.routes.ts",
@@ -950,7 +983,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 183
+   "line": 185
   },
   {
    "file": "chat-service/src/api/routes/chat.routes.ts",
@@ -961,7 +994,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 205
+   "line": 207
   }
  ],
  "checkout-service": [
@@ -1524,13 +1557,46 @@
   {
    "file": "enabler-service/src/api/routes/enabler.routes.ts",
    "method": "GET",
+   "path": "/promotion-offers",
+   "auth": {
+    "authenticate": false,
+    "authorize": true,
+    "adminish": false
+   },
+   "line": 248
+  },
+  {
+   "file": "enabler-service/src/api/routes/enabler.routes.ts",
+   "method": "GET",
+   "path": "/:enablerId/catalog",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 309
+  },
+  {
+   "file": "enabler-service/src/api/routes/enabler.routes.ts",
+   "method": "GET",
+   "path": "/:enablerId/catalog/share-link",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 310
+  },
+  {
+   "file": "enabler-service/src/api/routes/enabler.routes.ts",
+   "method": "GET",
    "path": "/:enablerId/listings",
    "auth": {
     "authenticate": false,
     "authorize": false,
     "adminish": false
    },
-   "line": 252
+   "line": 326
   },
   {
    "file": "enabler-service/src/api/routes/enabler.routes.ts",
@@ -1541,7 +1607,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 298
+   "line": 372
   },
   {
    "file": "enabler-service/src/api/routes/hub.routes.ts",
@@ -1552,7 +1618,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 12
+   "line": 30
   },
   {
    "file": "enabler-service/src/api/routes/maintenance.routes.ts",
@@ -1612,6 +1678,182 @@
    "line": 17
   },
   {
+   "file": "inventory-service/src/api/routes/inventory.routes.ts",
+   "method": "GET",
+   "path": "/stock/:variantId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 23
+  },
+  {
+   "file": "inventory-service/src/api/routes/inventory.routes.ts",
+   "method": "PUT",
+   "path": "/stock/:variantId/:warehouseId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 24
+  },
+  {
+   "file": "inventory-service/src/api/routes/inventory.routes.ts",
+   "method": "GET",
+   "path": "/stock-outs",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 28
+  },
+  {
+   "file": "inventory-service/src/api/routes/inventory.routes.ts",
+   "method": "POST",
+   "path": "/stock-outs",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 29
+  },
+  {
+   "file": "inventory-service/src/api/routes/inventory.routes.ts",
+   "method": "POST",
+   "path": "/stock-outs/reconcile",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 30
+  },
+  {
+   "file": "inventory-service/src/api/routes/inventory.routes.ts",
+   "method": "GET",
+   "path": "/materials",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 34
+  },
+  {
+   "file": "inventory-service/src/api/routes/inventory.routes.ts",
+   "method": "GET",
+   "path": "/materials/:variantId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 35
+  },
+  {
+   "file": "inventory-service/src/api/routes/inventory.routes.ts",
+   "method": "PUT",
+   "path": "/materials/:variantId/warehouses/:warehouseId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 36
+  },
+  {
+   "file": "inventory-service/src/api/routes/inventory.routes.ts",
+   "method": "POST",
+   "path": "/reservations",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 40
+  },
+  {
+   "file": "inventory-service/src/api/routes/inventory.routes.ts",
+   "method": "DELETE",
+   "path": "/reservations/:orderId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 41
+  },
+  {
+   "file": "inventory-service/src/api/routes/inventory.routes.ts",
+   "method": "GET",
+   "path": "/reservations/:orderId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 42
+  },
+  {
+   "file": "inventory-service/src/api/routes/inventory.routes.ts",
+   "method": "GET",
+   "path": "/warehouses",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 46
+  },
+  {
+   "file": "inventory-service/src/api/routes/inventory.routes.ts",
+   "method": "GET",
+   "path": "/warehouses/:id",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 47
+  },
+  {
+   "file": "inventory-service/src/api/routes/inventory.routes.ts",
+   "method": "POST",
+   "path": "/inventory-counts",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 51
+  },
+  {
+   "file": "inventory-service/src/api/routes/inventory.routes.ts",
+   "method": "PUT",
+   "path": "/inventory-counts/:countId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 52
+  },
+  {
+   "file": "inventory-service/src/api/routes/inventory.routes.ts",
+   "method": "GET",
+   "path": "/analytics/stock-levels",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 56
+  },
+  {
    "file": "inventory-service/src/api/routes/maintenance.routes.ts",
    "method": "POST",
    "path": "/cleanup/outbox/report",
@@ -1634,7 +1876,19 @@
    "line": 114
   }
  ],
- "kyc-service": [],
+ "kyc-service": [
+  {
+   "file": "kyc-service/src/api/routes/compliance.routes.ts",
+   "method": "GET",
+   "path": "/kyc-status/:userId",
+   "auth": {
+    "authenticate": false,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 124
+  }
+ ],
  "logistics-service": [
   {
    "file": "logistics-service/src/api/routes/courier.routes.ts",
@@ -1947,7 +2201,7 @@
   {
    "file": "logistics-service/src/api/routes/logistics.routes.ts",
    "method": "GET",
-   "path": "/tracking/:trackingNumber",
+   "path": "/tracking/:identifier",
    "auth": {
     "authenticate": false,
     "authorize": false,
@@ -2530,7 +2784,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 262
+   "line": 274
   },
   {
    "file": "order-service/src/api/routes/order.routes.ts",
@@ -2541,62 +2795,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 265
-  },
-  {
-   "file": "order-service/src/api/routes/order.routes.ts",
-   "method": "GET",
-   "path": "/orders/tracking/:trackingNumber",
-   "auth": {
-    "authenticate": false,
-    "authorize": false,
-    "adminish": false
-   },
-   "line": 268
-  },
-  {
-   "file": "order-service/src/api/routes/order.routes.ts",
-   "method": "GET",
-   "path": "/orders/:id",
-   "auth": {
-    "authenticate": false,
-    "authorize": false,
-    "adminish": false
-   },
-   "line": 271
-  },
-  {
-   "file": "order-service/src/api/routes/order.routes.ts",
-   "method": "PUT",
-   "path": "/orders/:id",
-   "auth": {
-    "authenticate": false,
-    "authorize": false,
-    "adminish": false
-   },
-   "line": 274
-  },
-  {
-   "file": "order-service/src/api/routes/order.routes.ts",
-   "method": "POST",
-   "path": "/orders/:id/status",
-   "auth": {
-    "authenticate": false,
-    "authorize": false,
-    "adminish": false
-   },
    "line": 277
-  },
-  {
-   "file": "order-service/src/api/routes/order.routes.ts",
-   "method": "DELETE",
-   "path": "/orders/:id",
-   "auth": {
-    "authenticate": false,
-    "authorize": false,
-    "adminish": false
-   },
-   "line": 287
   }
  ],
  "payment-service": [
@@ -2688,7 +2887,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 51
+   "line": 90
   },
   {
    "file": "payout-service/src/api/routes/payout.routes.ts",
@@ -2699,7 +2898,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 52
+   "line": 97
   }
  ],
  "request-service": [
@@ -3092,7 +3291,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 405
+   "line": 460
   },
   {
    "file": "user-service/src/api/routes/user.routes.ts",
@@ -3103,7 +3302,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 406
+   "line": 461
   },
   {
    "file": "user-service/src/api/routes/user.routes.ts",
@@ -3114,7 +3313,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 407
+   "line": 462
   },
   {
    "file": "user-service/src/api/routes/user.routes.ts",
@@ -3125,7 +3324,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 409
+   "line": 464
   },
   {
    "file": "user-service/src/api/routes/user.routes.ts",
@@ -3136,7 +3335,18 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 410
+   "line": 465
+  },
+  {
+   "file": "user-service/src/api/routes/user.routes.ts",
+   "method": "POST",
+   "path": "/resolve-names",
+   "auth": {
+    "authenticate": true,
+    "authorize": false,
+    "adminish": false
+   },
+   "line": 468
   },
   {
    "file": "user-service/src/api/routes/user.routes.ts",
@@ -3147,7 +3357,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 411
+   "line": 469
   },
   {
    "file": "user-service/src/api/routes/user.routes.ts",
@@ -3158,7 +3368,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 412
+   "line": 470
   },
   {
    "file": "user-service/src/api/routes/user.routes.ts",
@@ -3169,7 +3379,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 413
+   "line": 471
   },
   {
    "file": "user-service/src/api/routes/user.routes.ts",
@@ -3180,7 +3390,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 414
+   "line": 472
   },
   {
    "file": "user-service/src/api/routes/user.routes.ts",
@@ -3191,7 +3401,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 415
+   "line": 473
   },
   {
    "file": "user-service/src/api/routes/user.routes.ts",
@@ -3202,7 +3412,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 416
+   "line": 474
   },
   {
    "file": "user-service/src/api/routes/user.routes.ts",
@@ -3213,7 +3423,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 417
+   "line": 475
   },
   {
    "file": "user-service/src/api/routes/user.routes.ts",
@@ -3224,7 +3434,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 418
+   "line": 476
   },
   {
    "file": "user-service/src/api/routes/user.routes.ts",
@@ -3235,7 +3445,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 419
+   "line": 477
   },
   {
    "file": "user-service/src/api/routes/user.routes.ts",
@@ -3246,7 +3456,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 420
+   "line": 478
   },
   {
    "file": "user-service/src/api/routes/user.routes.ts",
@@ -3257,7 +3467,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 421
+   "line": 479
   },
   {
    "file": "user-service/src/api/routes/user.routes.ts",
@@ -3268,7 +3478,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 422
+   "line": 480
   },
   {
    "file": "user-service/src/api/routes/user.routes.ts",
@@ -3279,7 +3489,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 425
+   "line": 483
   },
   {
    "file": "user-service/src/api/routes/user.routes.ts",
@@ -3290,7 +3500,7 @@
     "authorize": false,
     "adminish": false
    },
-   "line": 429
+   "line": 487
   }
  ],
  "wallet-service": [

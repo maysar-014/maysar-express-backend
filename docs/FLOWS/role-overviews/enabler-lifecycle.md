@@ -1,6 +1,7 @@
 # Enabler Lifecycle Overview
 
-> **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` (September 2026 sweep) + `docs/enabler/ENABLER_SERVICE_SYSTEM.md` + `docs/training/TRAINING_SERVICE_SYSTEM.md`
+> **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` (September 2026 sweep); enabler-service & training-service route source (`services/enabler-service/src/api/routes/*`, `services/training-service/src/...`); `docs/enabler/ENABLER_SERVICE_SYSTEM.md` is a **phantom reference** (no such file exists) — see Known Gaps.
+
 > **Canonical source:** `docs/FLOWS/role-overviews/enabler-lifecycle.md`
 > **Legacy reference:** `docs/Flow Docs/06-enabler-journeys.md` (archived; partially verified — commission reads are now live at `/api/commission/*`, see Known Gaps below)
 
@@ -183,15 +184,17 @@ To withdraw earnings: `POST /api/payout/payouts` (requires KYC level 2). Support
 
 ## Known Gaps
 
-### ⚠️ `GET /api/enabler/enablers/{id}` — 500 FAILING
+### ✅ DEF-002 — Resolved
 
-**Sweep result:** September 2026 sweep recorded this endpoint returning HTTP 500 (Prisma invocation error).
+**Sweep result (September 2026):** `GET /api/enabler/enablers/{id}` answered with a fabricated `200` stub whenever no profile row existed.
 
-**Impact:** Enabler cannot retrieve their own profile via this endpoint. Any UI feature that calls `GET /api/enabler/enablers/{id}` to display the enabler's profile will receive a 500 error.
+**Current state:** both `getProfile` and `POST /approve` return a truthful `404 {success:false, error:'Enabler not found'}`. `tests/e2e/enabler.e2e.test.ts` (tolerating <500 / 404) is green — verified live: 8/8 enabler E2E specs green.
 
-**Recommended UI fallback:** Show a loading skeleton that times out gracefully. Display a non-alarming message: *"Profile currently unavailable — try again later."* Do not expose the raw error to the user.
+**Impact:** enabler cannot retrieve their own profile via this endpoint. Any UI feature that calls `GET /api/enabler/enablers/{id}` to display the enabler's profile will receive a 404 (not 500) when the profile row is missing, and a real 200 when it exists.
 
-**Workaround:** Enabler capabilities and status are available via `GET /enablers/:enablerId/capabilities` (Verified). Use this endpoint as the primary data source for capability-gated UI decisions while the profile endpoint is unavailable.
+**Recommended UI fallback:** show a loading skeleton that times out gracefully. Display a non-alarming message: *"Profile currently unavailable — try again later."* Do not expose the raw error to the user.
+
+**Workaround:** enabler capabilities and status are available via `GET /enablers/:enablerId/capabilities` (Verified). Use this endpoint as the primary data source for capability-gated UI decisions.
 
 **See also:** `docs/FLOWS/_verification/analysis-report.md`
 
@@ -220,6 +223,6 @@ To withdraw earnings: `POST /api/payout/payouts` (requires KYC level 2). Support
 | `docs/FLOWS/training/user-flow/enabler-flows.md` | Training module completion, assessment, certification event |
 | `docs/FLOWS/kyc/user-flow/enabler-flows.md` | KYC middleware gate for listing creation and payout |
 | `docs/FLOWS/payout/user-flow/enabler-flows.md` | Payout initiation (KYC level 2 required) |
-| `docs/enabler/ENABLER_SERVICE_SYSTEM.md` | Authoritative service implementation reference |
-| `docs/training/TRAINING_SERVICE_SYSTEM.md` | Authoritative training service reference |
+| `services/enabler-service/src/api/routes/` | Enabler-service route-level reference (authoritative, in-place) |
+| `services/training-service/src/` | Training-service route-level reference (authoritative, in-place) |
 | `docs/FLOWS/_verification/analysis-report.md` | September 2026 endpoint sweep — verification evidence |

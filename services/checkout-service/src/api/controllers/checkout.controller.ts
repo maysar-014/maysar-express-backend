@@ -576,8 +576,13 @@ export class CheckoutController {
 
       await this.eventBus.publish('OrderCreated', {
         checkoutId: sessionId,
+        // Include orderId so the payment saga can create a payment record immediately.
+        // The saga handler guards against missing orderId, so this was silently a no-op.
+        orderId: realOrderId,
         userId: session.userId,
         totalAmount: session.totalAmount,
+        currency: 'TZS',
+        paymentMethod: String(session.paymentMethodId || 'WALLET').toUpperCase(),
         orderSource: effectiveSource,
         ...(session.enablerId ? { enablerId: session.enablerId, enablerCode: session.enablerCode } : {})
       });

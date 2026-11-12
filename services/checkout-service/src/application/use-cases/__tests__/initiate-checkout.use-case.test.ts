@@ -145,6 +145,78 @@ describe('InitiateCheckoutUseCase', () => {
     );
   });
 
+  it('persists attribution only for cart products currently covered by seller authorization', async () => {
+    const enablerLookup = {
+      findByCode: jest.fn().mockResolvedValue({ id: 'enb_01', userId: 'enabler-user', status: 'ACTIVE' }),
+      getAuthorizedProductIds: jest.fn().mockResolvedValue(['prod-1']),
+    };
+    useCase = new InitiateCheckoutUseCase(
+      pricingPolicy, mockCheckoutRepository, mockCartRepository, mockEventBus,
+      enablerLookup, mockQuoteService as any,
+    );
+
+    const result = await useCase.execute(
+      'cart-1', 'buyer-1', 'addr-1', 'addr-2', 'ship-1', 0,
+      'ENB-123456', { orderSource: 'CART' }, VALID_QUOTE_ID,
+    );
+
+    expect(result.success).toBe(true);
+    expect(enablerLookup.getAuthorizedProductIds).toHaveBeenCalledWith('enb_01', ['prod-1']);
+    expect(mockCheckoutRepository.saveCheckoutSession).toHaveBeenCalledWith(expect.objectContaining({
+      enablerId: 'enb_01',
+      metadata: expect.objectContaining({ enablerProductIds: ['prod-1'] }),
+    }));
+  });
+
+  it('does not attach an enabler when no cart products are currently authorized', async () => {
+    const enablerLookup = {
+      findByCode: jest.fn().mockResolvedValue({ id: 'enb_01', userId: 'enabler-user', status: 'ACTIVE' }),
+      getAuthorizedProductIds: jest.fn().mockResolvedValue([]),
+    };
+    useCase = new InitiateCheckoutUseCase(
+      pricingPolicy, mockCheckoutRepository, mockCartRepository, mockEventBus,
+      enablerLookup, mockQuoteService as any,
+    );
+
+    const result = await useCase.execute(
+      'cart-1', 'buyer-1', 'addr-1', 'addr-2', 'ship-1', 0,
+      'ENB-123456', { orderSource: 'CART' }, VALID_QUOTE_ID,
+    );
+
+    expect(result.success).toBe(true);
+    expect(mockCheckoutRepository.saveCheckoutSession).toHaveBeenCalledWith(expect.not.objectContaining({ enablerId: 'enb_01' }));
+  });
+
+  it('keeps mixed-cart attribution scoped to approved product lines', async () => {
+    mockCartRepository.getCart.mockResolvedValue({
+      id: 'cart-1',
+      userId: 'buyer-1',
+      items: [
+        { productId: 'prod-1', quantity: 1, priceAtTime: 50 },
+        { productId: 'prod-2', quantity: 1, priceAtTime: 25 },
+      ],
+    });
+    const enablerLookup = {
+      findByCode: jest.fn().mockResolvedValue({ id: 'enb_01', userId: 'enabler-user', status: 'ACTIVE' }),
+      getAuthorizedProductIds: jest.fn().mockResolvedValue(['prod-1']),
+    };
+    useCase = new InitiateCheckoutUseCase(
+      pricingPolicy, mockCheckoutRepository, mockCartRepository, mockEventBus,
+      enablerLookup, mockQuoteService as any,
+    );
+
+    const result = await useCase.execute(
+      'cart-1', 'buyer-1', 'addr-1', 'addr-2', 'ship-1', 0,
+      'ENB-123456', { orderSource: 'CART' }, VALID_QUOTE_ID,
+    );
+
+    expect(result.success).toBe(true);
+    expect(mockCheckoutRepository.saveCheckoutSession).toHaveBeenCalledWith(expect.not.objectContaining({ enablerId: 'enb_01' }));
+    expect(mockCheckoutRepository.saveCheckoutSession).toHaveBeenCalledWith(expect.objectContaining({
+      metadata: expect.objectContaining({ enablerId: 'enb_01', enablerProductIds: ['prod-1'] }),
+    }));
+  });
+
   it('should fall back to a dev cart when cart not found in non-production', async () => {
     mockCartRepository.getCart.mockResolvedValueOnce(null);
 

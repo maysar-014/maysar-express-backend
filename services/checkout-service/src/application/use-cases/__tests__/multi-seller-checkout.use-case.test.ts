@@ -147,4 +147,35 @@ describe('MultiSellerCheckoutUseCase', () => {
     expect(result.success).toBe(false);
     expect((result as any).error.code).toBe('CHECKOUT_SESSION_NOT_FOUND');
   });
+
+  test('rechecks session scope and sends attribution only with authorized seller lines', async () => {
+    prisma.checkout_CheckoutSession.findUnique.mockResolvedValueOnce({
+      id: 'session-1',
+      buyerId: 'buyer-1',
+      expiresAt: new Date(Date.now() + 60_000),
+      metadata: {
+        items: [
+          { productId: 'prod-1', quantity: 1, priceAtTime: 60000, weight: 1 },
+          { productId: 'prod-2', quantity: 1, priceAtTime: 40000, weight: 2 },
+        ],
+        enablerId: 'enb_01',
+        enablerCode: 'ENB-123456',
+        enablerProductIds: ['prod-1', 'prod-2'],
+      },
+    });
+    const enablerLookup = {
+      getAuthorizedProductIds: jest.fn().mockResolvedValue(['prod-2']),
+    };
+    useCase = new MultiSellerCheckoutUseCase(quoteValidationService, eventBus, enablerLookup as any);
+
+    const result = await useCase.execute(baseRequest as any);
+
+    expect(result.success).toBe(true);
+    expect(enablerLookup.getAuthorizedProductIds).toHaveBeenCalledWith('enb_01', ['prod-1', 'prod-2']);
+    expect(placeOrderUseCase.execute).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      sellerId: 'seller-2',
+      enablerId: 'enb_01',
+      enablerProductIds: ['prod-2'],
+    }));
+  });
 });

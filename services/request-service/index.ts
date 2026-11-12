@@ -14,6 +14,7 @@ import { createRequestRoutes } from './src/api/routes/request.routes';
 import { healthRoutes } from './src/api/routes/health.routes';
 import { prisma } from './src/infrastructure/database/prisma-client';
 import { RequestExpirationSweeper } from './src/application/services/request-expiration-sweeper';
+import { appLogger } from '../../shared/logger/logger';
 
 const __requestExpirationSweeper = new RequestExpirationSweeper();
 (globalThis as any).__requestExpirationSweeper = __requestExpirationSweeper;
@@ -27,9 +28,9 @@ export const RequestModule: Module = {
       // Phase 4 §4.1: start the expiration sweeper (quotes, links, supplier
       // availability, stale requests). Interval via REQUEST_SWEEPER_INTERVAL_MS.
       __requestExpirationSweeper.start();
-      console.log('[RequestModule] initialized');
+      appLogger.info('[RequestModule] initialized');
     } catch (error) {
-      console.warn('[RequestModule] prisma initialization failed:', error);
+      appLogger.warn('[RequestModule] prisma initialization failed', { error: error instanceof Error ? error.message : String(error) });
     }
   },
   routes: (() => {
@@ -42,6 +43,6 @@ export const RequestModule: Module = {
   })(),
   shutdown: async () => {
     __requestExpirationSweeper.stop();
-    console.log('[RequestModule] shutting down');
+    appLogger.info('[RequestModule] shutting down');
   },
 };

@@ -6,6 +6,8 @@ import type {
   AuthUserDto,
   BulkUserOperationDto,
   CreateUserDto,
+  DisplayNameDto,
+  ResolveNamesRequestDto,
   UserPreferencesDto,
   UserResponseDto,
   UserSearchDto
@@ -127,5 +129,64 @@ describe('user.dto', () => {
     expect(authDto.addresses[0].isPrimary()).toBe(true);
     expect(bulkDto.userIds).toHaveLength(2);
     expect(preferences.notifications.sms).toBe(true);
+  });
+
+  it('supports name resolution request and display name dtos with PII-minimal shape', () => {
+    const requestDto: ResolveNamesRequestDto = {
+      ids: ['usr_01ARZ3NDEKTSV4RRFFQ69G5FAV', 'usr_02BZ4CDEKTSV4RRFFQ69G5FAV']
+    };
+    const displayDto: DisplayNameDto = {
+      fullName: 'Asha Mwakalobo',
+      publicCode: 'MYS-SLR-01',
+      role: 'seller'
+    };
+
+    expect(requestDto.ids).toHaveLength(2);
+    expect(requestDto.ids[0]).toBe('usr_01ARZ3NDEKTSV4RRFFQ69G5FAV');
+    expect(displayDto.fullName).toBe('Asha Mwakalobo');
+    expect(displayDto.publicCode).toBe('MYS-SLR-01');
+    expect(displayDto.role).toBe('seller');
+  });
+
+  it('DisplayNameDto exposes exactly { fullName, publicCode, role } and no PII fields', () => {
+    const displayDto: DisplayNameDto = {
+      fullName: 'Juma Mussa',
+      publicCode: 'MYS-SLR-02',
+      role: 'seller'
+    };
+
+    const keys = Object.keys(displayDto).sort();
+    expect(keys).toEqual(['fullName', 'publicCode', 'role'].sort());
+
+    // PII fields that must never appear on this DTO
+    const piiFields = [
+      'email', 'phoneNumber', 'dateOfBirth', 'passwordHash',
+      'kycStatus', 'kycData', 'kycNationalId', 'addresses',
+      'metadata', 'businessId', 'firstName', 'lastName'
+    ];
+    for (const pii of piiFields) {
+      expect(keys).not.toContain(pii);
+    }
+  });
+
+  it('supports ResolveNamesRequestDto with an ids array', () => {
+    const requestDto: ResolveNamesRequestDto = {
+      ids: ['user-1', 'user-2', 'user-3']
+    };
+
+    expect(requestDto.ids).toHaveLength(3);
+  });
+
+  it('supports DisplayNameDto with exactly fullName, publicCode and role', () => {
+    const displayDto: DisplayNameDto = {
+      fullName: 'Amina Juma',
+      publicCode: 'MYS-SLR-01',
+      role: 'seller'
+    };
+
+    expect(displayDto.fullName).toBe('Amina Juma');
+    expect(displayDto.publicCode).toBe('MYS-SLR-01');
+    expect(displayDto.role).toBe('seller');
+    expect(Object.keys(displayDto).sort()).toEqual(['fullName', 'publicCode', 'role'].sort());
   });
 });

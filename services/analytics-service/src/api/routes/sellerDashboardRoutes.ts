@@ -1,5 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { SellerDashboardController } from '../controllers/SellerDashboardController';
+import { ActionCenterGenerationJob } from '../../infrastructure/ActionCenterGenerationJob';
+import prisma from '../../infrastructure/database/prisma';
 
 const router = Router();
 const controller = new SellerDashboardController();
@@ -56,5 +58,31 @@ router.get('/sellers/:sellerId/dashboard/profitability-score', authMiddleware, s
 
 // Action items
 router.patch('/action-items/:actionId/resolve', authMiddleware, (req, res) => controller.resolveActionItem(req, res));
+
+// Admin-only: trigger ActionCenterGenerationJob on demand (used by lifecycle verification / ops tooling)
+// POST /api/analytics/admin/jobs/action-center
+router.post('/admin/jobs/action-center', authMiddleware, async (req: Request, res: Response) => {
+  const roles = normalizeRoles(req.user?.roles);
+  if (!roles.includes('admin')) {
+    return res.status(403).json({ success: false, error: 'Admin only' });
+  }
+  try {
+    const activeSellers = await (prisma as any).user_User.findMany({
+      where: { role: 'SELLER', status: 'ACTIVE' },
+      select: { id: true },
+    });
+    const job = new ActionCenterGenerationJob();
+    // Run for all active sellers sequentially (job already does this internally but
+    // the admin trigger should return after completion so the caller can rely on results).
+    await job.execute();
+    return res.json({
+      success: true,
+      data: { sellersProcessed: activeSellers.length },
+      message: 'ActionCenterGenerationJob completed',
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err?.message ?? 'Job failed' });
+  }
+});
 
 export default router;

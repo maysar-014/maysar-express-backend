@@ -44,7 +44,7 @@ const INFRASTRUCTURE_MESSAGE_PATTERNS = [
     'server has closed the connection'
 ];
 
-export const outboxDelay = new Histogram({
+export const outboxDelay: Histogram<string> = (metricsRegistry.getSingleMetric('outbox_event_processing_delay_seconds') as Histogram<string>) ?? new Histogram({
     name: 'outbox_event_processing_delay_seconds',
     help: 'Delay between event creation and processing in seconds',
     labelNames: ['service'],
@@ -52,14 +52,14 @@ export const outboxDelay = new Histogram({
     registers: [metricsRegistry]
 });
 
-export const outboxPublished = new Counter({
+export const outboxPublished: Counter<string> = (metricsRegistry.getSingleMetric('outbox_events_published_total') as Counter<string>) ?? new Counter({
     name: 'outbox_events_published_total',
     help: 'Total number of events published from outbox',
     labelNames: ['service'],
     registers: [metricsRegistry]
 });
 
-export const outboxFailed = new Counter({
+export const outboxFailed: Counter<string> = (metricsRegistry.getSingleMetric('outbox_events_failed_total') as Counter<string>) ?? new Counter({
     name: 'outbox_events_failed_total',
     help: 'Total number of events that failed during outbox processing',
     labelNames: ['service', 'permanent'],
@@ -154,7 +154,9 @@ export class OutboxProcessor {
                 return;
             }
 
-            throw error;
+            // Log unexpected errors but never re-throw — outbox processors are background
+            // jobs and must not produce unhandled rejections that trigger process shutdown.
+            this.logger.error('Unexpected error in outbox processing loop (non-fatal)', serializeError(error));
         } finally {
             this.isProcessing = false;
         }

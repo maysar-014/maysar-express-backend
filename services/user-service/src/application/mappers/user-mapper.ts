@@ -15,7 +15,8 @@ import {
   AuthUserDto,
   UserActivityDto,
   UserVerificationDto,
-  UserPreferencesDto
+  UserPreferencesDto,
+  DisplayNameDto
 } from '../dto/user.dto';
 
 /**
@@ -107,6 +108,25 @@ export class UserMapper {
    */
   static toDTO(user: User): UserResponseDto {
     return this.toResponseDto(user);
+  }
+
+  /**
+   * Map User entity to DisplayNameDto — PII-minimal shape for the bulk
+   * name resolution endpoint. Contains only { fullName, publicCode, role }
+   * and deliberately excludes email, phone, DOB, KYC, addresses, metadata,
+   * businessId, passwordHash and every other sensitive field.
+   *
+   * `publicCode` defaults to empty string when undefined so the DTO always
+   * has a stable primitive value (callers can check for empty to detect
+   * missing codes). `role` is normalized to lowercase to match the
+   * user-service convention (see docs/user/USER_SERVICE_FRONTEND_GUIDE.md).
+   */
+  static toDisplayNameDto(user: User): DisplayNameDto {
+    return {
+      fullName: user.getFullName(),
+      publicCode: user.publicCode ?? '',
+      role: String(user.role).toLowerCase(),
+    };
   }
 
   /**

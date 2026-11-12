@@ -35,6 +35,7 @@ function buildMocks(productReturnValue: any): {
   const mockProductRepository: jest.Mocked<ProductRepository> = {
     save: jest.fn(),
     findById: jest.fn().mockResolvedValue(productReturnValue),
+    findBySlug: jest.fn().mockResolvedValue(null),
     findBySeller: jest.fn(),
     findByCategory: jest.fn(),
     search: jest.fn(),
@@ -222,6 +223,7 @@ describe('Preservation Property Tests — Non-Buggy Inputs', () => {
       const mockProductRepository: jest.Mocked<ProductRepository> = {
         save: jest.fn(),
         findById: jest.fn().mockRejectedValue(new Error('Database connection failed')),
+        findBySlug: jest.fn().mockResolvedValue(null),
         findBySeller: jest.fn(),
         findByCategory: jest.fn(),
         search: jest.fn(),
@@ -253,6 +255,7 @@ describe('Preservation Property Tests — Non-Buggy Inputs', () => {
       const mockProductRepository: jest.Mocked<ProductRepository> = {
         save: jest.fn(),
         findById: jest.fn().mockResolvedValue(product),
+        findBySlug: jest.fn().mockResolvedValue(null),
         findBySeller: jest.fn(),
         findByCategory: jest.fn(),
         search: jest.fn(),

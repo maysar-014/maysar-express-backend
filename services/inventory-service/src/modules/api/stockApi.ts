@@ -40,6 +40,10 @@ interface StockItemDelegate {
   findMany(args: Record<string, unknown>): Promise<StockItemAnalyticsRecord[]>;
 }
 
+interface WarehouseOwnershipDelegate {
+  findUnique(args: { where: { id: string } }): Promise<{ sellerId?: string | null; sellerLocationId?: string | null } | null>;
+}
+
 const INVALID_QUERY_RESPONSE = { error: 'Invalid query parameters' };
 
 const getSingleQueryValue = (value: unknown): { value?: string | boolean; error?: string } => {
@@ -69,6 +73,8 @@ interface StockApiPrisma {
   inventoryCountItem?: InventoryCountItemDelegate;
   inventory_StockItem?: StockItemDelegate;
   stockItem?: StockItemDelegate;
+  inventory_Warehouse?: WarehouseOwnershipDelegate;
+  inventoryWarehouse?: WarehouseOwnershipDelegate;
 }
 
 export class StockApi {
@@ -439,10 +445,30 @@ export class StockApi {
         return;
       }
 
+      const normalizedQuantity = Number(quantity);
+      if (!Number.isInteger(normalizedQuantity) || normalizedQuantity <= 0) {
+        res.status(400).json({ error: 'quantity must be a positive integer' });
+        return;
+      }
+
+      const warehouseDelegate = this.prisma.inventory_Warehouse || this.prisma.inventoryWarehouse;
+      const warehouse = warehouseDelegate ? await warehouseDelegate.findUnique({ where: { id: warehouseId } }) : null;
+      const isAdmin = (req.user?.roles || []).some((role) => role.toLowerCase() === 'admin');
+      if (warehouse?.sellerId) {
+        if (!isAdmin && warehouse.sellerId !== performedBy) {
+          res.status(403).json({ error: 'You cannot adjust stock for this seller location' });
+          return;
+        }
+        if (!isAdmin && operation !== 'add') {
+          res.status(400).json({ error: 'Seller stock reductions must use the stock-out endpoint' });
+          return;
+        }
+      }
+
       await this.stockManager.updateStock([{
         variantId,
         warehouseId,
-        quantity: Number(quantity),
+        quantity: normalizedQuantity,
         operation,
         reason,
         referenceType: 'manual_adjustment',
@@ -453,7 +479,7 @@ export class StockApi {
         variantId,
         warehouseId,
         operation,
-        quantity: Number(quantity),
+        quantity: normalizedQuantity,
         reason,
         performedBy,
         status: 'completed'

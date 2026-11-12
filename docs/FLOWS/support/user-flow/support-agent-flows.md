@@ -11,7 +11,7 @@
 
 | Flow ID | Flow Name | Status | Primary Endpoint |
 |---------|-----------|--------|-----------------|
-| SUP-AGT-01 | View Ticket Inbox | Verified | `GET /api/support/admin/tickets` |
+| SUP-AGT-01 | View Ticket Inbox | Verified | `GET /api/support/tickets` (real inbox; legacy variant `/api/support/admin/tickets` → 404) |
 | SUP-AGT-02 | Assign Ticket | Verified | `PATCH /api/support/tickets/:id/assign` |
 | SUP-AGT-03 | Add Message to Ticket | Verified | `POST /api/support/tickets/:ticketId/messages` |
 | SUP-AGT-04 | Resolve Ticket | Verified | `POST /api/support/tickets/:id/resolve` |
@@ -35,7 +35,7 @@
 
 | Step | Actor/System | Action | Endpoint Method + Path | Auth | Expected Response |
 |------|-------------|--------|------------------------|------|-------------------|
-| 1 | Support Agent | Fetch ticket inbox | `GET /api/support/admin/tickets?status=OPEN&page=1&limit=20` | Agent JWT | 200 `{ data: { tickets[], pagination } }` |
+| 1 | Support Agent | Fetch ticket inbox | `GET /api/support/tickets?status=OPEN&page=1&limit=20` | Agent JWT | 200 `{ data: { tickets[], pagination } }` |
 
 **Supported query parameters:**
 

@@ -62,6 +62,9 @@ export interface StockManagerTxClient {
 
 export interface StockManagerPrisma extends StockManagerTxClient {
   $transaction<T>(callback: (tx: StockManagerTxClient) => Promise<T>): Promise<T>;
+  order_Order?: {
+    findUnique(args: { where: { id: string }; select: { isInventoryPreDeducted: boolean } }): Promise<{ isInventoryPreDeducted: boolean } | null>;
+  };
 }
 
 export interface StockLevel {
@@ -156,7 +159,10 @@ export class StockManager {
             newQuantity = stockItem.quantityAvailable + update.quantity;
             break;
           case 'subtract':
-            newQuantity = Math.max(0, stockItem.quantityAvailable - update.quantity);
+            if (update.quantity > stockItem.quantityAvailable) {
+              throw new Error(`Insufficient available stock for ${update.variantId} in warehouse ${update.warehouseId}`);
+            }
+            newQuantity = stockItem.quantityAvailable - update.quantity;
             break;
           case 'set':
             newQuantity = Math.max(0, update.quantity);
@@ -306,6 +312,16 @@ export class StockManager {
     warehouseId: string;
     quantity: number;
   }>): Promise<void> {
+    // Direct-sale reconciliation has already atomically reduced inventory. Keep
+    // this guard here, at the common deduction point, to survive event replays.
+    if (this.prisma.order_Order) {
+      const order = await this.prisma.order_Order.findUnique({
+        where: { id: orderId },
+        select: { isInventoryPreDeducted: true }
+      });
+      if (order?.isInventoryPreDeducted) return;
+    }
+
     const updates: StockUpdate[] = items.map(item => ({
       variantId: item.variantId,
       warehouseId: item.warehouseId,

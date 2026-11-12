@@ -1,0 +1,1246 @@
+{
+  "runDate": "2026-11-10T14:05:16.622Z",
+  "baseUrl": "http://localhost:3000",
+  "summary": {
+    "total": 176,
+    "passed": 176,
+    "failed": 0,
+    "skipped": 0,
+    "passRate": "100%"
+  },
+  "byLifecycle": {
+    "LC-01": {
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-02": {
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-03": {
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-04": {
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-05": {
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-06": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-07": {
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-08": {
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-09": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-10": {
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-11": {
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-12": {
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-13": {
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-14": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-15": {
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-16": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-17": {
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-18": {
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-19": {
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-20": {
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-21": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-22": {
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-23": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-24": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-25": {
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-26": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-27": {
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-28": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-29": {
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-30": {
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-31": {
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-32": {
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-33": {
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-34": {
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0
+    },
+    "LC-35": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "lifecycle": "LC-01",
+      "step": "Login [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-01",
+      "step": "Login [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-01",
+      "step": "Login [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-01",
+      "step": "Login [courier]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-01",
+      "step": "GET /api/auth/sessions [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-01",
+      "step": "POST /api/auth/logout [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-01",
+      "step": "Re-login and sessions confirmed",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-02",
+      "step": "GET seller businesses",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-02",
+      "step": "GET seller products",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-02",
+      "step": "GET /api/catalog/v1/products/:id",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-02",
+      "step": "GET seller storefront",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-02",
+      "step": "GET inventory stock for variant",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-03",
+      "step": "POST /api/checkout/cart/items (add)",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-03",
+      "step": "GET /api/checkout/cart/current",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-03",
+      "step": "POST /api/logistics/v1/quote",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-03",
+      "step": "POST /api/checkout/initiate",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-03",
+      "step": "POST /api/checkout/:id/confirm",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-03",
+      "step": "GET /api/order/orders [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-04",
+      "step": "GET /api/order/orders [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-04",
+      "step": "GET /api/order/orders/:id [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-04",
+      "step": "POST /api/order/orders/:id/verify [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-04",
+      "step": "GET /api/logistics/api/courier/deliveries",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-04",
+      "step": "POST /api/order/orders/:id/cancel [buyer] (state-aware)",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-05",
+      "step": "GET buyer wallet balance",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-05",
+      "step": "GET seller wallet balance",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-05",
+      "step": "GET buyer wallet statement",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-05",
+      "step": "POST /api/wallet/wallets/:id/credit [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-05",
+      "step": "GET buyer balance after credit",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-05",
+      "step": "GET /api/wallet/wallets/:userId/holds [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-06",
+      "step": "GET /api/payout/payouts [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-06",
+      "step": "POST /api/payout/payouts [buyer → 403]",
+      "status": 403,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-06",
+      "step": "GET seller balance before payout",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-06",
+      "step": "POST /api/payout/payouts [seller]",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-07",
+      "step": "POST /api/support/tickets [buyer]",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-07",
+      "step": "GET /api/support/tickets/:id [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-07",
+      "step": "POST /api/support/tickets/:id/messages",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-07",
+      "step": "GET /api/support/tickets/:id [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-07",
+      "step": "POST /api/support/tickets/:id/close",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-07",
+      "step": "POST /api/support/disputes [buyer]",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-07",
+      "step": "GET /api/support/disputes [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-07",
+      "step": "GET /api/support/disputes/:id [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-07",
+      "step": "POST /api/support/disputes/:id/resolve [admin]",
+      "status": 404,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-07",
+      "step": "POST /api/support/disputes/:id/escalate [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-08",
+      "step": "POST /api/chat/v1/conversations",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-08",
+      "step": "POST /api/chat/v1/conversations/:id/messages [buyer]",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-08",
+      "step": "PUT /api/chat/v1/conversations/:id/read [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-08",
+      "step": "GET /api/chat/v1/conversations/:id/messages [seller as participant]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-08",
+      "step": "GET /api/chat/v1/conversations [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-09",
+      "step": "GET /api/analytics/sellers/:id/dashboard",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-09",
+      "step": "GET /api/analytics/sellers/:id/sla",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-09",
+      "step": "GET /api/analytics/platform/kpis [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-09",
+      "step": "GET /api/analytics/seller-profitability/dashboard",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-10",
+      "step": "GET /api/kyc/status [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-10",
+      "step": "GET /api/compliance/kyc-status/:id [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-10",
+      "step": "GET /api/compliance/manual-review/pending [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-10",
+      "step": "GET /api/compliance/audit-log [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-10",
+      "step": "GET /api/support/admin/kyc/:userId [admin]",
+      "status": 404,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-10",
+      "step": "POST /api/kyc/submit [buyer] (write path verified)",
+      "status": 400,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-11",
+      "step": "POST /api/request/requests [buyer]",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-11",
+      "step": "GET /api/request/requests/:id [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-11",
+      "step": "GET /api/request/requests [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-11",
+      "step": "POST /api/request/requests/:id/messages [buyer]",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-11",
+      "step": "GET /api/request/requests/:id/messages [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-11",
+      "step": "POST /api/request/requests/:id/cancel [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-12",
+      "step": "GET /api/request/provider/requests [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-12",
+      "step": "POST /api/request/provider/requests/:id/assignment [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-12",
+      "step": "POST /api/request/provider/requests/:id/assessment [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-12",
+      "step": "POST /api/request/provider/requests/:id/quotes [admin]",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-12",
+      "step": "POST /api/request/provider/requests/suppliers [admin]",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-12",
+      "step": "POST /api/request/provider/requests/items/:id/sources [admin]",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-12",
+      "step": "POST /api/request/provider/requests/sources/:id/confirm [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-12",
+      "step": "POST /api/request/provider/requests/quotes/:id/publish [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-12",
+      "step": "POST /api/request/provider/quotes/:id/assessment-link [admin]",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-13",
+      "step": "GET /api/request/requests/assess/:token (no auth)",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-13",
+      "step": "POST /api/request/requests/assess/:token/convert (no auth)",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-13",
+      "step": "POST /api/request/requests/assess/:token/convert (idempotency)",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-14",
+      "step": "POST /api/logistics/v1/fulfillment-options",
+      "status": 400,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-14",
+      "step": "GET /api/logistics/api/v1/deliveries [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-14",
+      "step": "POST /api/logistics/api/v1/deliveries [admin]",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-14",
+      "step": "GET /api/logistics/api/v1/deliveries/:id [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-15",
+      "step": "GET /api/logistics/api/courier/deliveries [courier]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-15",
+      "step": "PATCH delivery status → picked_up",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-15",
+      "step": "PATCH delivery status → in_transit",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-15",
+      "step": "PATCH delivery status → out_for_delivery",
+      "status": 400,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-15",
+      "step": "PATCH delivery status → delivered (invalid transition test)",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-16",
+      "step": "GET /api/production/plans [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-16",
+      "step": "POST /api/production/plans [admin]",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-16",
+      "step": "PUT /api/production/plans/:id/status → SCHEDULED [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-16",
+      "step": "PUT /api/production/plans/:id/status → IN_PRODUCTION [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-17",
+      "step": "POST /api/auth/refresh [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-17",
+      "step": "POST /api/auth/forgot-password",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-17",
+      "step": "GET /api/auth/2fa/status [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-17",
+      "step": "POST /api/auth/2fa/backup-codes/regenerate [admin]",
+      "status": 400,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-17",
+      "step": "POST /api/auth/refresh without body → 401",
+      "status": 401,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-17",
+      "step": "POST /api/auth/2fa/enable without CSRF → 403",
+      "status": 403,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-18",
+      "step": "GET /api/order/orders [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-18",
+      "step": "GET /api/order/orders/:id [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-18",
+      "step": "POST /api/order/orders/:id/cancel [buyer] (state-aware response)",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-19",
+      "step": "GET /api/inventory/warehouses [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-19",
+      "step": "GET /api/inventory/stock/:variantId [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-19",
+      "step": "PUT /api/inventory/stock/:variantId/:warehouseId [seller]",
+      "status": 400,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-19",
+      "step": "POST /api/inventory/reservations [seller]",
+      "status": 400,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-19",
+      "step": "DELETE /api/inventory/reservations/:orderId [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-20",
+      "step": "GET /api/analytics/sellers/:id/sla/breaches [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-20",
+      "step": "GET /api/analytics/seller-profitability/retention [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-20",
+      "step": "GET /api/analytics/seller-profitability/revenue-health [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-20",
+      "step": "GET /api/analytics/admin/dashboard/red-flags [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-20",
+      "step": "GET /api/analytics/admin/dashboard/founder-operating-system [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-20",
+      "step": "POST /api/analytics/admin/jobs/action-center [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-20",
+      "step": "PATCH /api/analytics/action-items/:id/resolve [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-21",
+      "step": "POST /api/payout/payouts [buyer → 403]",
+      "status": 403,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-21",
+      "step": "GET /api/request/provider/requests [buyer → 403]",
+      "status": 403,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-21",
+      "step": "GET /api/analytics/platform/kpis [courier → 403]",
+      "status": 403,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-21",
+      "step": "POST /api/auth/admin/users/:id/suspend [seller → 403]",
+      "status": 403,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-22",
+      "step": "GET /api/commission/sellers/:sellerId [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-22",
+      "step": "GET /api/commission/sellers/:sellerId/summary [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-22",
+      "step": "POST /api/commission/calculate [admin]",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-22",
+      "step": "PUT /api/commission/:id/approve [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-22",
+      "step": "GET /api/commission/:id [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-22",
+      "step": "GET /api/commission/health [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-23",
+      "step": "GET /api/payment/payment-methods [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-23",
+      "step": "GET /api/payment/payments/order/:orderId [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-23",
+      "step": "GET /api/payment/payments/:paymentId [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-23",
+      "step": "GET /api/payment/payments/:paymentId/status [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-24",
+      "step": "GET /api/notification/notifications [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-24",
+      "step": "GET /api/notification/notifications/unread-count [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-24",
+      "step": "PATCH /api/notification/notifications/:id/status [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-24",
+      "step": "GET /api/notification/notifications?isRead=false [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-25",
+      "step": "GET /api/auth/admin/users/search [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-25",
+      "step": "GET /api/user/:userId [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-25",
+      "step": "PUT /api/user/:userId [buyer]",
+      "status": 400,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-25",
+      "step": "GET /api/user/lookup [admin]",
+      "status": 403,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-25",
+      "step": "GET /api/user/search [admin]",
+      "status": 403,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-26",
+      "step": "GET /api/training/api/v1/modules [courier]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-26",
+      "step": "POST /api/training/api/v1/training/start [courier]",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-26",
+      "step": "POST /api/training/api/v1/training/:id/complete [courier]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-26",
+      "step": "GET /api/training/api/v1/training/progress/:learnerId [courier]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-27",
+      "step": "GET /api/enabler/enablers/:id [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-27",
+      "step": "POST /api/enabler/enablers/:id/listings [enabler]",
+      "status": 400,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-27",
+      "step": "GET /api/enabler/enablers/:id/capabilities [enabler]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-27",
+      "step": "GET /api/enabler/enablers/:id/earnings [enabler]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-27",
+      "step": "POST /api/enabler/enablers/:id/enforcement [admin]",
+      "status": 400,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-28",
+      "step": "GET /api/business-registry/businesses/search [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-28",
+      "step": "GET /api/business-registry/businesses/:id/compliance-records [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-28",
+      "step": "GET /api/business-registry/businesses/:id/documents [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-28",
+      "step": "POST /api/business-registry/businesses/:id/verify [admin]",
+      "status": 400,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-29",
+      "step": "GET /api/catalog/v1/pricing/analytics [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-29",
+      "step": "GET /api/catalog/match/pending [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-29",
+      "step": "GET /api/catalog/v1/admin/buy-box/history/:productId [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-29",
+      "step": "GET /api/catalog/v1/admin/buy-box/anomaly-flags [admin]",
+      "status": 404,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-29",
+      "step": "GET /api/catalog/v1/categories [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-29",
+      "step": "GET /api/catalog/v1/search/products?q=test [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-29",
+      "step": "GET /api/catalog/v1/products/:id [buyer] (404 for unknown identifier)",
+      "status": 404,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-30",
+      "step": "POST /api/maps/geocoding/geocode [courier]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-30",
+      "step": "POST /api/maps/routing/calculate [courier]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-30",
+      "step": "POST /api/logistics/admin/cod-delivery [admin]",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-30",
+      "step": "POST /api/logistics/api/v1/cod/:deliveryId/otp [courier]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-30",
+      "step": "POST /api/logistics/api/v1/cod/:deliveryId/verify [courier]",
+      "status": 400,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-31",
+      "step": "PUT /api/commission/:id/approve [admin]",
+      "status": 409,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-31",
+      "step": "GET /api/enabler/enablers/:id/orders/:orderId/commission [enabler]",
+      "status": 404,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-32",
+      "step": "POST /api/catalog/v1/seller/offers [seller]",
+      "status": 409,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-32",
+      "step": "GET /api/catalog/v1/seller/offers [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-32",
+      "step": "GET /api/catalog/v1/products/:id/offers [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-32",
+      "step": "PATCH /api/catalog/v1/seller/offers/:id/price [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-32",
+      "step": "PATCH /api/catalog/v1/seller/offers/:id/stock [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-32",
+      "step": "PATCH /api/catalog/v1/seller/offers/:id/status → active [seller]",
+      "status": 400,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-33",
+      "step": "POST /api/catalog/v1/seller/listing/start [seller]",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-33",
+      "step": "PUT /api/catalog/v1/seller/listing/draft/:id [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-33",
+      "step": "GET /api/catalog/v1/seller/listing/draft/:id [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-33",
+      "step": "GET /api/catalog/v1/seller/listing/drafts [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-33",
+      "step": "POST /api/catalog/v1/seller/listing/:id/validate [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-33",
+      "step": "POST /api/catalog/v1/seller/listing/:id/publish [seller]",
+      "status": 409,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-34",
+      "step": "GET /api/catalog/v1/products/:id/configuration [buyer]",
+      "status": 404,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-34",
+      "step": "POST validate-configuration (simple product) [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-34",
+      "step": "POST resolve-configuration (simple product) [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-35",
+      "step": "POST /api/catalog/v1/checkout/validate [buyer]",
+      "status": 200,
+      "ok": true
+    }
+  ]
+}

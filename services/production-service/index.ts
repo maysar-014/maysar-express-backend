@@ -38,6 +38,7 @@ import { CapacityAdjustmentSaga } from './src/application/sagas/CapacityAdjustme
 import { ProductionController } from './src/api/controllers/ProductionController';
 import { createProductionRoutes } from './src/api/routes/productionRoutes';
 import { OrderEventHandler } from './src/infrastructure/events/OrderEventHandler';
+import { appLogger } from '../../shared/logger/logger';
 
 // Define Module Interface locally to avoid relative import issues if common is far
 interface Module {
@@ -51,7 +52,7 @@ export const ProductionModule: Module = {
     name: 'production-service',
     routes: Router(),
     initialize: async () => {
-        console.log('Initializing Production Service...');
+        appLogger.info('Initializing Production Service...');
 
         // Reuse the global Prisma singleton to avoid exhausting the connection pool.
         const { prisma: sharedPrisma } = await import('../../src/config/prisma');
@@ -120,10 +121,10 @@ export const ProductionModule: Module = {
         // 8. Event Handlers
         const orderHandler = new OrderEventHandler(planningSaga);
 
-        console.log('Production Service Initialized.');
+        appLogger.info('Production Service Initialized.');
     },
     shutdown: async () => {
-        console.log('Shutting down Production Service...');
+        appLogger.info('Shutting down Production Service...');
         // No-op: shared Prisma singleton is managed by the monolith lifecycle
     }
 };

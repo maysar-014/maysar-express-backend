@@ -1,7 +1,7 @@
 ﻿# Enabler Flows — KYC Service
 
 > **Verification status:** Partially Verified (middleware behaviour confirmed; no standalone HTTP surface)
-> **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` — kyc-service section; `docs/enabler/ENABLER_SERVICE_SYSTEM.md`
+> **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` — kyc-service section; enabler-service & payout-service route source (see `services/enabler-service/src/api/routes/*`, `services/payout-service/src/api/routes/payout.routes.ts`); `docs/enabler/ENABLER_SERVICE_SYSTEM.md` is a **phantom reference** (no such file exists) — see Known Gaps.
 > **Canonical source:** `docs/FLOWS/kyc/user-flow/enabler-flows.md`
 > **Corresponding frontend guide:** `docs/FLOWS/kyc/frontend-guide/enabler-guide.md`
 
@@ -129,3 +129,19 @@ When kyc-service completes a review and the enabler's KYC level changes, it publ
 |---------|----------------|------------|----------------|
 | KYC level revoked / drops below required | `requireKycLevel(N)` rejects on next request | `KYC_LEVEL_REQUIRED` / `KYC_LEVEL_INSUFFICIENT` | Gated actions blocked again |
 | `kyc.status_changed` processing failure | Downstream services may not see updated level immediately | — | Event redelivery handles retry |
+---
+
+## Cross-References
+
+| Document | Scope |
+|---------|-------|
+| `docs/FLOWS/kyc/user-flow/enabler-flows.md` | KYC middleware gate — canonical reference (this doc) |
+| `docs/FLOWS/kyc/user-flow/seller-flows.md` | KYC middleware gate — canonical reference |
+| `docs/FLOWS/kyc/user-flow/supplier-flows.md` | Supplier KYC gates (same middleware family, different cap) |
+| `docs/FLOWS/kyc/frontend-guide/supplier-guide.md` | Supplier KYC UI guidance |
+| `docs/FLOWS/payout/user-flow/enabler-flows.md` | Enabler payout flow gated by KYC-ENB-02 |
+| `docs/FLOWS/catalog/frontend-guide/enabler-guide.md` | Enabler catalog listing UI |
+| `docs/FLOWS/_verification/analysis-report.md` | Verification evidence |
+| `docs/FLOWS/_verification/known-gaps.md` | Phantom reference `docs/enabler/ENABLER_SERVICE_SYSTEM.md` — do not link |
+
+

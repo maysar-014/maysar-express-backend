@@ -1,19 +1,22 @@
 ﻿# Seller Flows — KYC Service
 
-> **Verification status:** Partially Verified (middleware behaviour confirmed; no standalone HTTP surface)
-> **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` — kyc-service section; `docs/enabler/ENABLER_SERVICE_SYSTEM.md`; `docs/catalog/CATALOG_SERVICE_SYSTEM.md`; `docs/payout/PAYOUT_SERVICE_SYSTEM.md`
-> **Canonical source:** `docs/FLOWS/kyc/user-flow/seller-flows.md`
-> **Corresponding frontend guide:** `docs/FLOWS/kyc/frontend-guide/seller-guide.md`
+> **Verification status:** Verified — Live-verified 2026-11-06 against `run-lifecycle-checks.mjs` (LC-10)
+> **Verification basis:** `scripts/verification/run-lifecycle-checks.mjs` LC-10 (2026-11-06)
 
 ---
 
 > ⚠️ **KYC Architecture Clarification — REQUIRED READING**
 >
-> KYC-service has **NO standalone HTTP surface**. There are **no `/api/kyc/*` routes** of any kind.
+> KYC enforcement uses `requireKycLevel(N)` middleware imported **directly from kyc-service** into catalog-service, payout-service, wallet-service, and enabler-service routes. This is an **in-process gate**.
 >
-> KYC is enforced as `requireKycLevel(N)` middleware imported **directly from kyc-service** into catalog-service, payout-service, wallet-service, and enabler-service routes. This is an **in-process gate** — NOT a separate HTTP service call.
+> **However, there IS a live HTTP surface:**
+> - `GET /api/kyc/status` — returns the authenticated user's current KYC level and status (verified in LC-10)
+> - `GET /api/compliance/kyc-status/:userId` — admin compliance lookup (verified in LC-10)
+> - `GET /api/compliance/manual-review/pending` — admin pending review queue (verified in LC-10)
+> - `GET /api/compliance/audit-log` — admin audit log (verified in LC-10)
+> - `GET /api/support/admin/kyc/:userId` — support agent KYC lookup (verified in LC-10)
 >
-> Legacy documentation (`docs/Flow Docs/03-seller-journeys.md`) incorrectly shows `compliance-service` as a standalone KYC service. **That is wrong** — `compliance-service` does not exist. The canonical KYC architecture is documented here.
+> Legacy documentation incorrectly shows `compliance-service` as a standalone KYC service. **That is wrong** — these endpoints are served by existing services. The canonical KYC architecture is documented here.
 
 ---
 
@@ -21,9 +24,46 @@
 
 | Flow ID | Flow Name | Status | Primary Endpoint |
 |---------|-----------|--------|-----------------|
-| KYC-SEL-01 | KYC Gate on Product Creation | Partially Verified | `POST /api/catalog/v1/products` (with in-process KYC check) |
-| KYC-SEL-02 | KYC Gate on Payout | Partially Verified | `POST /api/payout/payouts` (with in-process KYC check) |
-| KYC-SEL-03 | KYC Status Change Propagation | Partially Verified | `kyc.status_changed` event |
+| KYC-SEL-01 | KYC Gate on Product Creation | Verified | `POST /api/catalog/v1/products` (with in-process KYC check) |
+| KYC-SEL-02 | KYC Gate on Payout | Verified | `POST /api/payout/payouts` (with in-process KYC check) |
+| KYC-SEL-03 | Check KYC Status (Self) | Verified | `GET /api/kyc/status` |
+| KYC-SEL-04 | Admin: KYC Status Lookup | Verified | `GET /api/compliance/kyc-status/:userId` |
+| KYC-SEL-05 | Admin: Pending Manual Reviews | Verified | `GET /api/compliance/manual-review/pending` |
+| KYC-SEL-06 | Admin: Compliance Audit Log | Verified | `GET /api/compliance/audit-log` |
+| KYC-SEL-07 | Support: KYC Lookup by UserId | Verified | `GET /api/support/admin/kyc/:userId` |
+
+---
+
+## Flow KYC-SEL-03: Check KYC Status
+
+> ✅ Added 2026-11-06 — verified in LC-10.
+
+| Step | Actor/System | Action | Endpoint | Auth | Expected Response |
+|---|---|---|---|---|---|
+| 1 | Seller | Check own KYC level | `GET /api/kyc/status` | Bearer JWT | 200 `{ data: { kycLevel: N, status } }` or 404 |
+
+**Response:**
+```json
+{
+  "data": {
+    "kycLevel": 2,
+    "status": "VERIFIED"
+  }
+}
+```
+
+---
+
+## Flow KYC-SEL-04 through KYC-SEL-07: Admin / Support Compliance Endpoints
+
+> ✅ All verified in LC-10.
+
+| Endpoint | Auth | Response |
+|---|---|---|
+| `GET /api/compliance/kyc-status/:userId` | Admin JWT | 200 `{ data: { kycLevel, status, verifiedAt } }` or 404 |
+| `GET /api/compliance/manual-review/pending` | Admin JWT | 200 `{ data: { items: [], total } }` |
+| `GET /api/compliance/audit-log` | Admin JWT | 200 `{ data: [...] }` |
+| `GET /api/support/admin/kyc/:userId` | Admin JWT | 200 with KYC submission detail or 404 (expected when KYC was seeded directly, not submitted) |
 
 ---
 

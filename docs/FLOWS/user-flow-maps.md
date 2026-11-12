@@ -44,10 +44,13 @@
 | **Enabler** | training | [training/user-flow/enabler-flows.md](./training/user-flow/enabler-flows.md) | [training/frontend-guide/enabler-guide.md](./training/frontend-guide/enabler-guide.md) |
 | **Enabler** | kyc | [kyc/user-flow/enabler-flows.md](./kyc/user-flow/enabler-flows.md) | [kyc/frontend-guide/enabler-guide.md](./kyc/frontend-guide/enabler-guide.md) |
 | **Enabler** | payout | [payout/user-flow/enabler-flows.md](./payout/user-flow/enabler-flows.md) | [payout/frontend-guide/enabler-guide.md](./payout/frontend-guide/enabler-guide.md) |
+| **Enabler** | wallet | No wallet surface (403 `FORBIDDEN` — `authorizeWalletAccess()` excludes enablers) | No UI; redirect to payout status page |
 | **Supplier** | auth | [auth/user-flow/supplier-flows.md](./auth/user-flow/supplier-flows.md) | [auth/frontend-guide/supplier-guide.md](./auth/frontend-guide/supplier-guide.md) |
 | **Supplier** | production | [production/user-flow/supplier-flows.md](./production/user-flow/supplier-flows.md) | [production/frontend-guide/supplier-guide.md](./production/frontend-guide/supplier-guide.md) |
 | **Supplier** | inventory | [inventory/user-flow/supplier-flows.md](./inventory/user-flow/supplier-flows.md) | [inventory/frontend-guide/supplier-guide.md](./inventory/frontend-guide/supplier-guide.md) |
 | **Supplier** | payout | [payout/user-flow/supplier-flows.md](./payout/user-flow/supplier-flows.md) | [payout/frontend-guide/supplier-guide.md](./payout/frontend-guide/supplier-guide.md) |
+| **Supplier** | wallet | No wallet surface (403 `FORBIDDEN` — `authorizeWalletAccess()` excludes suppliers) | No UI; redirect to payout status page |
+| **Supplier** | kyc | [kyc/user-flow/supplier-flows.md](./kyc/user-flow/supplier-flows.md) | [kyc/frontend-guide/supplier-guide.md](./kyc/frontend-guide/supplier-guide.md) |
 | **Admin** | auth | [auth/user-flow/admin-flows.md](./auth/user-flow/admin-flows.md) | [auth/frontend-guide/admin-guide.md](./auth/frontend-guide/admin-guide.md) |
 | **Admin** | user | [user/user-flow/admin-flows.md](./user/user-flow/admin-flows.md) | [user/frontend-guide/admin-guide.md](./user/frontend-guide/admin-guide.md) |
 | **Admin** | catalog | [catalog/user-flow/admin-flows.md](./catalog/user-flow/admin-flows.md) | [catalog/frontend-guide/admin-guide.md](./catalog/frontend-guide/admin-guide.md) |

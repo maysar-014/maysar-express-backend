@@ -42,7 +42,7 @@ export class DatabaseManager {
 
       this.prismaClient = createPrismaClient({
         datasourceUrl: config.prisma.url,
-        log: config.prisma.logQueries ? ['query', 'info', 'warn', 'error'] : undefined,
+        log: ['warn', 'error'],
       });
 
       await Promise.race([
@@ -121,7 +121,7 @@ export function loadDatabaseConfig(): DatabaseConfig {
     prisma: {
       url: process.env.DATABASE_URL || 'postgresql://user:password@localhost:5432/order_service',
       maxConnections: parseInt(process.env.DB_MAX_CONNECTIONS || '10', 10),
-      logQueries: process.env.NODE_ENV === 'development',
+    logQueries: false,
     },
   };
 

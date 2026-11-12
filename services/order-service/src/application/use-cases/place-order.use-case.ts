@@ -12,6 +12,11 @@ import { PrismaVerificationAuditLogRepository } from '../../infrastructure/datab
 import { CatalogProductRepository } from '../../infrastructure/repositories/catalog-product.repository';
 import type { VerificationAuditLogEntry } from '../../domain/entities/verification-audit-log.entity';
 import { makeId } from '@shared/ids/id';
+import { normalizeEnablerCode, toShortEnablerCode } from '@shared/ids/public-codes';
+// Static import of the shared eventBus ensures the same singleton instance is used
+// across all modules. The previous dynamic import created a race condition where
+// different modules might resolve to different module instances under tsx/esm.
+import { eventBus as sharedEventBus } from '@shared-events/eventBus';
 
 /**
  * Generates a cryptographically random 6-digit delivery confirmation code.
@@ -59,6 +64,19 @@ export interface PlaceOrderRequest {
   };
   /** The seller location chosen as fulfillment pickup point */
   fulfillmentLocationId?: string;
+  /** Referral identity; permission is resolved from current seller scope at order placement. */
+  enablerId?: string;
+  enablerCode?: string;
+  /** Candidate product lines from the server-created checkout session. */
+  enablerProductIds?: string[];
+}
+
+export interface OrderEnablerAuthorizationLookup {
+  findByCode(code: string, shortCode?: string): Promise<{ id: string; userId: string; status: string } | null>;
+  getAuthorizedProductIds(enablerId: string, productIds: string[]): Promise<string[]>;
+  getAuthorizedProductTerms?(enablerId: string, productIds: string[]): Promise<Array<{
+    productId: string; authorizationId: string; earningRuleType: string; earningRuleValue: number;
+  }>>;
 }
 
 export interface PlaceOrderResponse {
@@ -128,6 +146,7 @@ export class PlaceOrderUseCase {
     // Defaults preserve the existing construction sites; tests inject stubs.
     private readonly catalogLookup: ProductCatalogLookup = new CatalogProductRepository(),
     private readonly verificationAudit: VerificationAuditSink = new PrismaVerificationAuditLogRepository(),
+    private readonly enablerAuthorizationLookup?: OrderEnablerAuthorizationLookup,
   ) {
     this.paymentGatewayAdapter = paymentGatewayAdapter;
   }
@@ -227,6 +246,64 @@ export class PlaceOrderUseCase {
 
     const orderId = IdGeneratorService.generateOrderId();
     const currency = request.currency || 'TZS';
+    let attributedEnabler: { id: string; code: string } | undefined;
+    let attributedProductIds: string[] = [];
+    let attributionAuthorizationId: string | undefined;
+    let attributionBaseAmount = 0;
+    let attributionRate = 0;
+    let attributionAmount = 0;
+    let attributionRuleType = 'PERCENTAGE_OF_ITEM_SUBTOTAL';
+    if (request.enablerCode) {
+      const normalizedCode = normalizeEnablerCode(request.enablerCode);
+      if (!normalizedCode) throw new Error('Invalid enabler code');
+      if (!this.enablerAuthorizationLookup) throw new Error('Enabler authorization service is unavailable');
+      const enabler = await this.enablerAuthorizationLookup.findByCode(
+        normalizedCode,
+        toShortEnablerCode(normalizedCode) || undefined,
+      );
+      if (!enabler || (request.enablerId && request.enablerId !== enabler.id)) throw new Error('Enabler code not found');
+      if (!['ACTIVE', 'APPROVED'].includes(String(enabler.status).toUpperCase())) throw new Error('Enabler is not active');
+      if (enabler.userId === request.buyerId) throw new Error('Enabler cannot be the buyer');
+      const orderProductIds = [...new Set(request.items.map((item) => item.productId))];
+      const terms = this.enablerAuthorizationLookup.getAuthorizedProductTerms
+        ? await this.enablerAuthorizationLookup.getAuthorizedProductTerms(enabler.id, orderProductIds)
+        : [];
+      const authorizedProductIds = terms.length
+        ? terms.map((term) => term.productId)
+        : await this.enablerAuthorizationLookup.getAuthorizedProductIds(enabler.id, orderProductIds);
+      const candidates = new Set(request.enablerProductIds ?? []);
+      attributedProductIds = authorizedProductIds.filter((productId) => candidates.has(productId));
+      if (attributedProductIds.length) {
+        attributedEnabler = { id: enabler.id, code: normalizedCode };
+        const approvedTerms = terms.filter((term) => candidates.has(term.productId));
+        const rules = new Set(approvedTerms.map((term) => `${term.earningRuleType}:${Number(term.earningRuleValue)}`));
+        if (approvedTerms.length && rules.size !== 1) throw new Error('Seller promotion terms are inconsistent within this order');
+        attributionAuthorizationId = approvedTerms[0]?.authorizationId;
+        attributionRate = Number(approvedTerms[0]?.earningRuleValue ?? 0);
+        attributionRuleType = approvedTerms[0]?.earningRuleType ?? attributionRuleType;
+        const approvedProductIds = new Set(approvedTerms.map((term) => term.productId));
+        const eligibleLines = request.items.filter((item) => approvedProductIds.has(item.productId));
+        attributionBaseAmount = eligibleLines.reduce((sum, item) => {
+          const price = typeof item.price === 'number' ? item.price : item.price.amount;
+          return sum + Number(price) * item.quantity;
+        }, 0);
+        if (attributionRuleType === 'PERCENTAGE_OF_ITEM_SUBTOTAL') {
+          attributionAmount = Math.round(attributionBaseAmount * attributionRate) / 100;
+        } else if (attributionRuleType === 'FIXED_PER_ORDER') {
+          attributionAmount = Math.round(attributionRate * 100) / 100;
+        } else if (attributionRuleType === 'FIXED_PER_ITEM') {
+          attributionAmount = Math.round(eligibleLines.reduce((sum, item) => sum + attributionRate * item.quantity, 0) * 100) / 100;
+        } else {
+          throw new Error('Unsupported seller promotion earning rule');
+        }
+      }
+    } else if (request.enablerId || request.enablerProductIds?.length) {
+      throw new Error('Enabler code is required for attribution');
+    }
+    const wholeSellerOrderAttributed = Boolean(
+      attributedEnabler && request.items.length > 0
+      && request.items.every((item) => attributedProductIds.includes(item.productId))
+    );
     const totalAmount = request.items.reduce((sum, item) => {
       const price = typeof item.price === 'number' ? item.price : item.price.amount;
       return sum + (price * item.quantity);
@@ -297,6 +374,18 @@ export class PlaceOrderUseCase {
       orderCompletionMethod: request.orderCompletionMethod,
       chatConversationId: request.chatConversationId,
       fulfillmentLocationId: request.fulfillmentLocationId,
+      // Legacy order-level commission fields are set only if the seller order
+      // contains no product lines outside the enabler's approved scope.
+      enablerId: wholeSellerOrderAttributed ? attributedEnabler?.id : undefined,
+      enablerCode: wholeSellerOrderAttributed ? attributedEnabler?.code : undefined,
+      enablerAttributionEnablerId: attributedEnabler?.id,
+      enablerAttributionCode: attributedEnabler?.code,
+      enablerAttributionProductIds: attributedProductIds,
+      enablerAttributionAuthorizationId: attributionAuthorizationId,
+      enablerAttributionBaseAmount: attributionBaseAmount,
+      enablerAttributionRate: attributionRate,
+      enablerAttributionAmount: attributionAmount,
+      enablerAttributionRuleType: attributionRuleType,
       // Delivery economics. These are accepted by the placement API and consumed
       // by BuyerConfirmCheckoutUseCase to size the COD commitment hold, but they
       // were never carried onto the order, so the hold was always 0 and COD
@@ -397,6 +486,25 @@ export class PlaceOrderUseCase {
       await this.eventPublisher.publish(new OrderCreatedEvent(order));
     } catch (legacyErr: any) {
       console.warn('[PlaceOrderUseCase] Legacy OrderCreatedEvent failed (non-fatal):', legacyErr.message);
+    }
+
+    // Publish OrderCreated synchronously via the in-memory event bus so the
+    // payment saga can create a payment record immediately (not waiting for
+    // the outbox processor's 5-second polling delay). Uses static import to
+    // guarantee the same singleton instance across all modules.
+    try {
+      const subscribersBefore = sharedEventBus.getSubscriberCount('OrderCreated');
+      console.log(`[PlaceOrderUseCase] OrderCreated subscribers before publish: ${subscribersBefore}`);
+      await sharedEventBus.publish('OrderCreated', {
+        orderId: order.id,
+        userId: order.buyerId,
+        totalAmount: Number(order.totalAmount ?? 0),
+        currency: request.currency || 'TZS',
+        paymentMethod: String(request.paymentMethod || request.orderCompletionMethod || 'WALLET').toUpperCase(),
+      });
+      console.log(`[PlaceOrderUseCase] OrderCreated published to ${subscribersBefore} subscribers`);
+    } catch (syncErr: any) {
+      console.warn('[PlaceOrderUseCase] Synchronous OrderCreated event publish failed (non-fatal):', syncErr.message);
     }
 
     return {

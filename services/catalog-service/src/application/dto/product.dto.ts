@@ -180,6 +180,9 @@ export interface ProductSummaryDto {
   weight?: number | null;
   /** Present when the product is covered by an active campaign */
   campaign?: ProductCampaignDto | null;
+  /** Total units sold across all DELIVERED orders. 0 when no sales data exists yet. */
+  purchaseCount?: number;
+  publishedAt?: Date | null;
 }
 
 /**

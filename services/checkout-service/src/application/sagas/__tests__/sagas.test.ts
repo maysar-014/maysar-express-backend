@@ -59,6 +59,25 @@ describe('OrderFulfillmentSaga', () => {
     expect(calls[2][0]).toBe('OrderCreationRequested');
   });
 
+  it('forwards product-scoped enabler attribution for mixed-cart order creation', async () => {
+    mockCheckoutRepository.getSession.mockResolvedValue({
+      id: 'session-1',
+      cartId: 'cart-1',
+      userId: 'buyer-1',
+      items: [{ productId: 'prod-1', quantity: 1 }, { productId: 'prod-2', quantity: 1 }],
+      totalAmount: 100,
+      metadata: { enablerId: 'enb_01', enablerCode: 'ENB-123456', enablerProductIds: ['prod-1'] },
+    });
+
+    await saga.execute('session-1');
+
+    expect(mockEventBus.publish).toHaveBeenCalledWith('OrderCreationRequested', expect.objectContaining({
+      enablerId: 'enb_01',
+      enablerProductIds: ['prod-1'],
+      enablerAttributionScope: 'PRODUCTS',
+    }));
+  });
+
   it('should compensate on error', async () => {
     mockCartRepository.delete.mockRejectedValueOnce(new Error('Delete failed'));
 

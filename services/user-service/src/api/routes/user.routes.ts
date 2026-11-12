@@ -38,6 +38,7 @@ export const USER_SERVICE_ROUTES: ApiRouteDefinition[] = [
   { method: 'POST', path: '/api/users/:id/role', description: 'Change user role with permission sync', authorization: ['admin'], requestBodyDTO: 'ChangeRoleDTO.Request', responseBodyDTO: 'ChangeRoleDTO.Response' },
   { method: 'POST', path: '/api/users/:id/phone/verify', description: 'Verify user phone number with OTP', authorization: ['self'], requestBodyDTO: 'VerifyPhoneDTO.Request', responseBodyDTO: 'VerifyPhoneDTO.Response' },
   { method: 'POST', path: '/api/users/:id/2fa/setup', description: 'Setup two-factor authentication', authorization: ['self'], requestBodyDTO: 'SetupTwoFactorDTO.Request', responseBodyDTO: 'SetupTwoFactorDTO.Response' },
+  { method: 'POST', path: '/api/users/resolve-names', description: 'Resolve a batch of user IDs to display names (fullName, publicCode, role)', authorization: ['authenticated'], requestBodyDTO: 'ResolveNamesDTO.Request', responseBodyDTO: 'ResolveNamesDTO.Response' },
   { method: 'POST', path: '/api/security/breaches/report', description: 'Report security breach', authorization: ['system', 'security'], requestBodyDTO: 'ReportSecurityBreachDTO.Request', responseBodyDTO: 'ReportSecurityBreachDTO.Response' }
 ];
 
@@ -63,6 +64,11 @@ import { PrismaEmailVerificationTokenRepository } from '../../infrastructure/rep
 import { PrismaPasswordResetTokenRepository } from '../../infrastructure/repositories/prisma-password-reset-token.repository';
 import { RequestPasswordResetUseCase } from '../../application/use-cases/request-password-reset.use-case';
 import { ResetPasswordUseCase } from '../../application/use-cases/reset-password.use-case';
+import {
+  ResolveNamesUseCase,
+  NameResolutionCache,
+  NAME_RESOLUTION_CACHE_PREFIX,
+} from '../../application/use-cases/resolve-names.use-case';
 import { requireAuth } from '@shared/middleware/auth-context.middleware';
 import { validateJoiRequest } from '@shared/middleware/joi-request-validation';
 
@@ -116,6 +122,18 @@ const userIdParamsSchema = Joi.object({
 
 const codReputationParamsSchema = Joi.object({
   userId: nonEmptyId.required(),
+}).unknown(false);
+
+/**
+ * POST /resolve-names body schema.
+ *
+ * `ids` must be a non-empty array of unique user IDs, max 100 entries. Joi
+ * enforces uniqueness here so the controller doesn't need to deduplicate
+ * before validating — it still deduplicates after validation for the
+ * first-occurrence ordering passed to the use case.
+ */
+const resolveNamesBodySchema = Joi.object({
+  ids: Joi.array().items(nonEmptyId).min(1).max(100).unique().required(),
 }).unknown(false);
 
 const tokenParamsSchema = Joi.object({
@@ -193,6 +211,37 @@ const securityBreachBodySchema = Joi.object({
   details: Joi.object().unknown(true).required(),
 }).unknown(false);
 
+/**
+ * Build a NameResolutionCache backed by the shared ioredis client.
+ *
+ * Returns undefined when Redis is unavailable so the use case falls through
+ * to the DB-only path. Each method is wrapped in try/catch so a Redis error
+ * never propagates to the use case — it degrades to a cache miss.
+ */
+function makeRedisNameCache(): NameResolutionCache | undefined {
+  try {
+    const client = getSharedRedisClient();
+    return {
+      async get(key: string): Promise<string | null> {
+        try { return await client.get(key); }
+        catch { return null; }
+      },
+      async set(key: string, value: string, ttlSeconds: number): Promise<void> {
+        try { await client.set(key, value, 'EX', ttlSeconds); }
+        catch { /* non-fatal — cache write failure just means a DB hit next time */ }
+      },
+      async del(key: string): Promise<void> {
+        try { await client.del(key); }
+        catch { /* non-fatal — stale entry expires at TTL */ }
+      },
+    };
+  } catch {
+    // Redis client could not be constructed — return undefined so the use
+    // case knows there is no cache and goes straight to the DB.
+    return undefined;
+  }
+}
+
 function initializeController(): void {
   if (!userController) {
     const userValidationService = new UserValidationService();
@@ -236,10 +285,11 @@ function initializeController(): void {
     const setupTwoFactorUseCase = new SetupTwoFactorUseCase(userRepository, emailService, notificationClient);
     const reportSecurityBreachUseCase = new ReportSecurityBreachUseCase(userRepository, emailService, notificationClient);
     const getUserUseCase = new GetUserUseCase(userRepository);
-    const updateUserUseCase = new UpdateUserUseCase(userRepository, eventPublisher);
+    const updateUserUseCase = new UpdateUserUseCase(userRepository, eventPublisher, makeRedisNameCache());
     const verifyEmailUseCase = new VerifyEmailUseCase(userRepository, eventPublisher, emailVerificationTokens);
     const requestPasswordResetUseCase = new RequestPasswordResetUseCase(userRepository, passwordResetTokens, emailService);
     const resetPasswordUseCase = new ResetPasswordUseCase(changePasswordUseCase, passwordResetTokens);
+    const resolveNamesUseCase = new ResolveNamesUseCase(userRepository, makeRedisNameCache());
 
     userController = new UserController(
       createUserUseCase,
@@ -257,7 +307,8 @@ function initializeController(): void {
       resetPasswordUseCase,
       emailService,
       notificationClient,
-      userRepository
+      userRepository,
+      resolveNamesUseCase
     );
 
     const getCODReputationUseCase = new GetCODReputationUseCase(userRepository);
@@ -271,6 +322,10 @@ export async function handleCreateUser(req: Request, res: Response): Promise<voi
 
 export async function handleGetUserById(req: Request, res: Response): Promise<void> {
   await userController.getUserById(req, res);
+}
+
+export async function handleResolveNames(req: Request, res: Response): Promise<void> {
+  await userController.resolveNames(req, res);
 }
 
 export async function handleUpdateUser(req: Request, res: Response): Promise<void> {
@@ -408,6 +463,9 @@ export function createUserRoutes(): Router {
   // Profile routes must be before /:id so GET/PUT /profile are not matched as id="profile"
   router.get('/profile', requireAuth, handleGetProfile);
   router.put('/profile', requireAuth, validateJoiRequest({ body: updateUserBodySchema }), handleUpdateProfile);
+  // Bulk name resolution — registered BEFORE /:id so the path 'resolve-names'
+  // is not shadowed by the /:id catch-all.
+  router.post('/resolve-names', requireAuth, validateJoiRequest({ body: resolveNamesBodySchema }), handleResolveNames);
   router.get('/:id', requireAuth, validateJoiRequest({ params: userIdParamsSchema }), handleGetUserById);
   router.put('/:id', requireAuth, validateJoiRequest({ params: userIdParamsSchema, body: updateUserBodySchema }), handleUpdateUser);
   router.delete('/:id', requireAuth, validateJoiRequest({ params: userIdParamsSchema }), handleDeleteUser);

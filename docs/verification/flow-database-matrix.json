@@ -1,0 +1,278 @@
+[
+  {
+    "flowId": "FLOW-001",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-002",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-003",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-004",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-005",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-006",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-007",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-008",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-009",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-010",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-011",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-012",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-013",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-014",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-015",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-016",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-017",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-018",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-019",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-020",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-021",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-022",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-023",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-024",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-025",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-026",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-027",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-028",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-029",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-030",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-031",
+    "tables": [
+      {
+        "prismaModel": "Request_Request",
+        "tableName": "request__request",
+        "effectType": "insert",
+        "classification": "direct",
+        "causalChain": "routes/health.routes.ts → controller → use-case → prisma.Request_Request (direct write)"
+      }
+    ]
+  },
+  {
+    "flowId": "FLOW-032",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-033",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-034",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-035",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-036",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-037",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-038",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-039",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-040",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-041",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-042",
+    "tables": [
+      {
+        "prismaModel": "Request_Request",
+        "tableName": "request__request",
+        "effectType": "insert",
+        "classification": "direct",
+        "causalChain": "routes/admin.routes.ts → controller → use-case → prisma.Request_Request (direct write)"
+      }
+    ]
+  },
+  {
+    "flowId": "FLOW-043",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-044",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-045",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-046",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-047",
+    "tables": [
+      {
+        "prismaModel": "Request_Request",
+        "tableName": "request__request",
+        "effectType": "insert",
+        "classification": "direct",
+        "causalChain": "routes/admin.routes.ts → controller → use-case → prisma.Request_Request (direct write)"
+      }
+    ]
+  },
+  {
+    "flowId": "FLOW-048",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-049",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-050",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-051",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-052",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-053",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-054",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-055",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-056",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-057",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-058",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-059",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-060",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-061",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-062",
+    "tables": []
+  },
+  {
+    "flowId": "FLOW-063",
+    "tables": []
+  }
+]

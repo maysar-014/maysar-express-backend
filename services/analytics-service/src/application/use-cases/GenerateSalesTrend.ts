@@ -1,15 +1,21 @@
 import prisma from '../../infrastructure/database/prisma';
+import { COMMITTED_ORDER_STATUSES } from '../constants/orderStatuses';
+
+// Cast to any[] — Prisma requires Order_OrderStatus enum but the values are valid enum members
+const COMMITTED_STATUSES_PRISMA = COMMITTED_ORDER_STATUSES as any[];
 
 export class GenerateSalesTrend {
   async execute(sellerId: string) {
     const last7Days = new Date();
     last7Days.setDate(last7Days.getDate() - 7);
 
+    // Use committed order statuses so trend data reflects all accepted orders,
+    // not just the final DELIVERED state.
     const orders = await prisma.order_Order.findMany({
       where: {
         sellerId,
         createdAt: { gte: last7Days },
-        status: 'DELIVERED'
+        status: { in: COMMITTED_STATUSES_PRISMA }
       },
       select: { createdAt: true, totalAmount: true }
     });
@@ -63,10 +69,10 @@ export class GenerateSalesTrend {
     if (data.length < 2) return 'flat';
     const last3 = data.slice(-3);
     const prev = data.slice(0, Math.max(1, data.length - 3));
-    
-    const last3Avg = last3.reduce((sum, d) => sum + d.revenue, 0) / last3.length;
-    const prevAvg = prev.reduce((sum, d) => sum + d.revenue, 0) / prev.length;
-    
+
+    const last3Avg = last3.reduce((sum: number, d: any) => sum + d.revenue, 0) / last3.length;
+    const prevAvg = prev.reduce((sum: number, d: any) => sum + d.revenue, 0) / prev.length;
+
     if (last3Avg > prevAvg * 1.1) return 'up';
     if (last3Avg < prevAvg * 0.9) return 'down';
     return 'flat';

@@ -34,6 +34,7 @@ describe('GetProductUseCase', () => {
     mockProductRepository = {
       save: jest.fn(),
       findById: jest.fn(),
+      findBySlug: jest.fn().mockResolvedValue(null),
       findBySeller: jest.fn(),
       findByCategory: jest.fn(),
       search: jest.fn(),
@@ -313,6 +314,7 @@ describe('GetProductsBySellerUseCase', () => {
     mockProductRepository = {
       save: jest.fn(),
       findById: jest.fn(),
+      findBySlug: jest.fn().mockResolvedValue(null),
       findBySeller: jest.fn(),
       findByCategory: jest.fn(),
       search: jest.fn(),

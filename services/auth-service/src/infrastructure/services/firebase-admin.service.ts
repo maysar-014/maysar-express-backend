@@ -1,6 +1,12 @@
 /**
  * Firebase Admin Service
  * Singleton wrapper around firebase-admin for phone OTP token verification
+ *
+ * IMPORTANT: This file references Firebase ONLY as an example push/auth provider.
+ * Maysar Express Backend is provider-agnostic — you can replace this
+ * implementation with any other push/OTP provider (OneSignal, AWS SNS, Twilio,
+ * self-hosted, etc.) by implementing the same interface. No provider is
+ * mandated in system code.
  */
 
 import * as admin from 'firebase-admin';

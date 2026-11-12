@@ -380,42 +380,6 @@ export class CreateProductUseCase {
 
       await this.productRepository.saveWithAttributesTransaction(persistenceDto, productId, attributesToSave);
 
-      // ── Auto-attach product to Catalog_SellerLocation inventory ─────────────
-      // If supplierLocationId is a sloc_ prefixed ID (Catalog_SellerLocation),
-      // automatically create the Catalog_ProductLocation record so the seller
-      // does not need a separate API call.
-      const isNewSellerLocation = savedLocation?.id?.startsWith('sloc_') ||
-        (supplierLocationId?.startsWith('sloc_'));
-      if (isNewSellerLocation && supplierLocationId && (dto.inventoryCount ?? 0) >= 0) {
-        try {
-          const prisma = (globalThis as any).prisma;
-          if (prisma?.catalog_ProductLocation) {
-            await prisma.catalog_ProductLocation.upsert({
-              where: { productId_locationId: { productId, locationId: supplierLocationId } },
-              create: {
-                id: makeId('ploc'),
-                productId,
-                locationId: supplierLocationId,
-                sellerId: dto.sellerId,
-                quantityAvailable: dto.inventoryCount ?? 0,
-                quantityReserved: 0,
-                isAvailable: (dto.inventoryCount ?? 0) > 0,
-                createdAt: now,
-                updatedAt: now,
-              },
-              update: {
-                quantityAvailable: dto.inventoryCount ?? 0,
-                isAvailable: (dto.inventoryCount ?? 0) > 0,
-                updatedAt: now,
-              },
-            });
-          }
-        } catch (inventoryErr: any) {
-          // Non-fatal — seller can attach inventory manually
-          console.warn('[CreateProductUseCase] Auto-attach inventory failed (non-fatal):', inventoryErr?.message);
-        }
-      }
-
       // The default variant ID is deterministic — matches what saveWithAttributesTransaction creates
       const defaultVariantId = `${productId}-default-variant`;
 

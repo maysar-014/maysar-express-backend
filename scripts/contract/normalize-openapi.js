@@ -3536,10 +3536,15 @@ const classifyAuthSecurity = (method, routePath) => {
   if (hasPathPrefix(routePath, '/api/auth/health')) return PUBLIC_SECURITY;
   if (hasPathPrefix(routePath, '/api/auth/oauth')) return PUBLIC_SECURITY;
   if (hasPathPrefix(routePath, '/api/auth/2fa')) return PUBLIC_SECURITY;
+  if (hasPathPrefix(routePath, '/api/auth/phone')) return PUBLIC_SECURITY;
   if (routePath === '/api/auth/verify-otp') return PUBLIC_SECURITY;
   if (routePath === '/api/auth/switch-role') return BEARER_SECURITY;
   if (routePath === '/api/auth/role-requests') return BEARER_SECURITY;
   if (hasPathPrefix(routePath, '/api/auth/admin')) return BEARER_SECURITY;
+  if (hasPathPrefix(routePath, '/api/auth/users')) return BEARER_SECURITY;
+  if (hasPathPrefix(routePath, '/api/auth/audit')) return BEARER_SECURITY;
+  if (hasPathPrefix(routePath, '/api/auth/security-events')) return BEARER_SECURITY;
+  if (hasPathPrefix(routePath, '/api/auth/discovery')) return BEARER_SECURITY;
   if (routePath === '/api/auth/sessions' || hasPathPrefix(routePath, '/api/auth/sessions')) return BEARER_SECURITY;
   if (routePath === '/api/auth/verify') return BEARER_SECURITY;
   if (AUTH_PUBLIC_EXACT_PATHS.has(routePath)) return PUBLIC_SECURITY;
@@ -3555,8 +3560,8 @@ const classifyCatalogSecurity = (method, routePath) => {
   if (usesMethod(method, 'POST') && CATALOG_PUBLIC_POST_PATHS.has(routePath)) return PUBLIC_SECURITY;
   if (hasPathPrefix(routePath, '/api/catalog/match')) return BEARER_SECURITY;
   if (routePath === '/api/catalog/sellers/{sellerId}/share-url') return BEARER_SECURITY;
-  if (hasPathPrefix(routePath, '/api/catalog/v1/products')) return BEARER_SECURITY;
-  if (hasPathPrefix(routePath, '/api/catalog/v1/pricing')) return BEARER_SECURITY;
+  if (hasPathPrefix(routePath, '/api/catalog/v1')) return BEARER_SECURITY;
+  if (hasPathPrefix(routePath, '/api/catalog/seller-locations')) return BEARER_SECURITY;
   return null;
 };
 
@@ -3564,21 +3569,8 @@ const classifyCommunitySecurity = (method, routePath) => {
   if (hasPathPrefix(routePath, '/api/community/system/maintenance')) return SERVICE_KEY_SECURITY;
   if (routePath === '/api/community/health' || routePath === '/api/community/metrics') return PUBLIC_SECURITY;
   if (usesMethod(method, 'GET') && COMMUNITY_PUBLIC_GET_PATHS.has(routePath)) return PUBLIC_SECURITY;
-
-  if (routePath === '/api/community/challenges') return BEARER_SECURITY;
-  if (hasPathPrefix(routePath, '/api/community/challenges/{challengeId}/solutions')) return BEARER_SECURITY;
-  if (routePath === '/api/community/discover') return BEARER_SECURITY;
-  if (routePath === '/api/community/discussions') return BEARER_SECURITY;
-  if (hasPathPrefix(routePath, '/api/community/discussions/{threadId}/accept')) return BEARER_SECURITY;
-  if (hasPathPrefix(routePath, '/api/community/discussions/{threadId}/answers')) return BEARER_SECURITY;
-  if (hasPathPrefix(routePath, '/api/community/discussions/{threadId}/close')) return BEARER_SECURITY;
-  if (routePath === '/api/community/expertise/validate') return BEARER_SECURITY;
-  if (routePath === '/api/community/knowledge/articles') return BEARER_SECURITY;
-  if (hasPathPrefix(routePath, '/api/community/knowledge/articles/{articleId}/publish')) return BEARER_SECURITY;
-  if (hasPathPrefix(routePath, '/api/community/knowledge/articles/{articleId}/reviews')) return BEARER_SECURITY;
-  if (routePath === '/api/community/posts') return BEARER_SECURITY;
-  if (hasPathPrefix(routePath, '/api/community/posts/users/{userId}/feed')) return BEARER_SECURITY;
-  return null;
+  // All community routes require authentication
+  return BEARER_SECURITY;
 };
 
 const classifyNotificationSecurity = (routePath) => {
@@ -3603,6 +3595,8 @@ const classifyPaymentSecurity = (routePath) => {
   if (hasPathPrefix(routePath, '/api/payment/health')) return PUBLIC_SECURITY;
   if (routePath === '/api/payment/metrics') return PUBLIC_SECURITY;
   if (PAYMENT_PUBLIC_PREFIXES.some((prefix) => hasPathPrefix(routePath, prefix))) return PUBLIC_SECURITY;
+  if (hasPathPrefix(routePath, '/api/payment/payment-methods')) return BEARER_SECURITY;
+  if (hasPathPrefix(routePath, '/api/payment/admin')) return BEARER_SECURITY;
   if (hasPathPrefix(routePath, '/api/payment/payments')) {
     return BEARER_SECURITY;
   }
@@ -3614,6 +3608,7 @@ const classifyTrainingSecurity = (method, routePath) => {
   if (hasPathPrefix(routePath, '/api/training/api/health')) return PUBLIC_SECURITY;
   if (usesMethod(method, 'GET') && hasPathPrefix(routePath, '/api/training/api/v1/modules')) return PUBLIC_SECURITY;
   if (hasPathPrefix(routePath, '/api/training/api/v1/training')) return BEARER_SECURITY;
+  if (hasPathPrefix(routePath, '/api/training')) return BEARER_SECURITY;
   return null;
 };
 
@@ -3634,6 +3629,10 @@ const classifyServiceSecurity = (method, routePath) => {
 
   if (hasPathPrefix(routePath, '/api/analytics')) {
     if (routePath === '/api/analytics/health' || routePath === '/api/analytics/metrics') return PUBLIC_SECURITY;
+    return BEARER_SECURITY;
+  }
+
+  if (hasPathPrefix(routePath, '/api/admin')) {
     return BEARER_SECURITY;
   }
 
@@ -3689,7 +3688,23 @@ const classifyServiceSecurity = (method, routePath) => {
 
   if (hasPathPrefix(routePath, '/api/maps')) {
     if (hasPathPrefix(routePath, '/api/maps/health')) return PUBLIC_SECURITY;
-    return null;
+    return BEARER_SECURITY;
+  }
+
+  if (hasPathPrefix(routePath, '/api/chat')) {
+    if (hasPathPrefix(routePath, '/api/chat/health')) return PUBLIC_SECURITY;
+    return BEARER_SECURITY;
+  }
+
+  if (hasPathPrefix(routePath, '/api/kyc')) {
+    if (hasPathPrefix(routePath, '/api/kyc/health')) return PUBLIC_SECURITY;
+    return BEARER_SECURITY;
+  }
+
+  if (hasPathPrefix(routePath, '/api/request')) {
+    if (hasPathPrefix(routePath, '/api/request/health')) return PUBLIC_SECURITY;
+    if (hasPathPrefix(routePath, '/api/request/requests/assess')) return PUBLIC_SECURITY;
+    return BEARER_SECURITY;
   }
 
   if (hasPathPrefix(routePath, '/api/notification')) return classifyNotificationSecurity(routePath);

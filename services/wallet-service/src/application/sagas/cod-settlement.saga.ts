@@ -44,6 +44,9 @@ export interface CODSettlementPayload {
     sellerAmount: number;
     courierId: string;
     courierAmount: number;
+    enablerUserId?: string;
+    enablerAmount?: number;
+    enablerEarningId?: string;
 }
 
 /**
@@ -157,6 +160,9 @@ export class CODSettlementSaga extends DistributedSagaOrchestrator<CODSettlement
                 name: 'PayoutSellerAndCourier',
                 execute: async (payload, sagaId) => {
                     if (payload.deliveryStatus !== 'SUCCESS') return;
+                    if ((payload.enablerAmount ?? 0) < 0 || (payload.enablerAmount ?? 0) > payload.sellerAmount) {
+                        throw new Error(`Enabler commission exceeds seller proceeds for order ${payload.orderId}`);
+                    }
                     const sellerAuditInfo = AuditInfo.create({
                         actor: 'wallet-service',
                         actorType: ActorType.SYSTEM,
@@ -171,19 +177,41 @@ export class CODSettlementSaga extends DistributedSagaOrchestrator<CODSettlement
                         reason: `Courier payout for order ${payload.orderId}`,
                         metadata: { sagaId, orderId: payload.orderId }
                     });
+                    const enablerAuditInfo = AuditInfo.create({
+                        actor: 'wallet-service',
+                        actorType: ActorType.SYSTEM,
+                        action: 'ENABLER_COMMISSION_CREDIT',
+                        reason: `Enabler commission for order ${payload.orderId}`,
+                        metadata: { sagaId, orderId: payload.orderId, earningId: payload.enablerEarningId }
+                    });
 
                     console.log(`[${sagaId}] Crediting seller ${payload.sellerId} and courier ${payload.courierId}`);
 
                     // Credit Seller
                     await this.creditWalletUseCase.execute({
                         userId: payload.sellerId,
-                        amount: payload.sellerAmount,
+                        amount: payload.sellerAmount - (payload.enablerAmount ?? 0),
                         currency: payload.currency,
                         description: `COD Payout - Order ${payload.orderId}`,
                         idempotencyKey: `cod_seller_credit_${payload.orderId}`,
                         correlationId: sagaId,
                         auditInfo: sellerAuditInfo
                     });
+
+                    if (payload.enablerUserId && (payload.enablerAmount ?? 0) > 0) {
+                        await this.creditWalletUseCase.execute({
+                            userId: payload.enablerUserId,
+                            amount: payload.enablerAmount!,
+                            currency: payload.currency,
+                            description: `Enabler commission - Order ${payload.orderId}`,
+                            idempotencyKey: `enabler_commission_credit_${payload.orderId}`,
+                            correlationId: sagaId,
+                            referenceType: 'enabler_commission',
+                            referenceId: payload.enablerEarningId ?? payload.orderId,
+                            metadata: { orderId: payload.orderId, earningId: payload.enablerEarningId },
+                            auditInfo: enablerAuditInfo
+                        });
+                    }
 
                     // Credit Courier
                     await this.creditWalletUseCase.execute({

@@ -6,12 +6,16 @@ import { OutboxProcessor } from '../../shared/outbox/outbox.processor';
 import { eventBus } from '../../shared/events/eventBus';
 import { healthRoutes } from './src/api/routes/health.routes';
 import { createMaintenanceRoutes } from './src/api/routes/maintenance.routes';
+import { createInventoryRoutes } from './src/api/routes/inventory.routes';
 import { createPrismaClient } from '@shared/database/prisma-client';
 import { requireAuth, requireRoleOrService } from '@shared/middleware/auth-context.middleware';
+import { appLogger } from '../../shared/logger/logger';
 import { StockManager } from './src/modules/stock/stockManager';
 import { ReservationEngine } from './src/modules/reservation/reservationEngine';
 import { WarehouseManager } from './src/modules/warehouse/warehouseManager';
 import { StockApi } from './src/modules/api/stockApi';
+import { StockOutApi } from './src/modules/api/stockOutApi';
+import { StockOutReconciliation } from './src/modules/stock-out/stockOutReconciliation';
 import { InventoryEventHandlers } from './src/modules/events/eventHandlers';
 import { EventIdempotency, IdempotencyMiddleware } from '@shared/middleware/idempotency';
 import { createRedisStockEngine, resolveRedisReservationMode } from './src/infrastructure/redis/redis-stock-engine';
@@ -24,7 +28,7 @@ let prisma: PrismaClient;
 export const InventoryModule: Module = {
     name: 'inventory-service',
     initialize: async () => {
-        console.log('Initializing inventory-service module');
+        appLogger.info('Initializing inventory-service module');
 
         // Reuse the global Prisma singleton to share the connection pool
         const globalForPrisma = globalThis as unknown as { prisma: any };
@@ -45,6 +49,7 @@ export const InventoryModule: Module = {
             redisReservationMode
         );
         const stockApi = new StockApi(prisma as any, stockManager, reservationEngine, warehouseManager);
+        const stockOutApi = new StockOutApi(new StockOutReconciliation(prisma));
         const eventIdempotency = process.env.REDIS_URL
             ? new EventIdempotency(process.env.REDIS_URL, prisma)
             : null;
@@ -61,15 +66,16 @@ export const InventoryModule: Module = {
             const outbox = new TransactionalOutbox(prisma, 'inventory_OutboxEvent');
             outboxProcessor = new OutboxProcessor(prisma, outbox, eventBus, 'inventory-service');
             outboxProcessor.start();
-            console.log('Inventory-service outbox processor started');
+            appLogger.info('Inventory-service outbox processor started');
         } catch (e) {
-            console.error('Failed to start inventory-service outbox processor:', e);
+            appLogger.error('Failed to start inventory-service outbox processor', { error: e instanceof Error ? e.message : String(e) });
         }
 
-        const router = Router();
-        router.use('/health', healthRoutes);
-        router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes(prisma));
-        router.get('/metrics', async (_req, res) => {
+        // Add all routes to the pre-declared router that app.ts already mounted.
+        const invRouter = InventoryModule.routes!;
+        invRouter.use('/health', healthRoutes);
+        invRouter.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes(prisma));
+        invRouter.get('/metrics', async (_req, res) => {
             res.set('Content-Type', metricsRegistry.contentType);
             res.end(await metricsRegistry.metrics());
         });
@@ -82,32 +88,14 @@ export const InventoryModule: Module = {
             apiRouter.use(idempotencyMiddleware.middleware());
         }
 
-        apiRouter.get('/stock/:variantId', (req, res) => stockApi.getStockLevel(req, res));
-        apiRouter.put('/stock/:variantId/:warehouseId', (req, res) => stockApi.adjustStock(req, res));
+        // Mount all business routes from the dedicated route file
+        apiRouter.use('/', createInventoryRoutes(stockApi, stockOutApi));
 
-        apiRouter.get('/materials', (req, res) => stockApi.listMaterials(req, res));
-        apiRouter.get('/materials/:variantId', (req, res) => stockApi.getMaterialStock(req, res));
-        apiRouter.put('/materials/:variantId/warehouses/:warehouseId', (req, res) => stockApi.updateMaterialInventory(req, res));
-
-        apiRouter.post('/reservations', (req, res) => stockApi.createReservation(req, res));
-        apiRouter.delete('/reservations/:orderId', (req, res) => stockApi.cancelReservation(req, res));
-        apiRouter.get('/reservations/:orderId', (req, res) => stockApi.getOrderReservations(req, res));
-
-        apiRouter.get('/warehouses', (req, res) => stockApi.getWarehouses(req, res));
-        apiRouter.get('/warehouses/:id', (req, res) => stockApi.getWarehouse(req, res));
-
-        apiRouter.post('/inventory-counts', (req, res) => stockApi.startInventoryCount(req, res));
-        apiRouter.put('/inventory-counts/:countId', (req, res) => stockApi.completeInventoryCount(req, res));
-
-        apiRouter.get('/analytics/stock-levels', (req, res) => stockApi.getStockAnalytics(req, res));
-
-        router.use('/', apiRouter);
-
-        InventoryModule.routes = router;
+        invRouter.use('/', apiRouter);
     },
     routes: Router(),
     shutdown: async () => {
-        console.log('Shutting down inventory-service module');
+        appLogger.info('Shutting down inventory-service module');
         if (outboxProcessor) {
             outboxProcessor.stop();
         }

@@ -1,12 +1,12 @@
 ﻿# Buyer Flows — Catalog Service
 
-> **Verification status:** Partially Verified (product/category 404s data-level; search redirects noted; canonical search endpoint Verified)
-> **Verification basis:** `docs/FLOWS/_verification/analysis-report.md` (September 2026)
-> **Last updated:** September 2026
+> **Verification status:** Verified (Flows 1-3); Flows 4-5 added 2026-11-10 (MUVA/MSLE — pending live verification)
+> **Verification basis:** `scripts/verification/run-lifecycle-checks.mjs` LC-29 (2026-11-06); MUVA/MSLE Phase 1-4 implementation (2026-11-10)
+> **Last updated:** 2026-11-10 (added Flow 4: Configuration Selection & Resolution, Flow 5: View Seller Offers for a Product)
 
 ## Overview
 
-This document covers catalog-service flows from the buyer's perspective: searching for products, viewing product detail, and browsing by category. All search and discovery flows are unauthenticated (no JWT required). The buy-box winner is determined server-side by a 9-signal composite ranking engine — buyers always see the best available seller for each product automatically.
+This document covers catalog-service flows from the buyer's perspective: searching for products, viewing product detail by ID or slug, and browsing by category. All search and discovery flows are unauthenticated (no JWT required). The buy-box winner is determined server-side by a 9-signal composite ranking engine — buyers always see the best available seller for each product automatically.
 
 ---
 
@@ -14,9 +14,11 @@ This document covers catalog-service flows from the buyer's perspective: searchi
 
 | # | Flow Name | Verification Status | Primary Endpoint |
 |---|---|---|---|
-| 1 | Product Search | Partially Verified (search redirects noted) | `GET /api/catalog/v1/products/search` |
-| 2 | View Product Detail | Verified (data-level 404 observed) | `GET /api/catalog/v1/products/:productId` |
-| 3 | Browse by Category | Partially Verified | `GET /api/catalog/v1/categories`, `GET /api/catalog/v1/categories/:categoryId/products` |
+| 1 | Product Search | Verified | `GET /api/catalog/v1/products/search` |
+| 2 | View Product Detail (by ID or Slug) | Verified | `GET /api/catalog/v1/products/:identifier` |
+| 3 | Browse by Category | Verified | `GET /api/catalog/v1/categories`, `GET /api/catalog/v1/categories/:categoryId/products` |
+| 4 | Configuration Selection & Resolution | Pending Verification | `GET /api/catalog/v1/products/:productId/configuration` |
+| 5 | View Seller Offers for a Product | Pending Verification | `GET /api/catalog/v1/products/:productId/offers` |
 
 ---
 
@@ -83,21 +85,33 @@ This document covers catalog-service flows from the buyer's perspective: searchi
 | Field | Value |
 |---|---|
 | Actor | Buyer |
-| Trigger | Buyer clicks on a product from search results, category browse, or direct link |
+| Trigger | Buyer clicks on a product from search results, category browse, or shareable slug URL |
 | Preconditions | None (unauthenticated) |
 | Terminal states (success) | 200 with full product detail including buy-box winner |
 | Terminal states (failure) | 404 (product not found) |
-| Verification status | Verified (data-level 404 observed in sweep — route exists) |
+| Verification status | Verified |
+
+### Transparent Identifier Resolution
+
+`GET /api/catalog/v1/products/:identifier` accepts either form without change to the URL structure:
+
+- **System ID** — e.g. `GET /api/catalog/v1/products/prod_01ABCDEF…` (direct database lookup)
+- **URL slug** — e.g. `GET /api/catalog/v1/products/juma-mens-leather-sandals` (falls back to slug lookup when ID lookup returns null)
+
+The response shape is identical regardless of which form is used. This mirrors the storefront pattern (`GET /api/catalog/sellers/:sellerId/storefront`) where either a UUID or a slug is accepted in the same parameter.
+
+> **No `/by-slug/` path.** A separate `/by-slug/:slug` endpoint does not exist and never should — it would be redundant and expose an implementation detail as a URL segment.
 
 ### Happy Path
 
 | Step | Actor/System | Action | Endpoint | Auth | Expected Response |
 |---|---|---|---|---|---|
-| 1 | Buyer | Navigates to product page | — | — | UI requests product detail |
-| 2 | Buyer | Product detail requested | `GET /api/catalog/v1/products/:productId` | None | Request sent |
-| 3 | catalog-service | Fetches product via `GetProductUseCase` | — | — | Product entity loaded |
-| 4 | catalog-service | Attaches buy-box winner, pricing, and stock status | — | — | Buy-box winner from pre-computed ranking |
-| 5 | Buyer | Receives full product detail | — | — | 200 with product, buy-box winner seller, pricing, variants, images, reviews summary |
+| 1 | Buyer | Navigates to product page (by ID or slug) | — | — | UI requests product detail |
+| 2 | Buyer | Product detail requested | `GET /api/catalog/v1/products/:identifier` | None | Request sent |
+| 3 | catalog-service | `GetProductUseCase` calls `findById(:identifier)` | — | — | Product found → proceed to step 5 |
+| 4 | catalog-service | If `findById` returns null, calls `findBySlug(:identifier)` | — | — | Product found by slug → proceed to step 5 |
+| 5 | catalog-service | Attaches buy-box winner, pricing, and stock status | — | — | Buy-box winner from pre-computed ranking |
+| 6 | Buyer | Receives full product detail | — | — | 200 with product, buy-box winner seller, pricing, variants, images, reviews summary |
 
 ### Response Includes
 
@@ -157,3 +171,151 @@ Both category endpoints are handled entirely within catalog-service. The categor
 | Category not found | 404 | `RESOURCE_NOT_FOUND` | Invalid `categoryId`; buyer returns to top-level category list |
 | Category exists but has no active products | 200 with empty `products[]` | — | UI shows empty state; suggest similar categories |
 | Invalid pagination parameters | 400 | `VALIDATION_ERROR` | Buyer corrects pagination |
+
+---
+
+---
+
+## Flow 4: Configuration Selection & Resolution
+
+> **Added 2026-11-10 — MUVA/MSLE Phase 1 (ENH-006/009)**
+> Products may have configurable options (Colour, Size, Storage, etc.). The buyer selects options and the backend resolves, validates, and confirms the selection before checkout. The frontend never invents configuration rules — it fetches the definition from the backend and presents the options to the buyer.
+
+### Summary
+
+| Field | Value |
+|---|---|
+| Actor | Buyer |
+| Trigger | Buyer views a product that has a configuration definition |
+| Preconditions | None (unauthenticated for read); product has an active configuration definition |
+| Terminal states (success) | 200 with dimensions, options, and valid combinations |
+| Terminal states (failure) | 404 if product has no configuration (simple product) |
+| Verification status | Pending live verification |
+
+### Step 1: Fetch Configuration Definition
+
+```
+GET /api/catalog/v1/products/{productId}/configuration
+```
+
+Returns the full configuration schema:
+- **dimensions** — selectable axes (e.g., Colour, Storage)
+- **options** — valid values per dimension (e.g., Black, Blue; 64GB, 128GB)
+- **dependencies** — conditional rules (e.g., if Colour=Blue, Storage is limited to 64GB only)
+- **constraints** — exclusions and min/max selection rules
+- **combinations** — the sparse set of valid discrete combinations
+
+> **404 response** means the product has no configuration — it is a simple product. No configuration selection is needed; the buyer can add it to cart directly.
+
+### Step 2: Buyer Selects Options
+
+The frontend renders the dimensions and options as a selector UI. The buyer picks one or more options per dimension. The frontend should call validate on each change or on submit.
+
+### Step 3: Validate Configuration
+
+```
+POST /api/catalog/v1/products/{productId}/validate-configuration
+Body: { "selections": { "dim_colour": ["opt_black"], "dim_storage": ["opt_128gb"] } }
+```
+
+Returns:
+```json
+{
+  "valid": true,
+  "errors": []
+}
+```
+
+If invalid, `errors` contains `{ field, message }` objects explaining what is wrong (missing required dimension, invalid option, dependency violation, etc.).
+
+### Step 4: Resolve Configuration
+
+```
+POST /api/catalog/v1/products/{productId}/resolve-configuration
+Body: { "selections": { "dim_colour": ["opt_black"], "dim_storage": ["opt_128gb"] } }
+```
+
+Returns:
+```json
+{
+  "resolved": true,
+  "variantId": "comb_01ABC...",
+  "fingerprint": "a1b2c3d4e5f6...",
+  "configurationDefinitionVersion": 1,
+  "valid": true,
+  "errors": [],
+  "resolvedConfiguration": { "Colour": "Black", "Storage": "128 GB" },
+  "isSparseCombination": true,
+  "combinationExists": true
+}
+```
+
+**Key fields:**
+- `fingerprint` — the deterministic canonical identifier for this configuration. Pass this to checkout so the order snapshot preserves the exact configuration.
+- `combinationExists` — if `false`, this specific combination is not purchasable even though each individual option is valid. The buyer must choose a different combination.
+- `resolvedConfiguration` — human-readable display values for the order summary.
+
+### Service Interaction Chain
+
+All three endpoints are handled within catalog-service. No inter-service calls are needed — the configuration definition, validation policy, and fingerprint algorithm are all in-process domain logic.
+
+### Unhappy Path Branches
+
+| Trigger Condition | System Response | Error Code |
+|---|---|---|
+| Product has no configuration definition | 404 | `NOT_FOUND` — simple product, no selection needed |
+| Invalid option ID in selections | 400 | `VALIDATION_ERROR` |
+| Missing required dimension | 200 with `valid: false` and error list | — |
+| Combination not in sparse set | 200 with `combinationExists: false` | — |
+
+---
+
+## Flow 5: View Seller Offers for a Product
+
+> **Added 2026-11-10 — MUVA/MSLE Phase 3 (ENH-001/009)**
+> Multiple sellers may offer the same catalog product. The buyer can see all active offers to compare prices, conditions, and fulfillment terms. The buy-box winner is pre-computed and surfaced as the default; the offers endpoint lets the buyer see alternatives.
+
+### Summary
+
+| Field | Value |
+|---|---|
+| Actor | Buyer |
+| Trigger | Buyer wants to compare all sellers offering a product |
+| Preconditions | None (unauthenticated) |
+| Terminal states (success) | 200 with array of active offers sorted by price ascending |
+| Terminal states (failure) | 500 (internal error) |
+| Verification status | Pending live verification |
+
+### Happy Path
+
+| Step | Actor/System | Action | Endpoint | Auth | Expected Response |
+|---|---|---|---|---|---|
+| 1 | Buyer | Requests offers for a product | `GET /api/catalog/v1/products/{productId}/offers` | None | 200 with offers array |
+
+### Response Shape
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "offer_01ABC...",
+      "sellerId": "usr_01...",
+      "price": 42000,
+      "currency": "TZS",
+      "stockAvailable": 15,
+      "condition": "new",
+      "fulfillmentPolicy": "seller_fulfilled",
+      "leadTimeDays": 2,
+      "minimumOrderQuantity": 1
+    }
+  ]
+}
+```
+
+Offers are sorted by price ascending. Only `active` status offers are returned. The buy-box winner is typically the first result but is also pre-attached to the product detail response (Flow 2).
+
+### Service Interaction Chain
+
+`GET /api/catalog/v1/products/{productId}/offers` is handled within catalog-service. It queries `Catalog_SellerOffer` filtered by `productId` and `status: 'active'`. No inter-service calls are needed.
+

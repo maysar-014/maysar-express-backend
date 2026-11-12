@@ -5,20 +5,17 @@ const registryLogger = createLogger('ModuleRegistry', 'core');
 
 export class ModuleRegistry {
     private modules: Module[] = [];
+    private moduleHealth: Map<string, 'healthy' | 'unhealthy'> = new Map();
 
     register(module: Module) {
         registryLogger.info(`Registering module: ${module.name}`);
         this.modules.push(module);
+        this.moduleHealth.set(module.name, 'unhealthy');
     }
 
     async initializeAll() {
-        registryLogger.info(`Initializing ${this.modules.length} modules in parallel...`);
+        registryLogger.info(`Initializing ${this.modules.length} modules...`);
         const totalStart = Date.now();
-
-        const allowFailure =
-            process.env.ALLOW_MODULE_INIT_FAILURES === 'true' ||
-            process.env.ALLOW_MODULE_INIT_FAILURES === '1' ||
-            process.env.CONTRACT_TESTS === '1';
 
         const timeoutMs = Number(process.env.MODULE_INIT_TIMEOUT_MS || 0);
 
@@ -42,28 +39,31 @@ export class ModuleRegistry {
                     await initPromise;
                 }
 
+                this.moduleHealth.set(module.name, 'healthy');
                 registryLogger.info(`Initialized ${module.name} in ${Date.now() - start}ms`);
             })
         );
 
-        let hasUnrecoverableFailure = false;
+        const failed = results
+            .map((r, i) => (r.status === 'rejected' ? this.modules[i].name : null))
+            .filter(Boolean);
+
         for (const [i, result] of results.entries()) {
             if (result.status === 'rejected') {
+                this.moduleHealth.set(this.modules[i].name, 'unhealthy');
                 registryLogger.error(`Failed to initialize module ${this.modules[i].name}:`, result.reason);
-                if (!allowFailure) {
-                    hasUnrecoverableFailure = true;
-                } else {
-                    registryLogger.warn(`Continuing without ${this.modules[i].name} due to initialization failure.`);
-                }
             }
         }
 
-        if (hasUnrecoverableFailure) {
-            const failed = results
-                .map((r, i) => (r.status === 'rejected' ? this.modules[i].name : null))
-                .filter(Boolean)
-                .join(', ');
-            throw new Error(`Failed to initialize modules: ${failed}`);
+        if (failed.length > 0) {
+            // Log the failures but do NOT crash the entire application.
+            // A single module's database connection failure should degrade that
+            // module's functionality, not prevent the entire monolith from booting.
+            // The health endpoint (/ready) will report which modules are unhealthy.
+            registryLogger.warn(
+                `Modules failed to initialize (non-fatal, degraded mode): ${failed.join(', ')}. ` +
+                `These modules will be unavailable but the server will continue serving requests.`
+            );
         }
 
         registryLogger.info(`All modules initialized in ${Date.now() - totalStart}ms`);
@@ -82,6 +82,10 @@ export class ModuleRegistry {
 
     getModules() {
         return this.modules;
+    }
+
+    getModuleHealth() {
+        return Object.fromEntries(this.moduleHealth);
     }
 }
 

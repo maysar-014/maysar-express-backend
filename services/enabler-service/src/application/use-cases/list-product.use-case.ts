@@ -7,13 +7,19 @@ import { ProductListedEvent } from '../../domain/events/enabler-events';
 import { ProductListingMapper } from '../mappers/product-listing.mapper';
 import { Enabler_ListingStatus, Enabler_Status } from '@prisma/client';
 import { getModelPrefix, makeId } from '@shared/ids/id';
+import { PromotedCatalogService } from '../services/promoted-catalog.service';
+
+export interface PromotionAuthorizationLookup {
+    getAuthorizedProducts(enablerId: string, productId?: string): Promise<Array<{ id: string; sellerId: string; authorizationId: string }>>;
+}
 
 export class ListProductUseCase {
     constructor(
         private readonly enablerRepository: IEnablerRepository,
         private readonly listingRepository: IProductListingRepository,
         private readonly catalogService: any, // Interface to be defined
-        private readonly eventPublisher: any
+        private readonly eventPublisher: any,
+        private readonly authorizationLookup: PromotionAuthorizationLookup = new PromotedCatalogService()
     ) { }
 
     async execute(enablerId: string, dto: CreateProductListingDto): Promise<ProductListingResponseDto> {
@@ -29,6 +35,14 @@ export class ListProductUseCase {
         const product = await this.catalogService.getProduct(dto.productId);
         if (!product) throw new Error('Product not found');
 
+        // Legacy listing records must not bypass the seller's current approval.
+        // The authorization service is the live source of truth and re-checks
+        // scope, effective dates, revocation, suspension, and product visibility.
+        const [authorizedProduct] = await this.authorizationLookup.getAuthorizedProducts(enablerId, dto.productId);
+        if (!authorizedProduct || authorizedProduct.sellerId !== product.sellerId) {
+            throw new Error('Cannot list product: active seller authorization is required');
+        }
+
         // 3. Apply Listing Policy
         const currentListings = await this.listingRepository.findByEnablerId(enablerId);
 
@@ -36,8 +50,8 @@ export class ListProductUseCase {
             enablerTier: enabler.tier,
             enablerStatus: enabler.status as Enabler_Status,
             productStatus: product.status,
-            sellerAllowsEnablers: product.seller.allowsEnablers, // Assuming structure
-            sellerBlockedEnablers: product.seller.blockedEnablers,
+            sellerAllowsEnablers: true,
+            sellerBlockedEnablers: [],
             currentListingsCount: currentListings.length
         }, enablerId);
 
@@ -67,7 +81,7 @@ export class ListProductUseCase {
                 returnPolicy: dto.returnPolicy,
                 warrantyPeriod: dto.warrantyPeriod
             },
-            sellerApproved: !product.seller.requiresApproval, // Auto-approve if not required
+            sellerApproved: true,
             views: 0,
             clicks: 0,
             orders: 0,

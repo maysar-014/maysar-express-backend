@@ -5,6 +5,7 @@ export interface GetDeliveriesInput {
   limit?: number;
   status?: string;
   courierId?: string;
+  orderId?: string;
   dateFrom?: Date;
   dateTo?: Date;
 }
@@ -83,6 +84,11 @@ export class GetDeliveriesUseCase {
       deliveries = await this.deliveryRepository.findAll(timeRange);
     }
 
+    // Filter by orderId if provided (repository may not support this natively)
+    if (input.orderId) {
+      deliveries = deliveries.filter((d: any) => d.orderId === input.orderId);
+    }
+
     // Apply pagination
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
@@ -138,6 +144,7 @@ export class GetDeliveriesUseCase {
       filters: {
         status: input.status,
         courierId: input.courierId,
+        orderId: input.orderId,
         dateFrom: input.dateFrom?.toISOString(),
         dateTo: input.dateTo?.toISOString()
       }

@@ -27,6 +27,8 @@ export interface CreateQuoteInput {
   warrantyNote?: string | null;
   explanation?: string | null;
   validUntil: string;
+  /** Internal: set to 'admin-override' to allow admin to create quotes without assignment check */
+  _adminOverride?: string | null;
 }
 
 export interface CreateQuoteResult {
@@ -45,7 +47,7 @@ export class CreateQuoteUseCase {
   async execute(providerId: string, requestId: string, input: CreateQuoteInput): Promise<CreateQuoteResult> {
     const request = await this.requestRepo.findById(requestId);
     if (!request) throw new NotFoundError(`Request ${requestId} not found`);
-    if (request.assignedProviderId !== providerId) {
+    if (request.assignedProviderId !== providerId && input?._adminOverride !== 'admin-override') {
       throw new ForbiddenError('Only the assigned provider can create a quote for this request');
     }
     // A revision (§B-6) is also quoted while the request is QUOTE_PUBLISHED —

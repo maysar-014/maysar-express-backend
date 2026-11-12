@@ -232,6 +232,39 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
   }
 
   /**
+   * Find a published product by its globally-unique URL slug.
+   * Supports the /p/[slug] frontend route pattern.
+   * Only returns published products (prevents draft/archived products from being accessible by slug).
+   */
+  async findBySlug(slug: string): Promise<any | null> {
+    const productData = await this.prisma.product.findFirst({
+      where: {
+        slug,
+        status: 'published'
+      },
+      include: {
+        category: true,
+        variants: true
+      }
+    });
+
+    if (!productData) return null;
+
+    const mediaRef = await this.prisma.mediaRef.findMany({
+      where: {
+        entityType: 'product',
+        entityId: productData.id
+      },
+      orderBy: { displayOrder: 'asc' }
+    });
+
+    return this.enrichWithStock(this.normalizeProductRecord({
+      ...productData,
+      mediaRef
+    }));
+  }
+
+  /**
    * Find products by seller with pagination
    */
   async findBySeller(sellerId: string): Promise<any[]> {
@@ -1002,8 +1035,15 @@ export class PrismaProductRepository implements ProductRepository, IProductRepos
       }
       return stockMap;
     } catch (error) {
-      // Inventory service unavailable — degrade gracefully, products show out_of_stock
-      console.warn('[PrismaProductRepository] fetchStockByVariantIds failed, defaulting to empty stock map:', (error as Error).message);
+      // RC-5 fix: structured JSON warning with detectable errorCode for log aggregation systems
+      console.warn(JSON.stringify({
+        level: 'warn',
+        errorCode: 'INVENTORY_UNREACHABLE',
+        message: 'fetchStockByVariantIds failed — defaulting to empty stock map; products will show out_of_stock',
+        variantCount: variantIds.length,
+        cause: (error as Error).message,
+        timestamp: new Date().toISOString()
+      }));
       return new Map();
     }
   }

@@ -5,12 +5,24 @@
 
 import { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
-import { joiId } from '@shared/validation/id';
+import { joiId, isSystemId } from '@shared/validation/id';
+import { isOrderNumber } from '@shared/ids/human-readable-ids';
+
+/**
+ * Accept both system IDs (ULID/UUID/CUID) and human-readable order numbers (ORD-YYYYMMDD-NLNL).
+ */
+const joiOrderOrSystemId = (message = 'Invalid ID format') =>
+  Joi.string()
+    .custom((value, helpers) => {
+      if (isSystemId(value) || isOrderNumber(value)) return value;
+      return helpers.error('any.invalid');
+    })
+    .messages({ 'any.invalid': message });
 
 // Commission calculation validation schema
 export const validateCalculateCommission = (req: Request, res: Response, next: NextFunction): void => {
   const schema = Joi.object({
-    orderId: joiId().required(),
+    orderId: joiOrderOrSystemId().required(),
     sellerId: joiId().required(),
     orderAmount: Joi.number().positive().precision(2).required(),
     recipientType: Joi.string().valid('seller', 'courier', 'enabler', 'customer').required(),

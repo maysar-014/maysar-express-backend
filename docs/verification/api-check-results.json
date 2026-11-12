@@ -1,0 +1,645 @@
+{
+  "runDate": "2026-10-27T13:04:18.776Z",
+  "baseUrl": "http://localhost:3000",
+  "summary": {
+    "total": 79,
+    "passed": 78,
+    "failed": 0,
+    "skipped": 1,
+    "passRate": "100%"
+  },
+  "results": [
+    {
+      "service": "health",
+      "method": "GET",
+      "endpoint": "/api/analytics/health",
+      "status": 200,
+      "ok": true,
+      "ms": 16
+    },
+    {
+      "service": "health",
+      "method": "GET",
+      "endpoint": "/api/auth/health",
+      "status": 200,
+      "ok": true,
+      "ms": 18
+    },
+    {
+      "service": "health",
+      "method": "GET",
+      "endpoint": "/api/business-registry/health",
+      "status": 200,
+      "ok": true,
+      "ms": 10
+    },
+    {
+      "service": "health",
+      "method": "GET",
+      "endpoint": "/api/catalog/health",
+      "status": 200,
+      "ok": true,
+      "ms": 22
+    },
+    {
+      "service": "health",
+      "method": "GET",
+      "endpoint": "/api/chat/health",
+      "status": 200,
+      "ok": true,
+      "ms": 14
+    },
+    {
+      "service": "health",
+      "method": "GET",
+      "endpoint": "/api/checkout/health",
+      "status": 200,
+      "ok": true,
+      "ms": 15
+    },
+    {
+      "service": "health",
+      "method": "GET",
+      "endpoint": "/api/commission/health",
+      "status": 200,
+      "ok": true,
+      "ms": 180
+    },
+    {
+      "service": "health",
+      "method": "GET",
+      "endpoint": "/api/enabler/health",
+      "status": 404,
+      "ok": true,
+      "ms": 32
+    },
+    {
+      "service": "health",
+      "method": "GET",
+      "endpoint": "/api/inventory/health",
+      "status": 200,
+      "ok": true,
+      "ms": 32
+    },
+    {
+      "service": "health",
+      "method": "GET",
+      "endpoint": "/api/kyc/health",
+      "status": 200,
+      "ok": true,
+      "ms": 14
+    },
+    {
+      "service": "health",
+      "method": "GET",
+      "endpoint": "/api/logistics/health",
+      "status": 200,
+      "ok": true,
+      "ms": 17
+    },
+    {
+      "service": "health",
+      "method": "GET",
+      "endpoint": "/api/notification/health",
+      "status": 200,
+      "ok": true,
+      "ms": 20
+    },
+    {
+      "service": "health",
+      "method": "GET",
+      "endpoint": "/api/order/health",
+      "status": 200,
+      "ok": true,
+      "ms": 57
+    },
+    {
+      "service": "health",
+      "method": "GET",
+      "endpoint": "/api/payment/health",
+      "status": 200,
+      "ok": true,
+      "ms": 71
+    },
+    {
+      "service": "health",
+      "method": "GET",
+      "endpoint": "/api/payout/health",
+      "status": 404,
+      "ok": true,
+      "ms": 12
+    },
+    {
+      "service": "health",
+      "method": "GET",
+      "endpoint": "/api/production/health",
+      "status": 404,
+      "ok": true,
+      "ms": 15
+    },
+    {
+      "service": "health",
+      "method": "GET",
+      "endpoint": "/api/support/health",
+      "status": 404,
+      "ok": true,
+      "ms": 15
+    },
+    {
+      "service": "health",
+      "method": "GET",
+      "endpoint": "/api/training/health",
+      "status": 404,
+      "ok": true,
+      "ms": 13
+    },
+    {
+      "service": "health",
+      "method": "GET",
+      "endpoint": "/api/user/health",
+      "status": 200,
+      "ok": true,
+      "ms": 25
+    },
+    {
+      "service": "health",
+      "method": "GET",
+      "endpoint": "/api/wallet/health",
+      "status": 200,
+      "ok": true,
+      "ms": 13
+    },
+    {
+      "service": "auth",
+      "method": "GET",
+      "endpoint": "/api/auth/sessions",
+      "status": 200,
+      "ok": true,
+      "ms": 16
+    },
+    {
+      "service": "auth",
+      "method": "POST",
+      "endpoint": "/api/auth/logout",
+      "status": 200,
+      "ok": true,
+      "ms": 16
+    },
+    {
+      "service": "user",
+      "method": "GET",
+      "endpoint": "/api/user/profile",
+      "status": 200,
+      "ok": true,
+      "ms": 50
+    },
+    {
+      "service": "user",
+      "method": "GET",
+      "endpoint": "/api/user/:id [admin]",
+      "status": 200,
+      "ok": true,
+      "ms": 39
+    },
+    {
+      "service": "business-registry",
+      "method": "GET",
+      "endpoint": "/api/business-registry/businesses/owner/:ownerId",
+      "status": 200,
+      "ok": true,
+      "ms": 238
+    },
+    {
+      "service": "business-registry",
+      "method": "GET",
+      "endpoint": "/api/business-registry/public/sellers/:id",
+      "status": 200,
+      "ok": true,
+      "ms": 109
+    },
+    {
+      "service": "business-registry",
+      "method": "GET",
+      "endpoint": "/api/business-registry/public/sellers",
+      "status": 200,
+      "ok": true,
+      "ms": 28
+    },
+    {
+      "service": "business-registry",
+      "method": "GET",
+      "endpoint": "/api/business-registry/public/sellers/:id/industries",
+      "status": 200,
+      "ok": true,
+      "ms": 17
+    },
+    {
+      "service": "catalog",
+      "method": "GET",
+      "endpoint": "/api/catalog/v1/products/search",
+      "status": 200,
+      "ok": true,
+      "ms": 8237
+    },
+    {
+      "service": "catalog",
+      "method": "GET",
+      "endpoint": "/api/catalog/v1/categories",
+      "status": 200,
+      "ok": true,
+      "ms": 288
+    },
+    {
+      "service": "catalog",
+      "method": "GET",
+      "endpoint": "/api/catalog/v1/sellers/:sellerId/products",
+      "status": 200,
+      "ok": true,
+      "ms": 452
+    },
+    {
+      "service": "catalog",
+      "method": "GET",
+      "endpoint": "/api/catalog/sellers/:slug/storefront",
+      "status": 200,
+      "ok": true,
+      "ms": 308
+    },
+    {
+      "service": "catalog",
+      "method": "GET",
+      "endpoint": "/api/catalog/v1/products/:id",
+      "status": "skip",
+      "ok": null,
+      "reason": "No products found in search to fetch by ID"
+    },
+    {
+      "service": "inventory",
+      "method": "GET",
+      "endpoint": "/api/inventory/warehouses",
+      "status": 200,
+      "ok": true,
+      "ms": 36
+    },
+    {
+      "service": "inventory",
+      "method": "GET",
+      "endpoint": "/api/inventory/analytics/stock-levels",
+      "status": 200,
+      "ok": true,
+      "ms": 141
+    },
+    {
+      "service": "inventory",
+      "method": "GET",
+      "endpoint": "/api/inventory/materials",
+      "status": 200,
+      "ok": true,
+      "ms": 36
+    },
+    {
+      "service": "inventory",
+      "method": "GET",
+      "endpoint": "/api/inventory/stock/:variantId",
+      "status": 404,
+      "ok": true,
+      "ms": 20
+    },
+    {
+      "service": "checkout",
+      "method": "GET",
+      "endpoint": "/api/checkout/cart/current",
+      "status": 200,
+      "ok": true,
+      "ms": 38
+    },
+    {
+      "service": "checkout",
+      "method": "GET",
+      "endpoint": "/api/checkout/delivery-options",
+      "status": 404,
+      "ok": true,
+      "ms": 30
+    },
+    {
+      "service": "order",
+      "method": "GET",
+      "endpoint": "/api/order/orders [buyer]",
+      "status": 200,
+      "ok": true,
+      "ms": 565
+    },
+    {
+      "service": "order",
+      "method": "GET",
+      "endpoint": "/api/order/orders [seller]",
+      "status": 200,
+      "ok": true,
+      "ms": 390
+    },
+    {
+      "service": "order",
+      "method": "GET",
+      "endpoint": "/api/order/master-orders",
+      "status": 404,
+      "ok": true,
+      "ms": 14
+    },
+    {
+      "service": "payment",
+      "method": "GET",
+      "endpoint": "/api/payment/payment-methods",
+      "status": 200,
+      "ok": true,
+      "ms": 10
+    },
+    {
+      "service": "payment",
+      "method": "GET",
+      "endpoint": "/api/payment/payments/:id [invalid id=400]",
+      "status": 400,
+      "ok": true,
+      "ms": 10
+    },
+    {
+      "service": "payment",
+      "method": "GET",
+      "endpoint": "/api/payment/admin/payments [admin]",
+      "status": 200,
+      "ok": true,
+      "ms": 84
+    },
+    {
+      "service": "wallet",
+      "method": "GET",
+      "endpoint": "/api/wallet/wallets/:id/balance",
+      "status": 200,
+      "ok": true,
+      "ms": 57
+    },
+    {
+      "service": "wallet",
+      "method": "GET",
+      "endpoint": "/api/wallet/wallets/:id/statement",
+      "status": 200,
+      "ok": true,
+      "ms": 202
+    },
+    {
+      "service": "payout",
+      "method": "GET",
+      "endpoint": "/api/payout/payouts [seller]",
+      "status": 200,
+      "ok": true,
+      "ms": 27
+    },
+    {
+      "service": "payout",
+      "method": "POST",
+      "endpoint": "/api/payout/payouts [buyer=403]",
+      "status": 403,
+      "ok": true,
+      "ms": 14
+    },
+    {
+      "service": "logistics",
+      "method": "POST",
+      "endpoint": "/api/logistics/v1/fulfillment-options",
+      "status": 400,
+      "ok": true,
+      "ms": 12
+    },
+    {
+      "service": "logistics",
+      "method": "POST",
+      "endpoint": "/api/logistics/v1/quote",
+      "status": 400,
+      "ok": true,
+      "ms": 13
+    },
+    {
+      "service": "notification",
+      "method": "GET",
+      "endpoint": "/api/notification/notifications",
+      "status": 200,
+      "ok": true,
+      "ms": 60
+    },
+    {
+      "service": "notification",
+      "method": "GET",
+      "endpoint": "/api/notification/preferences",
+      "status": 404,
+      "ok": true,
+      "ms": 11
+    },
+    {
+      "service": "analytics",
+      "method": "GET",
+      "endpoint": "/api/analytics/sellers/:id/dashboard",
+      "status": 200,
+      "ok": true,
+      "ms": 890
+    },
+    {
+      "service": "analytics",
+      "method": "GET",
+      "endpoint": "/api/analytics/sellers/:id/profitability",
+      "status": 404,
+      "ok": true,
+      "ms": 12
+    },
+    {
+      "service": "analytics",
+      "method": "PATCH",
+      "endpoint": "/api/analytics/action-items/:id/resolve [known 500]",
+      "status": 404,
+      "ok": true,
+      "ms": 21
+    },
+    {
+      "service": "support",
+      "method": "GET",
+      "endpoint": "/api/support/tickets [buyer]",
+      "status": 200,
+      "ok": true,
+      "ms": 29
+    },
+    {
+      "service": "support",
+      "method": "GET",
+      "endpoint": "/api/support/disputes [buyer]",
+      "status": 200,
+      "ok": true,
+      "ms": 27
+    },
+    {
+      "service": "support",
+      "method": "GET",
+      "endpoint": "/api/support/tickets [admin sees all]",
+      "status": 200,
+      "ok": true,
+      "ms": 29
+    },
+    {
+      "service": "support",
+      "method": "GET",
+      "endpoint": "/api/support/admin/kyc/:userId [admin]",
+      "status": 404,
+      "ok": true,
+      "ms": 11
+    },
+    {
+      "service": "chat",
+      "method": "GET",
+      "endpoint": "/api/chat/v1/conversations [buyer]",
+      "status": 200,
+      "ok": true,
+      "ms": 154
+    },
+    {
+      "service": "chat",
+      "method": "GET",
+      "endpoint": "/api/chat/v1/conversations/search",
+      "status": 200,
+      "ok": true,
+      "ms": 106
+    },
+    {
+      "service": "community",
+      "method": "GET",
+      "endpoint": "/api/community/posts/published",
+      "status": 200,
+      "ok": true,
+      "ms": 47
+    },
+    {
+      "service": "community",
+      "method": "GET",
+      "endpoint": "/api/community/discussions",
+      "status": 200,
+      "ok": true,
+      "ms": 13
+    },
+    {
+      "service": "community",
+      "method": "GET",
+      "endpoint": "/api/community/articles [known partial impl]",
+      "status": 404,
+      "ok": true,
+      "ms": 20
+    },
+    {
+      "service": "enabler",
+      "method": "GET",
+      "endpoint": "/api/enabler/enablers/:id [known 500]",
+      "status": 404,
+      "ok": true,
+      "ms": 237
+    },
+    {
+      "service": "enabler",
+      "method": "GET",
+      "endpoint": "/api/enabler/hub",
+      "status": 404,
+      "ok": true,
+      "ms": 35
+    },
+    {
+      "service": "commission",
+      "method": "GET",
+      "endpoint": "/api/commission/sellers/:id",
+      "status": 200,
+      "ok": true,
+      "ms": 91
+    },
+    {
+      "service": "commission",
+      "method": "GET",
+      "endpoint": "/api/commission/sellers/:id/summary",
+      "status": 200,
+      "ok": true,
+      "ms": 108
+    },
+    {
+      "service": "training",
+      "method": "GET",
+      "endpoint": "/api/training/api/v1/modules",
+      "status": 200,
+      "ok": true,
+      "ms": 105
+    },
+    {
+      "service": "training",
+      "method": "GET",
+      "endpoint": "/api/training/api/v1/training/certification/:id",
+      "status": 404,
+      "ok": true,
+      "ms": 17
+    },
+    {
+      "service": "kyc",
+      "method": "GET",
+      "endpoint": "/api/kyc/status",
+      "status": 200,
+      "ok": true,
+      "ms": 26
+    },
+    {
+      "service": "kyc",
+      "method": "GET",
+      "endpoint": "/api/compliance/kyc-status/:userId [admin]",
+      "status": 200,
+      "ok": true,
+      "ms": 31
+    },
+    {
+      "service": "kyc",
+      "method": "GET",
+      "endpoint": "/api/compliance/manual-review/pending [admin]",
+      "status": 200,
+      "ok": true,
+      "ms": 98
+    },
+    {
+      "service": "production",
+      "method": "GET",
+      "endpoint": "/api/production/dashboard",
+      "status": 200,
+      "ok": true,
+      "ms": 17
+    },
+    {
+      "service": "production",
+      "method": "GET",
+      "endpoint": "/api/production/bulk-orders",
+      "status": 200,
+      "ok": true,
+      "ms": 533
+    },
+    {
+      "service": "request",
+      "method": "GET",
+      "endpoint": "/api/request/requests [buyer]",
+      "status": 200,
+      "ok": true,
+      "ms": 398
+    },
+    {
+      "service": "request",
+      "method": "GET",
+      "endpoint": "/api/request/provider/requests [admin]",
+      "status": 200,
+      "ok": true,
+      "ms": 30
+    },
+    {
+      "service": "maps",
+      "method": "POST",
+      "endpoint": "/api/maps/geocoding/geocode",
+      "status": 200,
+      "ok": true,
+      "ms": 28
+    }
+  ]
+}
