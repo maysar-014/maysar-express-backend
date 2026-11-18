@@ -74,10 +74,8 @@ export function getSharedRedisClient(redisUrl?: string): Redis {
 
   const client = new Redis(url, {
     enableAutoPipelining: REDIS_POOL_CONFIG.enableAutoPipelining,
-    maxRetries: REDIS_POOL_CONFIG.maxRetries,
     retryStrategy: REDIS_POOL_CONFIG.retryStrategy,
     connectTimeout: REDIS_POOL_CONFIG.connectTimeout,
-
     family: REDIS_POOL_CONFIG.family,
     keepAlive: REDIS_POOL_CONFIG.keepAlive,
     maxAge: REDIS_POOL_CONFIG.maxAge,

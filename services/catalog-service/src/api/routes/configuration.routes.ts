@@ -244,7 +244,7 @@ export function createConfigurationRoutes(): Router {
           const optionMap = new Map(options.map((o: any) => [o.id, o.normalizedValue]));
           const normalizedSelections: Record<string, string[]> = {};
           for (const [dimId, optIds] of Object.entries(selections)) {
-            normalizedSelections[dimId] = (optIds as string[]).map((id: string) => optionMap.get(id) ?? id);
+            normalizedSelections[dimId] = (optIds as string[]).map((id: string) => (optionMap.get(id) ?? id) as string);
           }
           fingerprint = ConfigurationFingerprintAlgorithm.generateFingerprint({
             configurationDefinitionId: defData.id,
