@@ -76,9 +76,6 @@ export function getSharedRedisClient(redisUrl?: string): Redis {
     enableAutoPipelining: REDIS_POOL_CONFIG.enableAutoPipelining,
     retryStrategy: REDIS_POOL_CONFIG.retryStrategy,
     connectTimeout: REDIS_POOL_CONFIG.connectTimeout,
-    family: REDIS_POOL_CONFIG.family,
-    keepAlive: REDIS_POOL_CONFIG.keepAlive,
-    maxAge: REDIS_POOL_CONFIG.maxAge,
   });
   attachRedisErrorHandlers(client, url);
   sharedClients.set(url, client);
