@@ -26,7 +26,7 @@ const REDIS_POOL_CONFIG = {
   },
   connectTimeout: 10000,
   family: 4,
-  keepAlive: true,
+  keepAlive: 1000,
   maxAge: 0,
 } as const;
 

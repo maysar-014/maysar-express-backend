@@ -186,8 +186,27 @@ export const LogisticsModule: Module = {
             const prisma = (globalThis as any).prisma;
             const courierRepo = new PrismaCourierRepository(prisma);
             const logisticsEngine = new LogisticsEngine();
-            const courierSelection = new CourierSelectionEngine(courierRepo, new CourierAssignmentPolicy());
-            const createDelivery = new CreateDeliveryUseCase(courierRepo, logisticsEngine, courierSelection);
+            // CreateDeliveryUseCase requires 7 args; stub out the optional ports with no-ops
+            const noopWeatherPort = { getWeatherData: async () => ({ severity: 'low' as const }) };
+            const noopTrafficPort = { getTrafficData: async () => ({ congestionLevel: 0 }) };
+            const noopRoutePort = {
+                getRouteAlternatives: async () => [],
+                calculateOptimalRoute: async (from: any, to: any) => ({
+                    totalDistance: from.distanceTo ? from.distanceTo(to) * 1.35 : 10,
+                    totalDuration: 30,
+                    waypoints: [],
+                }),
+            };
+            const noopTrackingPort = { updateLocation: async () => {} };
+            const createDelivery = new CreateDeliveryUseCase(
+                logisticsEngine,
+                courierRepo,
+                noopWeatherPort as any,
+                noopTrafficPort as any,
+                noopRoutePort as any,
+                noopTrackingPort as any,
+                new CourierAssignmentPolicy(),
+            );
 
             eventBus.subscribe('order.seller_verified', {
                 name: 'logistics-order-verified-create-delivery',

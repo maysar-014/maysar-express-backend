@@ -23,7 +23,7 @@ export const COMMITTED_ORDER_STATUSES = [
   'IN_TRANSIT',
   'DELIVERED',
   'COMPLETED'
-] as const;
+];
 
 /**
  * Terminal Completed Statuses
@@ -34,4 +34,4 @@ export const COMMITTED_ORDER_STATUSES = [
 export const TERMINAL_COMPLETED_STATUSES = [
   'DELIVERED',
   'COMPLETED'
-] as const;
+];

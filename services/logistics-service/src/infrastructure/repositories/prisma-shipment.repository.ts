@@ -9,6 +9,7 @@
 import { Shipment, ShipmentData, ShipmentFailureReason, VehicleClass } from '../../domain/entities/shipment.entity';
 import { ShipmentRepository } from '../../domain/repositories/shipment.repository';
 import { GeoPoint } from '../../domain/value-objects/geopoint.value-object';
+import { DeliveryOutcome, OutcomeResponsibleParty } from '../../domain/value-objects/delivery-outcome';
 
 export class PrismaShipmentRepository implements ShipmentRepository {
   private get prisma(): any {
@@ -116,6 +117,8 @@ export class PrismaShipmentRepository implements ShipmentRepository {
       status: row.status,
       failureReason: (row.failureReason ?? null) as ShipmentFailureReason | null,
       deliveryJobId: row.deliveryJobId ?? null,
+      outcomeCode: (row.outcomeCode ?? null) as DeliveryOutcome | null,
+      outcomeResponsibleParty: (row.outcomeResponsibleParty ?? null) as OutcomeResponsibleParty | null,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };

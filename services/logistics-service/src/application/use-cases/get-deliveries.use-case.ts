@@ -54,6 +54,7 @@ export interface GetDeliveriesOutput {
   filters: {
     status?: string;
     courierId?: string;
+    orderId?: string;
     dateFrom?: string;
     dateTo?: string;
   };

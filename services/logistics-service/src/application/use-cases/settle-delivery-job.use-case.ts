@@ -21,7 +21,9 @@
 
 import { LedgerEntryRepository } from '../../domain/repositories/cost-model.repository';
 import { CostVariancePolicy } from '../../domain/value-objects/optimization-config.value-object';
-import { FinancialFeasibilityResult } from '../../domain/engines/financial-feasibility.engine';
+// FinancialFeasibilityResult is exported as FeasibilityResult from the engine
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import type { FeasibilityResult as FinancialFeasibilityResult } from '../../domain/engines/financial-feasibility.engine';
 
 export interface SettleDeliveryJobRequest {
   deliveryJobId: string;

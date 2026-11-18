@@ -196,7 +196,7 @@ export const EnablerModule: Module = {
                             }).catch(() => null);
 
                             if (walletRes?.ok) {
-                                const walletData = await walletRes.json().catch(() => null);
+                                const walletData = await walletRes.json().catch(() => null) as any;
                                 const txnId = walletData?.data?.id ?? walletData?.id ?? null;
 
                                 // Advance earning to AVAILABLE and record wallet transaction ID
