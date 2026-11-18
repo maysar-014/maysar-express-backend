@@ -21,6 +21,7 @@
 
 import { LedgerEntryRepository } from '../../domain/repositories/cost-model.repository';
 import { CostVariancePolicy } from '../../domain/value-objects/optimization-config.value-object';
+import { FinancialFeasibilityResult } from '../../domain/engines/financial-feasibility.engine';
 
 export interface SettleDeliveryJobRequest {
   deliveryJobId: string;

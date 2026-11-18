@@ -1798,7 +1798,7 @@ async function lcMapsAndCodOtp() {
 // ── LC-31: Enabler Commission Attribution ────────────────────────────────────────
 
 async function lcEnablerCommissionAttribution() {
-  header('LC-31', 'Enabler Commission Attribution');
+  header('LC-31', 'Enabler Commission Attribution + Earning Chain');
 
   const enablerId = ctx.entities.enablerId;
   if (!enablerId) {
@@ -1826,6 +1826,79 @@ async function lcEnablerCommissionAttribution() {
     console.log('  ⏭️  [LC-31] SKIPPED per-order commission — no orderId');
     results.push({ lifecycle: 'LC-31', step: 'per-order commission SKIPPED', status: 'skip', ok: null });
   }
+
+  // ── Enabler earning chain verification ───────────────────────────────────
+  // Verify that Enabler_Earning records exist and are queryable via the API.
+  const earningsRes = await api('GET', `/api/enabler/enablers/${enablerId}/earnings`, null, 'enabler');
+  step('LC-31', 'GET /api/enabler/enablers/:id/earnings [enabler]', earningsRes, [200, 404],
+    earningsRes.ok ? `count: ${earningsRes.data?.data?.length ?? earningsRes.data?.total ?? 'N/A'}` : '');
+
+  // Verify earnings summary
+  const earningSummaryRes = await api('GET', `/api/enabler/enablers/${enablerId}/earnings/summary`, null, 'enabler');
+  step('LC-31', 'GET /api/enabler/enablers/:id/earnings/summary [enabler]', earningSummaryRes, [200, 404]);
+
+  // If we have an orderId, verify the specific earning for this order exists and is in the right state
+  if (orderId) {
+    // The earning is linked 1:1 with the order via UNIQUE(orderId) constraint
+    const earningsData = earningsRes.data?.data ?? earningsRes.data?.earnings ?? [];
+    const orderEarning = Array.isArray(earningsData)
+      ? earningsData.find(e => e.orderId === orderId)
+      : null;
+
+    if (orderEarning) {
+      const validStates = ['ATTRIBUTED', 'QUALIFIED', 'AVAILABLE', 'PAID', 'CANCELLED', 'REVERSED', 'DISPUTED'];
+      const stateOk = validStates.includes(orderEarning.status);
+      results.push({
+        lifecycle: 'LC-31',
+        step: `Enabler_Earning state for order ${orderId}: ${orderEarning.status}`,
+        status: 200,
+        ok: stateOk,
+      });
+      if (stateOk) {
+        passed++;
+        console.log(`  ✅ [LC-31] Enabler_Earning for order ${orderId}: ${orderEarning.status} | amount: TZS ${orderEarning.amount ?? 'N/A'} ✓`);
+      } else {
+        failed++;
+        console.log(`  ❌ [LC-31] Unknown earning state: ${orderEarning.status}`);
+      }
+
+      // Verify the earning has a calculationContext (provenance traceability)
+      const hasProvenance = orderEarning.calculationContext && typeof orderEarning.calculationContext === 'object';
+      results.push({
+        lifecycle: 'LC-31',
+        step: 'Enabler_Earning calculationContext present (§30 provenance)',
+        status: 200,
+        ok: hasProvenance ?? null,
+      });
+      if (hasProvenance) {
+        passed++;
+        console.log(`  ✅ [LC-31] Earning provenance (calculationContext) present ✓`);
+      } else {
+        // null = info (may not be in API response even if stored)
+        console.log(`  ℹ️  [LC-31] calculationContext not in API response — stored in DB only`);
+      }
+    } else {
+      console.log(`  ℹ️  [LC-31] No earning found for orderId ${orderId} — order may not have been enabler-attributed`);
+      results.push({ lifecycle: 'LC-31', step: 'Enabler_Earning for this order NOT FOUND (non-enabler order)', status: 'info', ok: null });
+    }
+  }
+
+  // ── Enabler wallet balance — verify it's accessible ───────────────────────
+  const enablerUserId = (await api('GET', `/api/enabler/enablers/${enablerId}`, null, 'admin'))?.data?.data?.userId
+    ?? (await api('GET', `/api/enabler/enablers/${enablerId}`, null, 'admin'))?.data?.userId;
+  if (enablerUserId) {
+    const walletRes = await api('GET', `/api/wallet/wallets/${enablerUserId}/balance`, null, 'enabler');
+    step('LC-31', 'GET enabler wallet balance', walletRes, [200, 404],
+      walletRes.ok ? `TZS ${walletRes.data?.data?.balance ?? walletRes.data?.balance ?? 'N/A'}` : '');
+  } else {
+    console.log('  ⏭️  [LC-31] SKIPPED enabler wallet — could not resolve enabler userId');
+    results.push({ lifecycle: 'LC-31', step: 'enabler wallet SKIPPED', status: 'skip', ok: null });
+  }
+
+  // ── RBAC: Buyer cannot see enabler earnings ───────────────────────────────
+  const buyerEarningsAttempt = await api('GET', `/api/enabler/enablers/${enablerId}/earnings`, null, 'buyer');
+  step('LC-31', 'GET enabler earnings as buyer → 401/403 (RBAC)', buyerEarningsAttempt, [401, 403],
+    'Enabler earnings must not be accessible to buyers');
 }
 
 // ── LC-32: Seller Offer CRUD ───────────────────────────────────────────────────
@@ -2131,6 +2204,215 @@ function printSummary() {
   console.log(`\n  Results written to: docs/verification/lifecycle-results.json`);
 }
 
+// ── LC-32: Delivery Economics & Compensation Chain ───────────────────────────────
+//
+// Verifies the full financial chain from delivery completion to seller
+// compensation (MYS-DEL-001 Articles 23, 32, 34):
+//
+//   1. Delivery confirmed as DELIVERED (uses deliveryId from LC-15)
+//   2. Order reads COMPLETED or DELIVERED status
+//   3. Seller wallet balance increased after settlement propagation
+//   4. Payout service reflects the seller's earnings
+//   5. Delivery feasibility classification is present on the quote breakdown
+//   6. Constitution Article 23 outcome codes are set on delivery records
+//   7. Admin can query the delivery economics summary
+//
+// This lifecycle requires LC-03 (order) + LC-15 (delivery milestones) to have
+// run first. If prerequisites are absent it records skips rather than failing.
+
+async function lcDeliveryEconomicsChain() {
+  header('LC-32', 'Delivery Economics & Compensation Chain (MYS-DEL-001)');
+
+  const sellerId = USERS.seller.id;
+  const buyerId  = USERS.buyer.id;
+  const orderId  = ctx.entities.orderId;
+  const deliveryId = ctx.entities.deliveryId;
+
+  // ── Step 1: Verify the delivery reached DELIVERED state ──────────────────
+  if (!deliveryId) {
+    console.log('  ⏭️  [LC-32] SKIPPED — no deliveryId from LC-15');
+    results.push({ lifecycle: 'LC-32', step: 'delivery status check SKIPPED', status: 'skip', ok: null });
+    results.push({ lifecycle: 'LC-32', step: 'seller wallet check SKIPPED',   status: 'skip', ok: null });
+    results.push({ lifecycle: 'LC-32', step: 'payout eligibility SKIPPED',    status: 'skip', ok: null });
+    return;
+  }
+
+  const deliveryDetail = await api('GET', `/api/logistics/api/v1/deliveries/${deliveryId}`, null, 'seller');
+  const deliveryStatus = deliveryDetail.data?.data?.status ?? deliveryDetail.data?.status ?? 'UNKNOWN';
+  step('LC-32', 'GET delivery status (seller view)', deliveryDetail, [200, 404],
+    `status: ${deliveryStatus}`);
+
+  const isDelivered = ['delivered', 'DELIVERED', 'COMPLETED', 'CONFIRMED', 'SETTLED'].includes(deliveryStatus);
+  if (!isDelivered) {
+    console.log(`  ℹ️  [LC-32] Delivery status is ${deliveryStatus} — settlement may not have triggered yet`);
+  }
+
+  // ── Step 2: Verify order reached COMPLETED / DELIVERED state ─────────────
+  if (orderId) {
+    const orderDetail = await api('GET', `/api/order/orders/${orderId}`, null, 'seller');
+    const orderStatus = orderDetail.data?.data?.status ?? orderDetail.data?.status ?? 'UNKNOWN';
+    step('LC-32', 'GET order status post-delivery [seller]', orderDetail, [200, 404],
+      `status: ${orderStatus}`);
+
+    // Admin view confirms same state
+    const adminOrderDetail = await api('GET', `/api/order/orders/${orderId}`, null, 'admin');
+    step('LC-32', 'GET order status post-delivery [admin]', adminOrderDetail, [200, 404],
+      `status: ${adminOrderDetail.data?.data?.status ?? adminOrderDetail.data?.status ?? 'UNKNOWN'}`);
+  } else {
+    console.log('  ⏭️  [LC-32] SKIPPED order status check — no orderId');
+    results.push({ lifecycle: 'LC-32', step: 'order status check SKIPPED', status: 'skip', ok: null });
+  }
+
+  // ── Step 3: Seller wallet balance — expect increase after settlement ───────
+  const sellerBalanceBefore = ctx.entities.sellerBalanceBeforeDelivery ?? 0;
+  const sellerBalance = await api('GET', `/api/wallet/wallets/${sellerId}/balance`, null, 'seller');
+  const sellerBalanceAfter = Number(
+    sellerBalance.data?.data?.balance ?? sellerBalance.data?.balance ?? 0
+  );
+  step('LC-32', 'GET seller wallet balance post-delivery', sellerBalance, 200,
+    `TZS ${sellerBalanceAfter} (was TZS ${sellerBalanceBefore} before delivery)`);
+
+  const sellerEarned = sellerBalanceAfter - sellerBalanceBefore;
+  if (isDelivered && sellerEarned > 0) {
+    console.log(`  ✅ [LC-32] Seller wallet credited TZS ${sellerEarned} after delivery ✓`);
+  } else if (isDelivered) {
+    console.log(`  ⚠️  [LC-32] Delivery shows DELIVERED but seller wallet unchanged — settlement event may be processing`);
+  }
+
+  // ── Step 4: Seller wallet statement shows the settlement credit ───────────
+  const walletStatement = await api('GET', `/api/wallet/wallets/${sellerId}/statement`, null, 'seller');
+  step('LC-32', 'GET seller wallet statement [seller]', walletStatement, 200,
+    walletStatement.ok ? `transactions: ${walletStatement.data?.data?.transactions?.length ?? walletStatement.data?.data?.length ?? 'N/A'}` : '');
+
+  // ── Step 5: Payout service — seller eligible for payout ──────────────────
+  const payoutsRes = await api('GET', '/api/payout/payouts', null, 'seller');
+  step('LC-32', 'GET /api/payout/payouts [seller]', payoutsRes, 200,
+    `count: ${payoutsRes.data?.data?.length ?? 'N/A'}`);
+
+  // ── Step 6: Commission recorded for the order ─────────────────────────────
+  if (orderId) {
+    const commissionsRes = await api('GET', `/api/commission/sellers/${sellerId}`, null, 'seller');
+    step('LC-32', 'GET /api/commission/sellers/:sellerId [seller]', commissionsRes, [200, 404],
+      commissionsRes.ok ? `count: ${commissionsRes.data?.data?.length ?? commissionsRes.data?.total ?? 'N/A'}` : '');
+
+    // Check if the specific order has a commission record
+    const orderCommission = await api('GET', `/api/commission/order/${orderId}`, null, 'admin');
+    step('LC-32', 'GET /api/commission/order/:orderId [admin]', orderCommission, [200, 404],
+      orderCommission.ok ? `commission found: ${orderCommission.data?.data?.id ?? 'yes'}` : 'no commission yet (may be async)');
+  }
+
+  // ── Step 7: Quote breakdown feasibility classification ────────────────────
+  if (ctx.entities.quoteId) {
+    const quoteDetail = await api('GET', `/api/logistics/internal/quotes/${ctx.entities.quoteId}`, null, 'admin');
+    step('LC-32', 'GET logistics quote breakdown [admin]', quoteDetail, [200, 404]);
+
+    if (quoteDetail.ok) {
+      const breakdown = quoteDetail.data?.data?.breakdown ?? quoteDetail.data?.breakdown;
+      const feasibility = breakdown?.feasibility;
+      const classification = feasibility?.classification ?? breakdown?.classification;
+      if (classification) {
+        console.log(`  ✅ [LC-32] Quote classification: ${classification} ✓`);
+        const validClasses = ['PROFITABLE', 'BREAK_EVEN', 'SUBSIDIZED', 'LOSS_MAKING', 'UNVERIFIED'];
+        const classificationOk = validClasses.includes(classification);
+        if (!classificationOk) {
+          console.log(`  ❌ [LC-32] Unknown classification: ${classification}`);
+        }
+        results.push({
+          lifecycle: 'LC-32',
+          step: `Quote economic classification: ${classification}`,
+          status: quoteDetail.status,
+          ok: classificationOk,
+        });
+        if (classificationOk) passed++; else failed++;
+      } else {
+        console.log('  ℹ️  [LC-32] No feasibility classification on breakdown (11-stage fallback pipeline or no VehicleTariff)');
+        results.push({ lifecycle: 'LC-32', step: 'feasibility classification ABSENT (11-stage fallback)', status: 'info', ok: null });
+      }
+
+      // Verify financial amounts are present
+      if (feasibility) {
+        const hasFinancials = typeof feasibility.totalFundingTzs === 'number'
+          && typeof feasibility.driverPayoutTzs === 'number'
+          && typeof feasibility.platformContributionTzs === 'number';
+        results.push({
+          lifecycle: 'LC-32',
+          step: 'Feasibility financial fields present',
+          status: quoteDetail.status,
+          ok: hasFinancials,
+        });
+        if (hasFinancials) {
+          passed++;
+          console.log(`  ✅ [LC-32] totalFunding: TZS ${feasibility.totalFundingTzs} | driver: TZS ${feasibility.driverPayoutTzs} | margin: ${feasibility.contributionMarginPct?.toFixed(1) ?? 'N/A'}% ✓`);
+        } else {
+          failed++;
+          console.log('  ❌ [LC-32] Feasibility financial fields missing');
+        }
+      }
+    }
+  } else {
+    console.log('  ⏭️  [LC-32] SKIPPED quote breakdown check — no quoteId from LC-03');
+    results.push({ lifecycle: 'LC-32', step: 'quote breakdown check SKIPPED', status: 'skip', ok: null });
+  }
+
+  // ── Step 8: Courier earnings recorded ─────────────────────────────────────
+  const courierEarningsRes = await api('GET', '/api/logistics/api/courier/earnings', null, 'courier');
+  step('LC-32', 'GET /api/logistics/api/courier/earnings [courier]', courierEarningsRes, [200, 404],
+    courierEarningsRes.ok ? `records: ${courierEarningsRes.data?.data?.length ?? 'N/A'}` : 'no earnings endpoint');
+
+  // ── Step 9: Delivery outcome attribution (Article 23) ────────────────────
+  // Verify the delivery record carries a constitutional outcomeCode
+  if (deliveryDetail.ok) {
+    const rawOutcome = deliveryDetail.data?.data?.outcomeCode ?? deliveryDetail.data?.outcomeCode;
+    const constitutionalOutcomes = [
+      'COMPLETED', 'CANCELLED_BY_CUSTOMER', 'CANCELLED_BY_MERCHANT', 'CANCELLED_BY_DRIVER',
+      'CANCELLED_BY_PLATFORM', 'FAILED_CUSTOMER_UNAVAILABLE', 'FAILED_MERCHANT_UNAVAILABLE',
+      'FAILED_ADDRESS_OR_LOCATION', 'FAILED_OTHER', 'RETURNED_TO_ORIGIN',
+    ];
+    const outcomePresent = rawOutcome && constitutionalOutcomes.includes(rawOutcome);
+    results.push({
+      lifecycle: 'LC-32',
+      step: `Shipment outcomeCode (Article 23): ${rawOutcome ?? 'ABSENT'}`,
+      status: 200,
+      ok: outcomePresent ?? null,
+    });
+    if (outcomePresent) {
+      passed++;
+      console.log(`  ✅ [LC-32] Shipment outcomeCode: ${rawOutcome} ✓`);
+    } else if (rawOutcome) {
+      failed++;
+      console.log(`  ❌ [LC-32] Unknown outcomeCode: ${rawOutcome}`);
+    } else {
+      // null = skip: outcomeCode not yet populated (delivery still in transit or old record)
+      console.log('  ℹ️  [LC-32] outcomeCode ABSENT — delivery not yet terminal or column not populated');
+      results.push({ lifecycle: 'LC-32', step: 'outcomeCode ABSENT (not terminal or not migrated)', status: 'info', ok: null });
+    }
+  }
+
+  // ── Step 10: Monthly delivery report endpoint ─────────────────────────────
+  const now = new Date();
+  const reportRes = await api('GET',
+    `/api/logistics/api/v1/admin/delivery-economics/monthly-report?year=${now.getFullYear()}&month=${now.getMonth() + 1}`,
+    null, 'admin');
+  step('LC-32', 'GET monthly delivery economics report [admin]', reportRes, [200, 404],
+    reportRes.ok
+      ? `prelaunch: ${reportRes.data?.data?.isPreLaunch ?? 'N/A'} | limitations: ${reportRes.data?.data?.dataLimitations?.length ?? 0}`
+      : 'report endpoint not yet mounted (expected until admin reporting route is wired)');
+}
+
+// ── LC-32 Pre-capture seller balance ─────────────────────────────────────────
+// Called early in the run so we can compare before/after delivery.
+// Injected into lcBuyerPurchase() post-checkout to capture baseline.
+async function captureSellerBalanceBaseline() {
+  const sellerId = USERS.seller.id;
+  const bal = await api('GET', `/api/wallet/wallets/${sellerId}/balance`, null, 'seller');
+  if (bal.ok) {
+    ctx.entities.sellerBalanceBeforeDelivery = Number(
+      bal.data?.data?.balance ?? bal.data?.balance ?? 0
+    );
+    console.log(`  ℹ️  [LC-32 baseline] Seller balance before delivery: TZS ${ctx.entities.sellerBalanceBeforeDelivery}`);
+  }
+}
+
 // ── Main ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -2145,6 +2427,8 @@ async function main() {
     await lcSellerOnboarding();
     await lcBuyerPurchase();
     await lcOrderFulfillment();
+    // Capture seller balance baseline before delivery completes (for LC-32 comparison)
+    await captureSellerBalanceBaseline();
     await lcWallet();
     await lcPayout();
     await lcSupport();
@@ -2180,6 +2464,12 @@ async function main() {
     await lcSellerListingWorkflow();
     await lcConfigurationResolution();
     await lcCheckoutValidation();
+
+    // Delivery economics & compensation chain (MYS-DEL-001)
+    // Wait for any pending delivery events to settle before checking ledger/wallet
+    console.log('\n  ℹ️  Waiting 4s for delivery events (DeliveryCompleted → settlement → wallet credit)...');
+    await new Promise(r => setTimeout(r, 4000));
+    await lcDeliveryEconomicsChain();
   } finally {
     await cleanup();
     printSummary();

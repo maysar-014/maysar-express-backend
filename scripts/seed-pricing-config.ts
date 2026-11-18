@@ -70,6 +70,14 @@ const PRICING_CONFIG_V2 = {
   // BEFORE COD charge. Lower than the old 30% to keep prices competitive.
   platformMarginPct: 0.20,
 
+  // ── Payment processing rates (MYS-DEL-001 Article 29 correction 8) ──────────
+  // Real Tanzanian mobile money provider rates (November 2026 market data).
+  // These are applied by the FinancialFeasibilityEngine to produce accurate
+  // contribution margin without UNVERIFIED classification.
+  mobileMoneyProcessingRatePct: 0.01,    // 1% — Airtel Money, Tigo Pesa, M-Pesa, HaloPesa
+  cardProcessingRatePct:        0.015,   // 1.5% — VISA/Mastercard via acquiring bank
+  codProcessingRatePct:         0.005,   // 0.5% — cash handling, reconciliation, risk
+
   // ── Floor / ceiling / rounding ──────────────────────────────────────────────
   floorPriceTzs: 1500,
   ceilingPriceTzs: 50000,

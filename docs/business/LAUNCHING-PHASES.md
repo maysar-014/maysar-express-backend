@@ -100,7 +100,7 @@ This phase covers all systems that are currently implemented and working. The pl
 - Business registration and verification
 - Business address management
 - Document upload and verification workflow
-- Compliance records (KYC, AML, TRA, TCRA)
+- Compliance records (KYC, AML, internal compliance records)
 - Outbox-based event publishing
 
 #### Commission Service
@@ -288,7 +288,7 @@ This phase expands the platform beyond direct buyer-seller commerce into the ful
 - Identity document verification
 - KYC status integration with COD trust scoring
 - AML screening
-- TRA and TCRA compliance records
+- Internal compliance records
 - Compliance audit log
 
 #### Maps & Geolocation
@@ -341,8 +341,8 @@ This phase completes the platform with advanced analytics, community features, c
 
 #### Compliance & Regulatory
 - Full KYC/AML pipeline with automated screening
-- TRA (Tanzania Revenue Authority) reporting
-- TCRA (Tanzania Communications Regulatory Authority) compliance
+- Internal compliance reporting
+- Internal compliance monitoring
 - Subject rights requests (GDPR-equivalent)
 - Data retention policies and automated deletion
 - Data processing records and privacy impact assessments
@@ -372,7 +372,7 @@ This phase completes the platform with advanced analytics, community features, c
 - [ ] 10,000 orders/month processed without infrastructure scaling issues
 - [ ] Analytics premium tier has at least 50 paying seller subscribers
 - [ ] Community has 1,000 active monthly contributors
-- [ ] Full compliance audit passes for TRA and TCRA requirements
+- [ ] Full compliance audit passes for internal compliance requirements
 - [ ] ML buy-box scoring is live in shadow mode alongside rule-based scoring
 - [ ] Support ticket SLA (< 24h first response) is met for 95% of tickets
 

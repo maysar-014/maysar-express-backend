@@ -166,7 +166,7 @@ export class PrismaOrderRepository implements OrderRepository {
     }
   }
 
-  async findByBuyerId(buyerId: string): Promise<Order[]> {
+  async findByBuyerId(buyerId: string, limit = 50, offset = 0): Promise<Order[]> {
     try {
       const prismaOrders = await this.orderDelegate.findMany({
         where: { buyerId },
@@ -175,7 +175,9 @@ export class PrismaOrderRepository implements OrderRepository {
         },
         orderBy: {
           createdAt: 'desc'
-        }
+        },
+        take: limit,
+        skip: offset,
       });
 
       return prismaOrders.map((order: any) => this.mapPrismaOrderToDomain(order));
@@ -186,7 +188,7 @@ export class PrismaOrderRepository implements OrderRepository {
     }
   }
 
-  async findBySellerId(sellerId: string): Promise<Order[]> {
+  async findBySellerId(sellerId: string, limit = 50, offset = 0): Promise<Order[]> {
     try {
       const prismaOrders = await this.orderDelegate.findMany({
         where: { sellerId },
@@ -195,7 +197,9 @@ export class PrismaOrderRepository implements OrderRepository {
         },
         orderBy: {
           createdAt: 'desc'
-        }
+        },
+        take: limit,
+        skip: offset,
       });
 
       return prismaOrders.map((order: any) => this.mapPrismaOrderToDomain(order));

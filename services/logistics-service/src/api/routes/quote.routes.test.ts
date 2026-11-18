@@ -284,3 +284,251 @@ describe('POST /api/logistics/v1/quote (public)', () => {
     expect(after.body.data.status).toBe('CONSUMED');
   });
 });
+
+// ─── Feasibility gate assertions (MYS-DEL-001 Article 4.6) ───────────────────
+//
+// When the three-engine path runs (no active VehicleTariff in this fake DB,
+// so the 11-stage pipeline fires), the interim breakdown shape is returned.
+// These tests assert the constitutional contracts that MUST hold regardless
+// of which pipeline ran.
+
+describe('Financial feasibility — constitutional contracts on quote response', () => {
+  beforeAll(() => {
+    (globalThis as any).prisma = makeFakeDb();
+  });
+
+  afterAll(() => {
+    delete (globalThis as any).prisma;
+  });
+
+  test('every ACTIVE quote has a non-null breakdown', async () => {
+    const res = await request(app).post('/api/logistics/v1/quote').send(validQuoteBody);
+    expect(res.status).toBe(200);
+    const quote = res.body.data;
+    expect(quote.status).toBe('ACTIVE');
+    // Breakdown must be present — a quote without a breakdown cannot be audited.
+    expect(quote.breakdown).not.toBeNull();
+  });
+
+  test('deliveryFee is a positive integer number of TZS', async () => {
+    const res = await request(app).post('/api/logistics/v1/quote').send(validQuoteBody);
+    const fee = res.body.data.deliveryFee;
+    expect(typeof fee).toBe('number');
+    expect(fee).toBeGreaterThan(0);
+    expect(Number.isFinite(fee)).toBe(true);
+  });
+
+  test('COD delivery returns a higher fee than non-COD (same route)', async () => {
+    const withoutCod = await request(app)
+      .post('/api/logistics/v1/quote')
+      .send({ ...validQuoteBody, isCoD: false });
+    const withCod = await request(app)
+      .post('/api/logistics/v1/quote')
+      .send({ ...validQuoteBody, isCoD: true });
+
+    expect(withoutCod.status).toBe(200);
+    expect(withCod.status).toBe(200);
+    // COD adds a flat charge — fee must be strictly higher.
+    expect(withCod.body.data.deliveryFee).toBeGreaterThan(withoutCod.body.data.deliveryFee);
+  });
+
+  test('heavy package (15 kg) returns a higher fee than light package (0.5 kg)', async () => {
+    const light = await request(app)
+      .post('/api/logistics/v1/quote')
+      .send({ ...validQuoteBody, packageWeightKg: 0.5 });
+    const heavy = await request(app)
+      .post('/api/logistics/v1/quote')
+      .send({ ...validQuoteBody, packageWeightKg: 15 });
+
+    expect(light.status).toBe(200);
+    expect(heavy.status).toBe(200);
+    // Weight surcharge is additive — heavy must be >= light.
+    expect(heavy.body.data.deliveryFee).toBeGreaterThanOrEqual(light.body.data.deliveryFee);
+  });
+
+  test('DELIVERY_UNAVAILABLE quote has null deliveryFee', async () => {
+    // Use coordinates outside Tanzania to trigger zone unavailability.
+    const res = await request(app)
+      .post('/api/logistics/v1/quote')
+      .send({
+        ...validQuoteBody,
+        originLat: 48.8566,   // Paris
+        originLng: 2.3522,
+        destinationLat: 51.5074,  // London
+        destinationLng: -0.1278,
+      });
+
+    // Zone classifier may or may not flag this depending on implementation.
+    // What we assert is: if unavailable, fee is null; if available, fee > 0.
+    expect(res.status).toBe(200);
+    const quote = res.body.data;
+    if (quote.status === 'DELIVERY_UNAVAILABLE') {
+      expect(quote.deliveryFee).toBeNull();
+      expect(quote.unavailableReason).toBeTruthy();
+    } else {
+      expect(quote.deliveryFee).toBeGreaterThan(0);
+    }
+  });
+
+  test('quote expiresAt is after issuedAt', async () => {
+    const res = await request(app).post('/api/logistics/v1/quote').send(validQuoteBody);
+    expect(res.status).toBe(200);
+    const expiresAt = new Date(res.body.data.expiresAt).getTime();
+    // issuedAt is not in the response, so we compare to now.
+    expect(expiresAt).toBeGreaterThan(Date.now());
+  });
+
+  test('pricingVersion is a positive integer', async () => {
+    const res = await request(app).post('/api/logistics/v1/quote').send(validQuoteBody);
+    expect(res.status).toBe(200);
+    const version = res.body.data.pricingVersion;
+    expect(Number.isInteger(version)).toBe(true);
+    expect(version).toBeGreaterThan(0);
+  });
+});
+
+// ─── Three-engine feasibility integration ─────────────────────────────────────
+//
+// These tests directly invoke the three-engine pipeline with a fake VehicleTariff
+// to verify the feasibility field appears on the breakdown without going through HTTP.
+
+describe('Three-engine + feasibility integration (direct use-case invocation)', () => {
+  const {
+    RequestDeliveryQuoteUseCase,
+  } = jest.requireActual<typeof import('../../application/use-cases/request-delivery-quote.use-case')>(
+    '../../application/use-cases/request-delivery-quote.use-case',
+  );
+  const { DeliveryPricingEngine } = jest.requireActual<typeof import('../../domain/engines/delivery-pricing.engine')>(
+    '../../domain/engines/delivery-pricing.engine',
+  );
+  const { CourierCostCalculator } = jest.requireActual<typeof import('../../domain/engines/courier-cost-calculator')>(
+    '../../domain/engines/courier-cost-calculator',
+  );
+  const { ZoneClassifier } = jest.requireActual<typeof import('../../domain/services/zone-classifier')>(
+    '../../domain/services/zone-classifier',
+  );
+
+  // Fake vehicle tariff for the three-engine path.
+  const FAKE_TARIFF = {
+    id: 'vtf-test-001',
+    vehicleId: 'vhl-test',
+    version: 1,
+    baseOperatingCostTzs: 500,
+    costPerKmTzs: 250,
+    costPerHourTzs: 1200,
+    minimumJobCompensationTzs: 2000,
+    loadingFeeTzs: 100,
+    unloadingFeeTzs: 100,
+    waitingRateTzsPerMinute: 20,
+    freeWaitMinutes: 5,
+    isActive: true,
+  };
+
+  function makeFakeDbWithTariff() {
+    const db = makeFakeDb();
+    return {
+      ...db,
+      Logistics_VehicleTariff: {
+        findFirst: async () => FAKE_TARIFF,
+      },
+    };
+  }
+
+  function makeVehicleTariffRepo(fake: any) {
+    return {
+      findLatestActive: async () => {
+        const row = await fake.Logistics_VehicleTariff.findFirst();
+        if (!row) return null;
+        // Minimal VehicleTariff-compatible object
+        return {
+          ...row,
+          baseOperatingCostTzs: row.baseOperatingCostTzs,
+          costPerKmTzs: row.costPerKmTzs,
+          costPerHourTzs: row.costPerHourTzs,
+          minimumJobCompensationTzs: row.minimumJobCompensationTzs,
+          loadingFeeTzs: row.loadingFeeTzs,
+          unloadingFeeTzs: row.unloadingFeeTzs,
+          waitingRateTzsPerMinute: row.waitingRateTzsPerMinute,
+          freeWaitMinutes: row.freeWaitMinutes,
+        };
+      },
+    };
+  }
+
+  test('three-engine path produces a breakdown with feasibility field', async () => {
+    const fakeDb = makeFakeDbWithTariff();
+    (globalThis as any).prisma = fakeDb;
+
+    const { PrismaQuoteRepository } = jest.requireActual<
+      typeof import('../../infrastructure/repositories/prisma-quote.repository')
+    >('../../infrastructure/repositories/prisma-quote.repository');
+    const { PrismaPricingConfigRepository } = jest.requireActual<
+      typeof import('../../infrastructure/repositories/prisma-pricing-config.repository')
+    >('../../infrastructure/repositories/prisma-pricing-config.repository');
+    const { PrismaPricingAuditRecordRepository } = jest.requireActual<
+      typeof import('../../infrastructure/repositories/prisma-pricing-audit-record.repository')
+    >('../../infrastructure/repositories/prisma-pricing-audit-record.repository');
+
+    const fakeRouting = {
+      async getRoute() {
+        return { distanceKm: 8, durationMinutes: 25, source: 'fallback' as const };
+      },
+    };
+
+    const useCase = new RequestDeliveryQuoteUseCase(
+      new DeliveryPricingEngine(),
+      new CourierCostCalculator(),
+      new ZoneClassifier(),
+      fakeRouting,
+      new PrismaQuoteRepository(),
+      new PrismaPricingConfigRepository(),
+      new PrismaPricingAuditRecordRepository(),
+      makeVehicleTariffRepo(fakeDb) as unknown as import('../../domain/repositories/vehicle-tariff.repository').VehicleTariffRepository,
+    );
+
+    const response = await useCase.execute({
+      originLat: -6.8197,
+      originLng: 39.2805,
+      originAddress: 'Kariakoo, Dar es Salaam',
+      destinationLat: -6.8000,
+      destinationLng: 39.2500,
+      destinationAddress: 'Mikocheni, Dar es Salaam',
+      packageWeightKg: 2,
+      isCoD: false,
+    });
+
+    expect(response.status).toBe('ACTIVE');
+    expect(response.deliveryFee).toBeGreaterThan(0);
+
+    // If the three-engine path ran, breakdown will have engineVersion.
+    const breakdown = response.breakdown as any;
+    if (breakdown && breakdown.engineVersion === 'three-engine-v1') {
+      // Feasibility must be present on a three-engine breakdown.
+      expect(breakdown.feasibility).not.toBeNull();
+
+      // Classification must be one of the five constitutional values.
+      const validClassifications = ['PROFITABLE', 'BREAK_EVEN', 'SUBSIDIZED', 'LOSS_MAKING', 'UNVERIFIED'];
+      expect(validClassifications).toContain(breakdown.feasibility.classification);
+
+      // Total funding must be >= customer delivery fee (never zero when fee > 0).
+      expect(breakdown.feasibility.totalFundingTzs).toBeGreaterThanOrEqual(response.deliveryFee!);
+
+      // Driver payout is always recorded (not zero) when tariff is active.
+      expect(breakdown.feasibility.driverPayoutTzs).toBeGreaterThan(0);
+
+      // Platform contribution = totalFunding - totalVariableCost.
+      const expectedContribution =
+        breakdown.feasibility.totalFundingTzs - breakdown.feasibility.totalVariableCostTzs;
+      expect(breakdown.feasibility.platformContributionTzs).toBeCloseTo(expectedContribution, 1);
+
+      // Versioning fields must be present.
+      expect(breakdown.feasibility.pricingVersion).toBeGreaterThan(0);
+      expect(typeof breakdown.feasibility.costModelVersion).toBe('string');
+
+      // Financial assumptions are always an array.
+      expect(Array.isArray(breakdown.feasibility.financialAssumptions)).toBe(true);
+    }
+
+    delete (globalThis as any).prisma;
+  });
+});

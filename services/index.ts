@@ -6,7 +6,6 @@ export { BusinessRegistryModule } from './business-registry-service';
 export { CatalogModule } from './catalog-service'; // Now includes campaign-service & pricing-service
 export { CheckoutModule } from './checkout-service';
 export { CommissionModule } from './commission-service';
-export { CommunityModule } from './community-service';
 export { EnablerModule } from './enabler-service';
 export { InventoryModule } from './inventory-service';
 export { LogisticsModule } from './logistics-service';

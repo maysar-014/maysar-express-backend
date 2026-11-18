@@ -236,7 +236,7 @@ flowchart TD
     DASHBOARD --> USER_MGMT["User Management\n(Suspend · Ban · Unlock)"]
     USER_MGMT --> AUDIT["All Actions\nAudit Logged"]
 
-    DASHBOARD --> COMPLIANCE_REVIEW["Compliance Review\n(AML · TCRA · TRA)"]
+    DASHBOARD --> COMPLIANCE_REVIEW["Compliance Review\n(AML · Internal compliance)"]
     COMPLIANCE_REVIEW --> FLAG{Suspicious\nActivity?}
     FLAG -->|Yes| FREEZE["Freeze Account\nEscalate to Compliance"]
     FLAG -->|No| CLEAR["Mark Clear\nContinue Monitoring"]

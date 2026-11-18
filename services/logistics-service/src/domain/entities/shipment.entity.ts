@@ -1,5 +1,5 @@
 /**
- * Shipment Entity (Phase 2 §2.1)
+ * Shipment Entity (Phase 2 §2.1 / MYS-DEL-001 Article 23)
  *
  * The atomic unit of physical movement: one seller group's package travelling
  * from a seller origin to the buyer destination. One order produces one
@@ -19,12 +19,23 @@
  *
  * Failure sub-reasons: FAILED_PICKUP, CUSTOMER_UNAVAILABLE, SUPPLIER_DELAY,
  * DRIVER_FAILURE, DAMAGED, DISPUTED
+ *
+ * Constitutional outcome (MYS-DEL-001 Article 23):
+ * When a shipment reaches a terminal state (SETTLED or FAILED), `outcomeCode`
+ * is set to one of the 10 actor/cause-attributed outcome codes from DeliveryOutcome.
+ * `outcomeResponsibleParty` is derived from OUTCOME_RESPONSIBLE_PARTY and
+ * recorded for automatic cost attribution by the settlement layer.
  */
 
 import { GeoPoint } from '../value-objects/geopoint.value-object';
 import { makeId } from '../../../../../shared/ids/id';
 import { makeShipmentTrackingNumber } from '../../../../../shared/ids/human-readable-ids';
-
+import {
+  DeliveryOutcome,
+  OUTCOME_RESPONSIBLE_PARTY,
+  OutcomeResponsibleParty,
+  isDeliveryOutcome,
+} from '../value-objects/delivery-outcome';
 export type ShipmentStatus =
   | 'CREATED'
   | 'PLANNED'
@@ -79,6 +90,10 @@ export interface ShipmentData {
   status: ShipmentStatus;
   failureReason: ShipmentFailureReason | null;
   deliveryJobId: string | null;
+  /** MYS-DEL-001 Article 23: actor/cause-attributed terminal outcome. Null until terminal. */
+  outcomeCode: DeliveryOutcome | null;
+  /** Responsible party for cost attribution. Null until outcomeCode is set. */
+  outcomeResponsibleParty: OutcomeResponsibleParty | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -127,6 +142,12 @@ export class Shipment {
     if (data.status !== 'FAILED' && data.failureReason) {
       throw new Error('Shipment invariant violation: failureReason can only be set when status is FAILED');
     }
+    if (data.outcomeCode !== null && !isDeliveryOutcome(data.outcomeCode)) {
+      throw new Error(`Shipment invariant violation: unknown outcomeCode '${data.outcomeCode}'`);
+    }
+    if (data.outcomeCode !== null && data.outcomeResponsibleParty === null) {
+      throw new Error('Shipment invariant violation: outcomeCode requires outcomeResponsibleParty');
+    }
     // Every shipment owns an independent tracking number. Rows/entities created
     // before this contract existed get one on hydration; nothing ever reuses the
     // order number as a shipment identifier.
@@ -162,6 +183,8 @@ export class Shipment {
       status: 'CREATED',
       failureReason: null,
       deliveryJobId: null,
+      outcomeCode: null,
+      outcomeResponsibleParty: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -186,6 +209,10 @@ export class Shipment {
   get status(): ShipmentStatus { return this.data.status; }
   get failureReason(): ShipmentFailureReason | null { return this.data.failureReason; }
   get deliveryJobId(): string | null { return this.data.deliveryJobId; }
+  /** MYS-DEL-001 Article 23: constitutional terminal outcome code. */
+  get outcomeCode(): DeliveryOutcome | null { return this.data.outcomeCode; }
+  /** Responsible party for cost attribution from this shipment's outcome. */
+  get outcomeResponsibleParty(): OutcomeResponsibleParty | null { return this.data.outcomeResponsibleParty; }
   get createdAt(): Date { return this.data.createdAt; }
   get updatedAt(): Date { return this.data.updatedAt; }
   get isFailed(): boolean { return this.data.status === 'FAILED'; }
@@ -221,18 +248,53 @@ export class Shipment {
     this.transitionTo('CONFIRMED');
   }
 
-  /** Payment settled — terminal state. */
+  /** Payment settled — terminal state. Records COMPLETED outcome. */
   settle(): void {
     this.transitionTo('SETTLED');
+    this.data.outcomeCode = 'COMPLETED';
+    this.data.outcomeResponsibleParty = OUTCOME_RESPONSIBLE_PARTY['COMPLETED'];
+    this.data.updatedAt = new Date();
   }
 
-  /** Failure with a mandatory sub-reason — terminal state. */
-  markFailed(reason: ShipmentFailureReason): void {
+  /**
+   * Failure with a mandatory sub-reason — terminal state.
+   *
+   * `outcome` must be one of the constitutional failure/cancellation codes
+   * (MYS-DEL-001 Article 23). `failureSubReason` retains the existing
+   * operational sub-reason for backward compatibility.
+   */
+  markFailed(reason: ShipmentFailureReason, outcome: DeliveryOutcome): void {
     if (!FAILURE_REASONS.includes(reason)) {
       throw new Error(`Shipment.markFailed: unknown failure reason '${reason}'. Allowed: ${FAILURE_REASONS.join(', ')}`);
     }
+    if (!isDeliveryOutcome(outcome)) {
+      throw new Error(`Shipment.markFailed: unknown outcome '${outcome}'`);
+    }
+    if (outcome === 'COMPLETED') {
+      throw new Error('Shipment.markFailed: outcome must not be COMPLETED on a failure transition');
+    }
     this.transitionTo('FAILED');
     this.data.failureReason = reason;
+    this.data.outcomeCode = outcome;
+    this.data.outcomeResponsibleParty = OUTCOME_RESPONSIBLE_PARTY[outcome];
+    this.data.updatedAt = new Date();
+  }
+
+  /**
+   * Convenience overload: set outcome without changing status.
+   * Used when the outcome is determined after the status transition
+   * (e.g. investigation resolves INVESTIGATE responsibility).
+   * Only valid when the shipment is already terminal.
+   */
+  resolveOutcome(outcome: DeliveryOutcome): void {
+    if (!this.isTerminal) {
+      throw new Error('Shipment.resolveOutcome: can only be called on a terminal shipment');
+    }
+    if (!isDeliveryOutcome(outcome)) {
+      throw new Error(`Shipment.resolveOutcome: unknown outcome '${outcome}'`);
+    }
+    this.data.outcomeCode = outcome;
+    this.data.outcomeResponsibleParty = OUTCOME_RESPONSIBLE_PARTY[outcome];
     this.data.updatedAt = new Date();
   }
 

@@ -107,6 +107,7 @@ These documents were created with full code-level depth and serve as the referen
 | [../api-documentation-constitution.md](../api-documentation-constitution.md) | API documentation standards |
 | [../performance_constitution.md](../performance_constitution.md) | Performance budgets and latency rules |
 | [../integration_constitution.md](../integration_constitution.md) | Integration standards |
+| [MAYSAR_DATABASE_PERFORMANCE_CONSTITUTION.md](constitutions/MAYSAR_DATABASE_PERFORMANCE_CONSTITUTION.md) | Database performance, index architecture and scalability (MYS-DB-001) |
 
 ---
 

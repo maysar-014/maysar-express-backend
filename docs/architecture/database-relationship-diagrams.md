@@ -27,7 +27,7 @@
 | 16 | [Training Service](#16-training-service) | Training_TrainingModule, Training_TrainingRecord, Training_CertificationRequirement, Training_Badge, Training_LeaderboardEntry |
 | 17 | [Support Service](#17-support-service) | Support_Ticket, Support_TicketMessage, Support_TicketAttachment, Support_TicketStatusHistory, Support_SupportAgent, Support_OutboxEvent |
 | 18 | [Community Service](#18-community-service) | CommunityUser, Post, Comment, Community_Like, Community_Share, Community_Follow, Community_Bookmark, Community_Report, Community_Hashtag, Community_DiscussionThread, Community_ThreadAnswer, Community_KnowledgeArticle, Community_ArticleReview, Community_BusinessChallenge, Community_ChallengeSolution, Community_BusinessProfile, Community_EngagementQuota, Community_ContributionHistory, Community_UserInteraction, Community_PeerEndorsement |
-| 19 | [Compliance Service](#19-compliance-service) | Compliance_KYCRecord, Compliance_AMLRecord, Compliance_TRARecord, Compliance_TCRARecord, Compliance_MarketRecord, Compliance_SubjectRightsRequest, Compliance_ComplianceAuditLog, Compliance_DataRetentionPolicy, Compliance_DataDeletionLog, Compliance_DataProcessingRecord, Compliance_PrivacyImpactAssessment, Kyc_AuditLog |
+| 19 | [Compliance Service](#19-compliance-service) | Compliance_KYCRecord, Compliance_AMLRecord, Compliance_MarketRecord, Compliance_SubjectRightsRequest, Compliance_ComplianceAuditLog, Compliance_DataRetentionPolicy, Compliance_DataDeletionLog, Compliance_DataProcessingRecord, Compliance_PrivacyImpactAssessment, Kyc_AuditLog |
 | 23 | [Chat Service](#23-chat-service) | Chat_Conversation, Chat_ConversationParticipant, Chat_Message, Chat_UserBlock, Chat_ModerationReport, Chat_SpamScoreLog, Chat_CheckoutLink |
 | 20 | [Analytics Service](#20-analytics-service) | Analytics_SellerMetrics, Analytics_SellerDailySales, Analytics_SellerProductPerformance, Analytics_SellerInventoryHealth, Analytics_SellerActionItem, Analytics_SalesAnalytics, Analytics_SupplierAnalytics, Analytics_CourierAnalytics, Analytics_EnablerAnalytics, Analytics_Metric, Analytics_Event |
 | 21 | [Production Service](#21-production-service) | Production_BulkOrderRequest, Production_BulkOrderQuote, Production_CapacitySnapshot |
@@ -1749,27 +1749,6 @@ erDiagram
         float riskScore
         datetime lastCheckAt
         json flags
-    }
-
-    Compliance_TRARecord {
-        string id PK
-        string userId
-        string tin UK
-        string vrn
-        string taxComplianceStatus
-        datetime lastFiscalCheck
-        string efdStatus
-    }
-
-    Compliance_TCRARecord {
-        string id PK
-        string userId
-        string licenseNumber
-        string status
-        datetime registrationAt
-        datetime expiryDate
-        datetime lastAuditAt
-        json auditFindings
     }
 
     Compliance_MarketRecord {

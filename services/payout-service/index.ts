@@ -33,6 +33,8 @@ export const PayoutModule: Module = {
     routes: (() => {
         const router = Router();
         const container = Container.getInstance();
+        router.get('/health', (_req, res) => res.json({ success: true, status: 'ok', service: 'payout-service' }));
+        router.get('/health/live', (_req, res) => res.json({ success: true, status: 'ok' }));
         router.use('/payouts', requireAuth, createPayoutRoutes(container.payoutController));
         router.use('/system/maintenance', requireRoleOrService(['admin', 'system']), createMaintenanceRoutes());
         return router;

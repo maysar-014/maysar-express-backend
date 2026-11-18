@@ -112,6 +112,14 @@ export interface PricingConfigData {
   /** Platform margin as a fraction of fulfillment cost (not of final fee). e.g. 0.20 = 20% */
   platformMarginPct: number;
 
+  // ── Payment processing rates (MYS-DEL-001 Article 29 correction 8) ──────────
+  /** Mobile money processing rate [0,1]. Default 0.01 when absent. */
+  mobileMoneyProcessingRatePct?: number;
+  /** Card processing rate [0,1]. Default 0.015 when absent. */
+  cardProcessingRatePct?: number;
+  /** COD cash-handling rate [0,1]. Default 0.005 when absent. */
+  codProcessingRatePct?: number;
+
   // ── Floor / ceiling / rounding ──────────────────────────────────────────────
   floorPriceTzs: number;
   ceilingPriceTzs: number;
@@ -173,6 +181,12 @@ export class PricingConfig {
   // ── Getters ─────────────────────────────────────────────────────────────────
   get version(): number { return this.data.version; }
   get platformMarginPct(): number { return this.data.platformMarginPct; }
+  /** Mobile money processing rate. Defaults to 0.01 (1%) when not configured. */
+  get mobileMoneyProcessingRatePct(): number { return this.data.mobileMoneyProcessingRatePct ?? 0.01; }
+  /** Card processing rate. Defaults to 0.015 (1.5%) when not configured. */
+  get cardProcessingRatePct(): number { return this.data.cardProcessingRatePct ?? 0.015; }
+  /** COD cash-handling rate. Defaults to 0.005 (0.5%) when not configured. */
+  get codProcessingRatePct(): number { return this.data.codProcessingRatePct ?? 0.005; }
   get floorPriceTzs(): number { return this.data.floorPriceTzs; }
   get ceilingPriceTzs(): number { return this.data.ceilingPriceTzs; }
   get roundingIncrementTzs(): number { return this.data.roundingIncrementTzs; }

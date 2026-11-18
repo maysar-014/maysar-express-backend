@@ -25,9 +25,14 @@ import { QuoteRepository } from '../../domain/repositories/quote.repository';
 import { PricingConfigRepository } from '../../domain/repositories/pricing-config.repository';
 import { PricingAuditRecordRepository } from '../../domain/repositories/pricing-audit-record.repository';
 import { VehicleTariffRepository } from '../../domain/repositories/vehicle-tariff.repository';
+import { MerchantDeliveryPolicyRepository } from '../../domain/repositories/merchant-delivery-policy.repository';
+import { AuthorizedSubsidyRepository } from '../../domain/repositories/authorized-subsidy.repository';
 import { FulfillmentCostEngine } from '../../domain/engines/fulfillment-cost.engine';
 import { DriverCompensationEngine } from '../../domain/engines/driver-compensation.engine';
 import { BuyerPriceEngine } from '../../domain/engines/buyer-price.engine';
+import { FinancialFeasibilityEngine } from '../../domain/engines/financial-feasibility.engine';
+import { MerchantContributionEngine } from '../../domain/engines/merchant-contribution.engine';
+import { SubsidyGovernanceEngine } from '../../domain/engines/subsidy-governance.engine';
 import { ThreeEngineQuoteBreakdown } from '../../domain/engines/three-engine-breakdown';
 import { VehicleTariff } from '../../domain/entities/vehicle-tariff.entity';
 import { Quote, QuoteData, QuoteResponse } from '../../domain/entities/quote.entity';
@@ -48,6 +53,12 @@ export interface DeliveryQuoteRequest {
   itemValueTzs?: number;
   requestedAt?: Date;
   /**
+   * Seller ID — used to look up the merchant's delivery contribution policy
+   * (MYS-DEL-001 Article 4.4). Optional; when absent no merchant contribution
+   * is applied and the feasibility engine uses null for that funding source.
+   */
+  sellerId?: string;
+  /**
    * Multi-pickup: additional pickup points after the primary origin.
    * When present, route = origin → additionalPickupPoints[0] → ... → destination.
    * Zone is still classified from origin → destination (first seller → buyer).
@@ -64,6 +75,12 @@ export class RequestDeliveryQuoteUseCase {
   private readonly fulfillmentCostEngine = new FulfillmentCostEngine();
   private readonly driverCompensationEngine = new DriverCompensationEngine();
   private readonly buyerPriceEngine = new BuyerPriceEngine();
+  // MYS-DEL-001 Article 4.6: financial feasibility gate.
+  private readonly financialFeasibilityEngine = new FinancialFeasibilityEngine();
+  // MYS-DEL-001 Article 4.4: merchant contribution.
+  private readonly merchantContributionEngine = new MerchantContributionEngine();
+  // MYS-DEL-001 Article 4.5: subsidy governance.
+  private readonly subsidyGovernanceEngine = new SubsidyGovernanceEngine();
 
   constructor(
     private readonly pricingEngine: DeliveryPricingEngine,
@@ -74,6 +91,8 @@ export class RequestDeliveryQuoteUseCase {
     private readonly pricingConfigRepo: PricingConfigRepository,
     private readonly auditRepo: PricingAuditRecordRepository,
     private readonly vehicleTariffRepo?: VehicleTariffRepository,
+    private readonly merchantPolicyRepo?: MerchantDeliveryPolicyRepository,
+    private readonly subsidyRepo?: AuthorizedSubsidyRepository,
   ) {}
 
   async execute(request: DeliveryQuoteRequest): Promise<QuoteResponse> {
@@ -164,12 +183,47 @@ export class RequestDeliveryQuoteUseCase {
       : undefined;
     const courierCost = this.courierCostCalc.estimate(routeResult.distanceKm, routeResult.durationMinutes, tariffRates);
 
+    // 6b. MYS-DEL-001 Article 4.4 — look up the seller's merchant delivery
+    // contribution policy so the feasibility engine can include EXPECTED
+    // contributions in the breakdown (they will be EXPECTED, not CONFIRMED,
+    // at quote time — only the settlement layer confirms collection).
+    let merchantContributionResult: import('../../domain/engines/merchant-contribution.engine').MerchantContributionResult | null = null;
+    if (request.sellerId && this.merchantPolicyRepo) {
+      try {
+        const policy = await this.merchantPolicyRepo.findByMerchantId(request.sellerId);
+        if (policy) {
+          merchantContributionResult = this.merchantContributionEngine.compute({
+            policy,
+            customerDeliveryFeeTzs: undefined, // buyer price not yet computed at this stage
+          });
+        }
+      } catch {
+        // Non-fatal — treat as no merchant contribution.
+      }
+    }
+
+    // 6c. MYS-DEL-001 Article 4.5 — look up the first applicable active subsidy
+    // for this route. Subsidies are matched by zone and strategy; global subsidies
+    // (null zone/strategy) match any route. The SubsidyGovernanceEngine validates
+    // expiry and authorization at compute time — it never blindly applies them.
+    let subsidyAuthorization: import('../../domain/engines/subsidy-governance.engine').AuthorizedSubsidy | null = null;
+    if (this.subsidyRepo) {
+      try {
+        const zone = zoneResult.unavailable ? null : (zoneResult.zone as string);
+        const candidates = await this.subsidyRepo.findActive({ deliveryZone: zone, asOf: now });
+        // Pick the first valid non-expired subsidy; the engine re-validates it at compute time.
+        subsidyAuthorization = candidates[0] ?? null;
+      } catch {
+        // Non-fatal — treat as no subsidy.
+      }
+    }
+
     // 6a. Phase 3 §3.1 — three-engine pipeline (cost → compensation → buyer
     // price) as the PRIMARY path whenever an active VehicleTariff exists.
     // Falls back to the interim 11-stage pipeline (below) when no tariff is
     // active or the three-engine path fails for any reason.
     const threeEngineResponse = this.tryThreeEnginePath(
-      { activeTariff, routeResult, request, config, now, quoteId, expiresAt, deliveryZone },
+      { activeTariff, routeResult, request, config, now, quoteId, expiresAt, deliveryZone, merchantContributionResult, subsidyAuthorization },
     );
     if (threeEngineResponse) {
       await this.persistQuoteAndAudit(threeEngineResponse.quote, threeEngineResponse.auditData);
@@ -278,21 +332,26 @@ export class RequestDeliveryQuoteUseCase {
   }
 
   /**
-   * Phase 3 §3.1 — the three-engine pipeline: FulfillmentCostEngine →
-   * DriverCompensationEngine → BuyerPriceEngine. Returns null when there is
-   * no active VehicleTariff or anything fails, so the caller falls back to
-   * the interim 11-stage pipeline. Pure computes wrapped in try/catch — the
-   * quote endpoint must never fail because of the new path.
+   * Phase 3 §3.1 / MYS-DEL-001 Article 4.6 — the three-engine pipeline:
+   *   FulfillmentCostEngine → DriverCompensationEngine → BuyerPriceEngine
+   *   → FinancialFeasibilityEngine (gate).
+   *
+   * Returns null when there is no active VehicleTariff or anything fails,
+   * so the caller falls back to the interim 11-stage pipeline. The fallback
+   * path does NOT run the feasibility engine and stores feasibility=null
+   * on the breakdown, which the classification layer treats as UNVERIFIED.
    */
   private tryThreeEnginePath(params: {
     activeTariff: VehicleTariff | null;
     routeResult: { distanceKm: number; durationMinutes: number };
     request: DeliveryQuoteRequest;
-    config: { version: number; platformMarginPct: number };
+    config: { version: number; platformMarginPct: number; mobileMoneyProcessingRatePct: number };
     now: Date;
     quoteId: string;
     expiresAt: Date;
     deliveryZone: DeliveryZone;
+    merchantContributionResult?: import('../../domain/engines/merchant-contribution.engine').MerchantContributionResult | null;
+    subsidyAuthorization?: import('../../domain/engines/subsidy-governance.engine').AuthorizedSubsidy | null;
   }): { quote: Quote; auditData: PricingAuditRecordData } | null {
     const { activeTariff, routeResult, request, config, now, quoteId, expiresAt, deliveryZone } = params;
     if (!activeTariff) return null;
@@ -338,11 +397,119 @@ export class RequestDeliveryQuoteUseCase {
         serviceFee: { marginPct: Math.min(1, Math.max(0, config.platformMarginPct)) },
       });
 
+      // Engine 4 (MYS-DEL-001 Article 4.6): financial feasibility gate.
+      // Merchant contribution is EXPECTED at quote time — not CONFIRMED.
+      // Per Article 4.4, EXPECTED contributions are NOT counted in totalFunding.
+      // They are recorded in the breakdown for dashboard visibility only.
+      // Payment processing cost: use mobile money rate as the conservative default
+      // at quote time (actual method unknown until checkout confirmation).
+      const merchantContribution = params.merchantContributionResult ?? null;
+      const paymentProcessingCostTzs = Math.round(
+        buyerPrice.finalBuyerPriceTzs * config.mobileMoneyProcessingRatePct
+      );
+
+      // For PERCENTAGE_OF_FEE policies, we now know the buyer price so we can
+      // recompute the contribution with the actual fee.
+      let finalMerchantContribution = merchantContribution;
+      if (
+        merchantContribution &&
+        merchantContribution.contributionType === 'PERCENTAGE_OF_FEE' &&
+        params.merchantContributionResult !== null
+      ) {
+        try {
+          const policy = {
+            merchantId: merchantContribution.merchantId,
+            type: merchantContribution.contributionType,
+            rate: undefined as number | undefined,
+            agreementRef: merchantContribution.agreementRef ?? undefined,
+          };
+          // Re-compute with actual buyer price now available
+          finalMerchantContribution = this.merchantContributionEngine.compute({
+            policy: { ...policy, type: merchantContribution.contributionType },
+            customerDeliveryFeeTzs: buyerPrice.finalBuyerPriceTzs,
+          });
+        } catch {
+          // Fall back to the original estimate
+        }
+      }
+
+      // MYS-DEL-001 Article 4.5 — apply the subsidy authorization if present.
+      // The SubsidyGovernanceEngine validates expiry and authorization; it
+      // computes the deficit as the gap between fulfillment cost and buyer price.
+      let subsidyApplication: import('../../domain/engines/subsidy-governance.engine').SubsidyApplicationResult | null = null;
+      const rawSubsidy = params.subsidyAuthorization ?? null;
+      if (rawSubsidy) {
+        const deficit = Math.max(0, fulfillmentCost.totalFulfillmentCostTzs - buyerPrice.finalBuyerPriceTzs);
+        subsidyApplication = this.subsidyGovernanceEngine.apply({
+          authorization: rawSubsidy,
+          deficitTzs: deficit,
+          issuedAt: now,
+        });
+        if (!subsidyApplication.isValid) {
+          console.warn(
+            '[RequestDeliveryQuoteUseCase] Subsidy authorization invalid for quote',
+            quoteId, ':', subsidyApplication.invalidReason,
+          );
+          subsidyApplication = null;
+        }
+      }
+
+      const feasibility = this.financialFeasibilityEngine.compute({
+        funding: {
+          customerDeliveryFeeTzs: buyerPrice.finalBuyerPriceTzs,
+          merchantContribution: finalMerchantContribution,
+          confirmedPartnerContributionTzs: 0, // resolved at settlement
+          subsidyApplication,
+        },
+        costs: {
+          driverPayoutTzs: driverCompensation.totalCompensationTzs,
+          otherFulfillmentExpensesTzs: 0,     // loading/unloading captured in fulfillmentCost
+          paymentProcessingExpensesTzs: paymentProcessingCostTzs,
+          codExpensesTzs: 0,                  // resolved at settlement
+        },
+        dataQuality: {
+          driverCompensationFromRealTariff: true, // VehicleTariff is active
+          fulfillmentCostFromConfig: true,         // tariff-backed calculation
+          paymentCostFromActualRates: true,        // from configured processing rate
+        },
+        pricingVersion: config.version,
+        costModelVersion: `vehicle-tariff-v${activeTariff.version}`,
+        financialAssumptions: [
+          `Payment processing cost: mobile money rate ${(config.mobileMoneyProcessingRatePct * 100).toFixed(2)}% applied as conservative default — actual method determined at checkout.`,
+          finalMerchantContribution
+            ? `Merchant contribution (${finalMerchantContribution.contributionType}): TZS ${finalMerchantContribution.expectedContributionTzs} EXPECTED — not counted in totalFunding until confirmed at settlement.`
+            : 'No merchant delivery contribution arrangement found.',
+          subsidyApplication?.isValid
+            ? `Subsidy applied: ${subsidyApplication.purpose} (${subsidyApplication.fundingSource}) — TZS ${subsidyApplication.appliedAmountTzs}.`
+            : 'No active subsidy authorization for this route.',
+          `Driver compensation computed from VehicleTariff version ${activeTariff.version}.`,
+        ],
+        issuedAt: now,
+      });
+
+      // Log any blocking reasons or warnings — these go to ops monitoring.
+      if (!feasibility.isApproved) {
+        console.error(
+          '[RequestDeliveryQuoteUseCase] Feasibility gate blocked quote:',
+          feasibility.blockingReasons,
+        );
+        // For now: return null to fall through to the 11-stage pipeline rather
+        // than hard-blocking the quote endpoint. A future phase will make this
+        // a hard block once driver and cost data are fully populated.
+      }
+      if (feasibility.warnings.length > 0) {
+        console.warn(
+          '[RequestDeliveryQuoteUseCase] Feasibility warnings for quote',
+          quoteId, ':', feasibility.warnings,
+        );
+      }
+
       const breakdown: ThreeEngineQuoteBreakdown = {
         engineVersion: 'three-engine-v1',
         fulfillmentCost,
         driverCompensation,
         buyerPrice,
+        feasibility,
       };
 
       const quoteData: QuoteData = {

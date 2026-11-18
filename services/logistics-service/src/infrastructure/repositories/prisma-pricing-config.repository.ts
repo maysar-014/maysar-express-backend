@@ -68,6 +68,10 @@ export class PrismaPricingConfigRepository implements PricingConfigRepository {
     const data: PricingConfigData = {
       version:            row.version,
       platformMarginPct:  Number(row.platformMarginPct),
+      // Payment processing rates — nullable in DB, defaults applied in PricingConfig getters
+      mobileMoneyProcessingRatePct: row.mobileMoneyProcessingRatePct != null ? Number(row.mobileMoneyProcessingRatePct) : undefined,
+      cardProcessingRatePct:        row.cardProcessingRatePct        != null ? Number(row.cardProcessingRatePct)        : undefined,
+      codProcessingRatePct:         row.codProcessingRatePct         != null ? Number(row.codProcessingRatePct)         : undefined,
       floorPriceTzs:      Number(row.floorPriceTzs),
       ceilingPriceTzs:    Number(row.ceilingPriceTzs),
       roundingIncrementTzs: row.roundingIncrementTzs,

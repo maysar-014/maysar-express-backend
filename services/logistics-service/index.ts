@@ -392,6 +392,135 @@ export const LogisticsModule: Module = {
             //            POST /api/logistics/v1/fulfillment-options (Phase 4 §4.1)
             router.use('/v1', publicQuoteRouter);
 
+            // ── Admin: Delivery Economics Report (MYS-DEL-001 Articles 34–38) ──
+            // GET /api/logistics/api/v1/admin/delivery-economics/monthly-report
+            //   ?year=2026&month=11
+            // Returns the GenerateMonthlyDeliveryReportUseCase output including
+            // platform economics, driver economics, operational efficiency,
+            // reconciliation summary and explicit data limitations.
+            router.get('/api/v1/admin/delivery-economics/monthly-report', requireAuth, requireRoleOrService(['admin']), async (req: any, res: any) => {
+                try {
+                    const year  = Number(req.query.year)  || new Date().getFullYear();
+                    const month = Number(req.query.month) || (new Date().getMonth() + 1);
+
+                    if (year < 2020 || year > 2100 || month < 1 || month > 12) {
+                        res.status(400).json({ success: false, error: 'Invalid year or month' });
+                        return;
+                    }
+
+                    const { GenerateMonthlyDeliveryReportUseCase } = await import('./src/application/use-cases/generate-monthly-delivery-report.use-case');
+                    const prisma = (globalThis as any).prisma;
+
+                    // Minimal data source that reads from the logistics ledger and shipments.
+                    // Returns null when no data exists (pre-launch / no deliveries this period).
+                    const dataSource = {
+                        async aggregateLedgerForMonth(y: number, m: number) {
+                            if (!prisma?.logistics_LedgerEntry?.findMany) return null;
+                            const start = new Date(y, m - 1, 1);
+                            const end   = new Date(y, m, 1);
+                            try {
+                                const rows = await prisma.logistics_LedgerEntry.findMany({
+                                    where: { calculatedAt: { gte: start, lt: end } },
+                                    select: { entryType: true, amountTzs: true },
+                                });
+                                if (!rows.length) return null;
+                                const bucket = (type: string) => rows.filter((r: any) => r.entryType === type).map((r: any) => Number(r.amountTzs));
+                                const sum    = (arr: number[]) => arr.reduce((a: number, b: number) => a + b, 0);
+                                return {
+                                    totalBuyerChargesTzs:        sum(bucket('BUYER_LOGISTICS_CHARGE')),
+                                    totalCarrierPayablesTzs:     sum(bucket('CARRIER_PAYABLE')),
+                                    totalMaysarRevenueTzs:       sum(bucket('MAYSAR_LOGISTICS_REVENUE')),
+                                    totalSubsidyTzs:             sum(bucket('DISCOUNT_MAYSAR_FUNDED')) + sum(bucket('DISCOUNT_SUPPLIER_FUNDED')),
+                                    totalConsolidationSavingsTzs:sum(bucket('CONSOLIDATION_SAVING')),
+                                    totalAdjustmentsTzs:         sum(bucket('ADJUSTMENT')),
+                                    entryCount: rows.length,
+                                    buyerFees:       bucket('BUYER_LOGISTICS_CHARGE'),
+                                    carrierPayouts:  bucket('CARRIER_PAYABLE').map(Math.abs),
+                                };
+                            } catch { return null; }
+                        },
+
+                        async aggregateShipmentOutcomesForMonth(y: number, m: number) {
+                            if (!prisma?.logistics_Shipment?.groupBy) return null;
+                            const start = new Date(y, m - 1, 1);
+                            const end   = new Date(y, m, 1);
+                            try {
+                                const rows = await prisma.logistics_Shipment.findMany({
+                                    where: { outcomeCode: { not: null }, updatedAt: { gte: start, lt: end } },
+                                    select: { outcomeCode: true },
+                                });
+                                if (!rows.length) return null;
+                                const completed  = rows.filter((r: any) => r.outcomeCode === 'COMPLETED').length;
+                                const cancelled  = rows.filter((r: any) => String(r.outcomeCode ?? '').startsWith('CANCELLED')).length;
+                                const failed     = rows.filter((r: any) => String(r.outcomeCode ?? '').startsWith('FAILED')).length;
+                                const returned   = rows.filter((r: any) => r.outcomeCode === 'RETURNED_TO_ORIGIN').length;
+                                return { completedCount: completed, cancelledCount: cancelled, failedCount: failed, returnedCount: returned, totalCount: rows.length };
+                            } catch { return null; }
+                        },
+
+                        async aggregateClassificationsForMonth(y: number, m: number) {
+                            if (!prisma?.logistics_PricingAuditRecord?.findMany) return null;
+                            const start = new Date(y, m - 1, 1);
+                            const end   = new Date(y, m, 1);
+                            try {
+                                const rows = await prisma.logistics_PricingAuditRecord.findMany({
+                                    where: { recordedAt: { gte: start, lt: end } },
+                                    select: { breakdown: true },
+                                });
+                                if (!rows.length) return null;
+                                let profitable = 0, breakEven = 0, subsidized = 0, lossMaking = 0, unverified = 0, realTariff = 0, placeholder = 0;
+                                for (const row of rows) {
+                                    const b = row.breakdown as any;
+                                    const cls = b?.feasibility?.classification;
+                                    if (cls === 'PROFITABLE')  profitable++;
+                                    else if (cls === 'BREAK_EVEN') breakEven++;
+                                    else if (cls === 'SUBSIDIZED')  subsidized++;
+                                    else if (cls === 'LOSS_MAKING') lossMaking++;
+                                    else unverified++;
+                                    if (b?.engineVersion === 'three-engine-v1') realTariff++;
+                                    else placeholder++;
+                                }
+                                return { profitableCount: profitable, breakEvenCount: breakEven, subsidizedCount: subsidized, lossMakingCount: lossMaking, unverifiedCount: unverified, realTariffCount: realTariff, placeholderCount: placeholder };
+                            } catch { return null; }
+                        },
+
+                        async aggregateReconciliationsForMonth(y: number, m: number) {
+                            if (!prisma?.logistics_LedgerEntry?.findMany) return null;
+                            const start = new Date(y, m - 1, 1);
+                            const end   = new Date(y, m, 1);
+                            try {
+                                const rows = await prisma.logistics_LedgerEntry.findMany({
+                                    where: {
+                                        entryType: 'ADJUSTMENT',
+                                        calculatedAt: { gte: start, lt: end },
+                                        // Filter to reconciliation deltas only
+                                    },
+                                    select: { metadata: true },
+                                });
+                                const recons = rows.filter((r: any) => (r.metadata as any)?.type === 'RECONCILIATION_DELTA');
+                                if (!recons.length) return null;
+                                const materialCount = recons.filter((r: any) => {
+                                    const devs = (r.metadata as any)?.deviations ?? [];
+                                    return devs.some((d: any) => d.pct > 15);
+                                }).length;
+                                return {
+                                    reconciledCount: recons.length,
+                                    materialDeviationCount: materialCount,
+                                    distanceDeviations: [],
+                                    driverPayoutDeviations: [],
+                                };
+                            } catch { return null; }
+                        },
+                    };
+
+                    const uc = new GenerateMonthlyDeliveryReportUseCase(dataSource as any);
+                    const report = await uc.execute({ year, month });
+
+                    res.json({ success: true, data: report });
+                } catch (err: any) {
+                    res.status(500).json({ success: false, error: err?.message ?? 'Failed to generate delivery economics report' });
+                }
+            });
             // Internal service-to-service quote endpoints (no JWT — network-level protection)
             // Full path: GET  /api/logistics/internal/quotes/:quoteId
             //            PATCH /api/logistics/internal/quotes/:quoteId/consume

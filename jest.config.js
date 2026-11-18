@@ -180,18 +180,6 @@ module.exports = {
       }
     },
     {
-      displayName: 'community-service',
-      preset: 'ts-jest',
-      testEnvironment: 'node',
-      testMatch: ['<rootDir>/services/community-service/**/*.test.ts'],
-      setupFilesAfterEnv: ['<rootDir>/tests/setup/community-service/setup.ts'],
-      moduleNameMapper: {
-        '@community/(.*)': '<rootDir>/services/community-service/src/$1',
-        '@shared/(.*)': '<rootDir>/shared/$1',
-        '^uuid$': '<rootDir>/node_modules/uuid/dist/index.js',
-      }
-    },
-    {
       displayName: 'compliance-service',
       preset: 'ts-jest',
       testEnvironment: 'node',

@@ -795,8 +795,8 @@ The audit pipeline completed static analysis (discovery, tracing, database impac
 | Community_Hashtag | - | - | 0 | ⚠️ GAP |
 | Community_Bookmark | - | - | 0 | ⚠️ GAP |
 | Compliance_SubjectRightsRequest | - | - | 0 | ⚠️ GAP |
-| Compliance_TCRARecord | - | - | 0 | ⚠️ GAP |
-| Compliance_TRARecord | - | - | 0 | ⚠️ GAP |
+| Compliance_TCRARecord | - | - | 0 | ✅ REMOVED |
+| Compliance_TRARecord | - | - | 0 | ✅ REMOVED |
 | Compliance_AMLRecord | - | - | 0 | ⚠️ GAP |
 | Compliance_MarketRecord | - | - | 0 | ⚠️ GAP |
 | Compliance_DataRetentionPolicy | - | - | 0 | ⚠️ GAP |

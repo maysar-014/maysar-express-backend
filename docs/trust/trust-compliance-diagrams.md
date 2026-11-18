@@ -19,13 +19,13 @@ flowchart TD
     MANUAL_REVIEW --> AML_CHECK["AML Screening\n(Sanctions · PEP · Risk Score)"]
     AML_CHECK --> AML_RESULT{AML\nResult}
     AML_RESULT -->|High Risk| FREEZE["Freeze Account\nEscalate to Compliance"]
-    AML_RESULT -->|Clear| TRA_CHECK["TRA Tax Compliance\nCheck (Tanzania)"]
+    AML_RESULT -->|Clear| INTERNAL_TAX_CHECK["Internal Tax Compliance\nCheck"]
 
-    TRA_CHECK --> TRA_RESULT{TRA\nStatus}
-    TRA_RESULT -->|Non-compliant| HOLD["Hold Verification\nRequest Tax Docs"]
-    TRA_RESULT -->|Compliant| TCRA_CHECK["TCRA Registration\nCheck (if applicable)"]
+    INTERNAL_TAX_CHECK --> INTERNAL_TAX_RESULT{Internal Tax\nStatus}
+    INTERNAL_TAX_RESULT -->|Non-compliant| HOLD["Hold Verification\nRequest Tax Docs"]
+    INTERNAL_TAX_RESULT -->|Compliant| BUSINESS_REG_CHECK["Business Registration\nCheck"]
 
-    TCRA_CHECK --> FINAL_DECISION{Final\nDecision}
+    BUSINESS_REG_CHECK --> FINAL_DECISION{Final\nDecision}
     FINAL_DECISION -->|Approved| VERIFIED["Business Verified ✅\nStatus: ACTIVE\nCan list products & receive payouts"]
     FINAL_DECISION -->|Rejected| REJECTED["Verification Rejected\nReason Provided\nAppeal Process Available"]
 
@@ -147,10 +147,10 @@ graph TB
             PHOTO_PROOF["Photo Proof\n(Delivery evidence)"]
         end
 
-        subgraph Compliance["Regulatory Compliance"]
+        subgraph Compliance["Internal Compliance"]
             AML["AML Screening\n(Sanctions · PEP)"]
-            TRA["TRA Tax Compliance\n(Tanzania)"]
-            TCRA["TCRA Registration\n(Telecom regulator)"]
+            INTERNAL_TAX["Internal Tax Compliance\nCheck"]
+            BUSINESS_REG["Business Registration\nCheck"]
             GDPR["Data Protection\n(GDPR-aligned)"]
         end
     end

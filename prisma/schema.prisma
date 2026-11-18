@@ -23,6 +23,8 @@ model Analytics_EnablerAnalytics {
   skillCertifications    Int?      @default(0)
   skillLevel             String?
   createdAt              DateTime  @default(now())
+
+  @@map("analytics_enabler_analytics")
 }
 
 model Analytics_SellerMetrics {
@@ -58,6 +60,8 @@ model Analytics_SellerMetrics {
   dailySales                     Analytics_SellerDailySales[]
   inventoryHealth                Analytics_SellerInventoryHealth[]
   productPerformance             Analytics_SellerProductPerformance[]
+
+  @@map("analytics_seller_metrics")
 }
 
 model Analytics_SellerDailySales {
@@ -129,6 +133,10 @@ model Analytics_SalesAnalytics {
   date      DateTime
   insights  String?
   createdAt DateTime @default(now())
+
+  @@index([sellerId, date])
+  @@index([createdAt])
+  @@map("analytics_sales_analytics")
 }
 
 model Analytics_SupplierAnalytics {
@@ -144,6 +152,9 @@ model Analytics_SupplierAnalytics {
   pricingUpdates      Int?      @default(0)
   activeProducts      Int?      @default(0)
   createdAt           DateTime  @default(now())
+
+  @@index([lastUpdated])
+  @@map("analytics_supplier_analytics")
 }
 
 model Analytics_CourierAnalytics {
@@ -160,6 +171,9 @@ model Analytics_CourierAnalytics {
   kycStatus           String?
   kycCompletedAt      DateTime?
   createdAt           DateTime  @default(now())
+
+  @@index([lastDelivery])
+  @@map("analytics_courier_analytics")
 }
 
 model Analytics_Metric {
@@ -174,6 +188,7 @@ model Analytics_Metric {
 
   @@index([metricType, timestamp])
   @@index([dimension, metricType])
+  @@map("analytics_metrics")
 }
 
 model Analytics_Event {
@@ -189,6 +204,7 @@ model Analytics_Event {
 
   @@index([status, timestamp])
   @@index([type, timestamp])
+  @@map("analytics_events")
 }
 
 model User {
@@ -233,6 +249,9 @@ model Auth_User {
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
+  @@index([status])
+  @@index([role])
+  @@index([createdAt])
   @@map("auth_user_sync")
 }
 
@@ -277,6 +296,8 @@ model Auth_PasswordResetToken {
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([expiresAt])
   @@map("auth_password_reset_tokens")
 }
 
@@ -289,6 +310,8 @@ model Auth_EmailVerificationToken {
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([expiresAt])
   @@map("auth_email_verification_tokens")
 }
 
@@ -307,6 +330,7 @@ model AuditLog {
 
   @@index([userId])
   @@index([timestamp])
+  @@index([action, success])
   @@map("auth_audit_logs")
 }
 
@@ -363,6 +387,9 @@ model Business {
   documents          BusinessDocument[]
   complianceRecords  BusinessRegistry_ComplianceRecord[]
 
+  @@index([ownerId])
+  @@index([status])
+  @@index([verificationStatus])
   @@map("businessregistry_businesses")
 }
 
@@ -381,6 +408,7 @@ model BusinessAddress {
   business   Business                     @relation(fields: [businessId], references: [id], onDelete: Cascade)
   suppliedProducts Product[]              @relation("ProductSupplierLocation")
 
+  @@index([businessId])
   @@map("businessregistry_business_addresses")
 }
 
@@ -395,6 +423,8 @@ model BusinessDocument {
   verifiedAt DateTime?
   business   Business                        @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
+  @@index([businessId])
+  @@index([status])
   @@map("businessregistry_business_documents")
 }
 
@@ -408,6 +438,8 @@ model BusinessRegistry_ComplianceRecord {
   notes      String?
   business   Business                          @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
+  @@index([businessId])
+  @@index([status])
   @@map("businessregistry_compliance_records")
 }
 
@@ -441,6 +473,7 @@ model EventStore {
   createdAt   DateTime @default(now())
 
   @@index([aggregateId])
+  @@index([aggregateId, version])
   @@index([eventType])
   @@map("event_store")
 }
@@ -462,6 +495,8 @@ model Category {
   attributes   CategoryAttribute[]
   enablerScopes Enabler_SellerAuthorizationScope[]
 
+  @@index([parentId])
+  @@index([isActive])
   @@map("catalog_categories")
 }
 
@@ -549,7 +584,6 @@ model BuyBox {
   assignmentType  Catalog_AssignmentType?
   alternatives    Catalog_BuyBoxAlternative[]
 
-  @@index([productId])
   @@map("catalog_buy_boxes")
 }
 
@@ -650,6 +684,7 @@ model Catalog_OperatorAuditLog {
   changedAt     DateTime  @default(now()) @db.Timestamp(6)
 
   @@index([entityType, entityId])
+  @@index([operatorId, changedAt])
   @@map("catalog_operator_audit_logs")
 }
 
@@ -688,6 +723,7 @@ model MediaRef {
   uploadedBy   String   @db.VarChar(64)
   createdAt    DateTime @default(now()) @db.Timestamp(6)
 
+  @@index([entityType, entityId])
   @@map("catalog_media_refs")
 }
 
@@ -837,6 +873,7 @@ model Checkout_Cart {
   @@index([userId])
   @@index([status])
   @@index([expiresAt])
+  @@map("checkout_carts")
 }
 
 model Checkout_CartItem {
@@ -852,6 +889,7 @@ model Checkout_CartItem {
 
   @@unique([cartId, productId, variantId])
   @@index([cartId])
+  @@map("checkout_cart_items")
 }
 
 model Checkout_CheckoutSession {
@@ -886,6 +924,7 @@ model Checkout_CheckoutSession {
   @@index([status])
   @@index([cartId])
   @@index([expiresAt])
+  @@map("checkout_sessions")
 }
 
 model Checkout_Order {
@@ -912,6 +951,7 @@ model Checkout_Order {
   @@index([status])
   @@index([paymentStatus])
   @@index([createdAt])
+  @@map("checkout_orders")
 }
 
 model Checkout_OrderItem {
@@ -926,6 +966,7 @@ model Checkout_OrderItem {
   order      Checkout_Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+  @@map("checkout_order_items")
 }
 
 model Checkout_InventoryReservation {
@@ -943,6 +984,7 @@ model Checkout_InventoryReservation {
   @@index([checkoutId])
   @@index([status])
   @@index([expiresAt])
+  @@map("checkout_inventory_reservations")
 }
 
 model Checkout_AppliedDiscount {
@@ -957,6 +999,7 @@ model Checkout_AppliedDiscount {
 
   @@index([checkoutId])
   @@index([discountCode])
+  @@map("checkout_applied_discounts")
 }
 
 model Commission {
@@ -972,6 +1015,10 @@ model Commission {
   metadata  Json?
   createdAt DateTime                    @default(now()) @db.Timestamp(6)
 
+  @@index([orderId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([createdAt])
   @@map("commission_commissions")
 }
 
@@ -988,6 +1035,10 @@ model Commission_Referral {
   metadata     Json?
   createdAt    DateTime                  @default(now()) @db.Timestamp(6)
 
+  @@index([referrerId])
+  @@index([refereeId])
+  @@index([status])
+  @@index([expiresAt])
   @@map("commission_referrals")
 }
 
@@ -1003,6 +1054,8 @@ model Commission_Reward {
   referenceId String?                 @db.VarChar(64)
   createdAt   DateTime                @default(now()) @db.Timestamp(6)
 
+  @@index([userId])
+  @@index([status])
   @@map("commission_rewards")
 }
 
@@ -1018,6 +1071,8 @@ model CommissionPayout {
   metadata      Json?
   createdAt     DateTime                @default(now()) @db.Timestamp(6)
 
+  @@index([recipientId])
+  @@index([status])
   @@map("commission_payouts")
 }
 
@@ -1030,169 +1085,9 @@ model Commission_EventStore {
   eventVersion Int      @default(1)
   createdAt    DateTime @default(now()) @db.Timestamp(6)
 
+  @@index([aggregateId])
+  @@index([eventType])
   @@map("commission_event_store")
-}
-
-model Post {
-  id               String               @id @default(cuid()) @db.VarChar(64)
-  authorId         String               @db.VarChar(64)
-  title            String?              @db.VarChar(255)
-  content          String
-  type             Community_PostType   @default(text)
-  visibility       Community_Visibility @default(public)
-  tags             String[]
-  location         Json?
-  metadata         Json?
-  isPinned         Boolean              @default(false)
-  isFeatured       Boolean              @default(false)
-  likesCount       Int                  @default(0)
-  commentsCount    Int                  @default(0)
-  sharesCount      Int                  @default(0)
-  status           Community_PostStatus @default(published)
-  publishedAt      DateTime?            @db.Timestamp(6)
-  moderatedBy      String?              @db.VarChar(64)
-  moderatedAt      DateTime?            @db.Timestamp(6)
-  moderationReason String?
-  createdAt        DateTime             @default(now()) @db.Timestamp(6)
-  updatedAt        DateTime             @updatedAt @db.Timestamp(6)
-  bookmarks        Community_Bookmark[]
-  comments         Comment[]
-  likes            Community_Like[]
-  author           CommunityUser        @relation("PostAuthor", fields: [authorId], references: [id])
-  shares           Community_Share[]
-
-  @@map("community_posts")
-}
-
-model CommunityUser {
-  id             String               @id @default(cuid()) @db.VarChar(64)
-  username       String               @unique @db.VarChar(50)
-  displayName    String               @db.VarChar(100)
-  avatarUrl      String?              @db.VarChar(500)
-  bio            String?              @db.VarChar(500)
-  location       String?              @db.VarChar(100)
-  website        String?              @db.VarChar(255)
-  isVerified     Boolean              @default(false)
-  reputation     Int                  @default(0)
-  followersCount Int                  @default(0)
-  followingCount Int                  @default(0)
-  status         Community_UserStatus @default(active)
-  lastActiveAt   DateTime             @db.Timestamp(6)
-  createdAt      DateTime             @default(now()) @db.Timestamp(6)
-  updatedAt      DateTime             @updatedAt @db.Timestamp(6)
-  bookmarks      Community_Bookmark[]
-  comments       Comment[]
-  followers      Community_Follow[]   @relation("UserFollowers")
-  following      Community_Follow[]   @relation("UserFollowing")
-  likes          Community_Like[]
-  posts          Post[]               @relation("PostAuthor")
-  shares         Community_Share[]
-
-  @@map("community_users")
-}
-
-model Comment {
-  id               String                  @id @default(cuid()) @db.VarChar(64)
-  postId           String                  @db.VarChar(64)
-  authorId         String                  @db.VarChar(64)
-  parentId         String?                 @db.VarChar(64)
-  content          String
-  likesCount       Int                     @default(0)
-  repliesCount     Int                     @default(0)
-  status           Community_CommentStatus @default(published)
-  moderatedBy      String?                 @db.VarChar(64)
-  moderatedAt      DateTime?               @db.Timestamp(6)
-  moderationReason String?
-  createdAt        DateTime                @default(now()) @db.Timestamp(6)
-  updatedAt        DateTime                @updatedAt @db.Timestamp(6)
-  author           CommunityUser           @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  parent           Comment?                @relation("CommentReplies", fields: [parentId], references: [id])
-  replies          Comment[]               @relation("CommentReplies")
-  post             Post                    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  likes            Community_Like[]
-
-  @@map("community_comments")
-}
-
-model Community_Like {
-  id        String             @id @default(cuid()) @db.VarChar(64)
-  userId    String             @db.VarChar(64)
-  postId    String?            @db.VarChar(64)
-  commentId String?            @db.VarChar(64)
-  type      Community_LikeType @default(like)
-  createdAt DateTime           @default(now()) @db.Timestamp(6)
-  comment   Comment?           @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  post      Post?              @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      CommunityUser      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, postId])
-  @@unique([userId, commentId])
-  @@map("community_likes")
-}
-
-model Community_Share {
-  id        String        @id @default(cuid()) @db.VarChar(64)
-  userId    String        @db.VarChar(64)
-  postId    String        @db.VarChar(64)
-  platform  String?       @db.VarChar(50)
-  createdAt DateTime      @default(now()) @db.Timestamp(6)
-  post      Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      CommunityUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, postId])
-  @@map("community_shares")
-}
-
-model Community_Follow {
-  id          String                 @id @default(cuid()) @db.VarChar(64)
-  followerId  String                 @db.VarChar(64)
-  followingId String                 @db.VarChar(64)
-  status      Community_FollowStatus @default(accepted)
-  createdAt   DateTime               @default(now()) @db.Timestamp(6)
-  follower    CommunityUser          @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
-  following   CommunityUser          @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
-
-  @@unique([followerId, followingId])
-  @@map("community_follows")
-}
-
-model Community_Report {
-  id          String                 @id @default(cuid()) @db.VarChar(64)
-  reporterId  String                 @db.VarChar(64)
-  entityType  String                 @db.VarChar(50)
-  entityId    String                 @db.VarChar(64)
-  reason      Community_ReportReason
-  description String?                @db.VarChar(1000)
-  status      Community_ReportStatus @default(pending)
-  reviewedBy  String?                @db.VarChar(64)
-  reviewedAt  DateTime?              @db.Timestamp(6)
-  resolution  String?
-  createdAt   DateTime               @default(now()) @db.Timestamp(6)
-
-  @@map("community_reports")
-}
-
-model Community_Hashtag {
-  id            String   @id @default(cuid()) @db.VarChar(64)
-  name          String   @unique @db.VarChar(100)
-  usageCount    Int      @default(0)
-  trendingScore Decimal  @default(0) @db.Decimal(5, 2)
-  lastUsedAt    DateTime @db.Timestamp(6)
-  createdAt     DateTime @default(now()) @db.Timestamp(6)
-
-  @@map("community_hashtags")
-}
-
-model Community_Bookmark {
-  id        String        @id @default(cuid()) @db.VarChar(64)
-  userId    String        @db.VarChar(64)
-  postId    String        @db.VarChar(64)
-  createdAt DateTime      @default(now()) @db.Timestamp(6)
-  post      Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      CommunityUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, postId])
-  @@map("community_bookmarks")
 }
 
 model Compliance_SubjectRightsRequest {
@@ -1205,6 +1100,8 @@ model Compliance_SubjectRightsRequest {
   data        Json?
   reason      String?
 
+  @@index([userId])
+  @@index([status])
   @@map("compliance_subject_rights_requests")
 }
 
@@ -1220,6 +1117,8 @@ model Compliance_TCRARecord {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  @@index([userId])
+  @@index([expiryDate])
   @@map("compliance_tcra_records")
 }
 
@@ -1234,6 +1133,7 @@ model Compliance_TRARecord {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
+  @@index([userId])
   @@map("compliance_tra_records")
 }
 
@@ -1248,6 +1148,7 @@ model Compliance_AMLRecord {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  @@index([sanctionsStatus])
   @@map("compliance_aml_records")
 }
 
@@ -1261,6 +1162,8 @@ model Compliance_MarketRecord {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  @@index([sellerId])
+  @@index([qualityStatus])
   @@map("compliance_market_records")
 }
 
@@ -1286,6 +1189,8 @@ model Compliance_DataDeletionLog {
   requestedBy    String
   reason         String
 
+  @@index([userId])
+  @@index([deletedAt])
   @@map("compliance_data_deletion_logs")
 }
 
@@ -1301,6 +1206,9 @@ model Compliance_KYCRecord {
   expiryDate         DateTime?
   riskLevel          Compliance_KYCRiskLevel @default(medium)
 
+  @@index([userId])
+  @@index([verificationStatus])
+  @@index([expiryDate])
   @@map("compliance_kyc_records")
 }
 
@@ -1314,6 +1222,8 @@ model Compliance_ComplianceAuditLog {
   userAgent String?
   details   Json?
 
+  @@index([userId, timestamp])
+  @@index([action])
   @@map("compliance_audit_logs")
 }
 
@@ -1529,6 +1439,8 @@ model Inventory_InventoryCount {
   inventoryCountItems Inventory_InventoryCountItem[]
   warehouse           Inventory_Warehouse            @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
 
+  @@index([warehouseId])
+  @@index([status])
   @@map("inventory_counts")
 }
 
@@ -1545,6 +1457,8 @@ model Inventory_InventoryCountItem {
   inventoryCount   Inventory_InventoryCount @relation(fields: [inventoryCountId], references: [id], onDelete: Cascade)
   stockItem        Inventory_StockItem      @relation(fields: [productVariantId, warehouseId], references: [productVariantId, warehouseId], onDelete: Cascade)
 
+  @@index([inventoryCountId])
+  @@index([productVariantId])
   @@map("inventory_count_items")
 }
 
@@ -1656,6 +1570,8 @@ model Logistics_Courier {
   earnings            Logistics_Earning[]
   locationHistory     Logistics_LocationHistory[]
 
+  @@index([status])
+  @@index([createdAt])
   @@map("logistics_couriers")
 }
 
@@ -1706,6 +1622,14 @@ model Logistics_Delivery {
   /// is a separate HTTP request, so it is recorded here for tracing rather
   /// than resumed: settlement lives in a separate saga (BLG-024/BLG-027).
   codSagaId             String?            @db.VarChar(64)
+  /// Constitutional terminal outcome (MYS-DEL-001 Article 23).
+  /// One of: COMPLETED | CANCELLED_BY_CUSTOMER | CANCELLED_BY_MERCHANT |
+  /// CANCELLED_BY_DRIVER | CANCELLED_BY_PLATFORM | FAILED_CUSTOMER_UNAVAILABLE |
+  /// FAILED_MERCHANT_UNAVAILABLE | FAILED_ADDRESS_OR_LOCATION | FAILED_OTHER |
+  /// RETURNED_TO_ORIGIN. Null until the delivery reaches a terminal state.
+  outcomeCode           String?            @db.VarChar(40)
+  /// Financial responsibility for cost attribution: CUSTOMER | MERCHANT | DRIVER | MAYSAR | INVESTIGATE.
+  outcomeResponsibleParty String?          @db.VarChar(16)
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
   courier               Logistics_Courier? @relation(fields: [courierId], references: [id])
@@ -1713,6 +1637,7 @@ model Logistics_Delivery {
   @@index([orderId])
   @@index([courierId])
   @@index([status])
+  @@index([outcomeCode])
   @@index([createdAt])
   @@index([codSagaId])
   @@map("logistics_deliveries")
@@ -1822,6 +1747,8 @@ model Notification_DeliveryLog {
   createdAt         DateTime                    @default(now()) @db.Timestamp(6)
   notification      Notification                @relation(fields: [notificationId], references: [id], onDelete: Cascade)
 
+  @@index([notificationId])
+  @@index([status])
   @@map("notification_delivery_logs")
 }
 
@@ -1837,7 +1764,6 @@ model NotificationPreference {
   updatedAt  DateTime @updatedAt @db.Timestamp(6)
 
   @@unique([userId, channel])
-  @@index([userId])
   @@map("notification_preferences")
 }
 
@@ -2054,7 +1980,6 @@ model Order_MasterOrderItem {
   sellerOrder   Order_Order       @relation(fields: [sellerOrderId], references: [id], onDelete: Cascade)
 
   @@id([masterOrderId, sellerOrderId])
-  @@index([sellerOrderId])
   @@map("order_master_order_items")
 }
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2137,7 +2062,6 @@ model order_CODTrustScore {
   updatedAt        DateTime @updatedAt
   createdAt        DateTime @default(now())
 
-  @@index([buyerId])
   @@index([buyerId, activeExposure])
   @@map("order_cod_trust_scores")
 }
@@ -2365,6 +2289,8 @@ model Payout {
   updatedAt          DateTime            @updatedAt @db.Timestamp(6)
 
   @@index([userId])
+  @@index([status])
+  @@index([createdAt])
   @@map("payout_payouts")
 }
 
@@ -2406,6 +2332,7 @@ model Training_TrainingRecord {
   @@index([moduleId])
   @@index([status])
   @@index([expiresAt])
+  @@map("training_records")
 }
 
 model Training_CertificationRequirement {
@@ -2416,6 +2343,8 @@ model Training_CertificationRequirement {
   maxAttempts        Int      @default(3)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+
+  @@map("training_certification_requirements")
 }
 
 model Training_TrainingModule {
@@ -2433,6 +2362,8 @@ model Training_TrainingModule {
   createdAt       DateTime                  @default(now())
   updatedAt       DateTime                  @updatedAt
   records         Training_TrainingRecord[]
+
+  @@map("training_modules")
 }
 
 model Training_Badge {
@@ -2445,6 +2376,7 @@ model Training_Badge {
 
   @@index([learnerId])
   @@index([type])
+  @@map("training_badges")
 }
 
 model Training_LeaderboardEntry {
@@ -2455,6 +2387,7 @@ model Training_LeaderboardEntry {
   updatedAt    DateTime @updatedAt
 
   @@index([totalScore(sort: Desc)])
+  @@map("training_leaderboard")
 }
 
 model User_User {
@@ -2509,6 +2442,9 @@ model User_User {
   passwordResetTokens     User_PasswordResetToken[]
   sessions                User_Session[]
 
+  @@index([role])
+  @@index([status])
+  @@index([createdAt])
   @@map("users")
 }
 
@@ -2555,6 +2491,8 @@ model User_UserAddress {
   updatedAt  DateTime         @updatedAt
   user       User_User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([isDefault])
   @@map("user_addresses")
 }
 
@@ -2568,6 +2506,8 @@ model User_Session {
   createdAt DateTime  @default(now())
   user      User_User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([expiresAt])
   @@map("user_sessions")
 }
 
@@ -2580,6 +2520,8 @@ model User_PasswordResetToken {
   createdAt DateTime  @default(now())
   user      User_User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([expiresAt])
   @@map("user_password_reset_tokens")
 }
 
@@ -2592,6 +2534,8 @@ model User_EmailVerificationToken {
   createdAt DateTime  @default(now())
   user      User_User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([expiresAt])
   @@map("user_email_verification_tokens")
 }
 
@@ -2608,6 +2552,8 @@ model User_AuditLog {
   timestamp DateTime   @default(now())
   user      User_User? @relation(fields: [userId], references: [id])
 
+  @@index([userId])
+  @@index([timestamp])
   @@map("user_audit_logs")
 }
 
@@ -2725,6 +2671,7 @@ model Wallet_IdempotencyRecord {
   createdAt DateTime @default(now()) @db.Timestamp(6)
   expiresAt DateTime @default(dbgenerated("(now() + '24:00:00'::interval)"))
 
+  @@index([expiresAt])
   @@map("wallet_idempotency_records")
 }
 
@@ -2966,7 +2913,6 @@ model Enabler_Profile {
   earnings              Enabler_Earning[]
   enforcementActions    Enabler_EnforcementAction[]
 
-  @@index([userId])
   @@index([status])
   @@index([tier])
   @@index([trainingStatus])
@@ -2996,7 +2942,6 @@ model Enabler_ProductListing {
   enabler          Enabler_Profile       @relation(fields: [enablerId], references: [id], onDelete: Cascade)
 
   @@unique([enablerId, productId])
-  @@index([enablerId])
   @@index([productId])
   @@index([sellerId])
   @@index([status])
@@ -3031,7 +2976,6 @@ model Enabler_Order {
   enabler            Enabler_Profile     @relation(fields: [enablerId], references: [id])
 
   @@index([enablerId])
-  @@index([orderId])
   @@index([sellerId])
   @@index([buyerId])
   @@index([status])
@@ -3120,7 +3064,6 @@ model Enabler_Analytics {
   updatedAt          DateTime        @updatedAt @db.Timestamp(6)
   enabler            Enabler_Profile @relation(fields: [enablerId], references: [id], onDelete: Cascade)
 
-  @@index([enablerId])
   @@map("enabler_analytics")
 }
 
@@ -3195,7 +3138,6 @@ model Enabler_SellerAuthorization {
   scopes           Enabler_SellerAuthorizationScope[]
 
   @@unique([enablerId, sellerId])
-  @@index([enablerId])
   @@index([sellerId])
   @@index([promotionOfferId, status])
   @@index([status])
@@ -3242,7 +3184,6 @@ model Enabler_SellerAuthorizationScope {
 
   @@unique([authorizationId, productId])
   @@unique([authorizationId, categoryId])
-  @@index([authorizationId])
   @@map("enabler_seller_authorization_scopes")
 }
 
@@ -3362,7 +3303,6 @@ model Enabler_OrderDraftItem {
   product     Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([draftId, productId, variantId])
-  @@index([draftId])
   @@index([sellerId])
   @@map("enabler_order_draft_items")
 }
@@ -3595,228 +3535,6 @@ model Campaign_OutboxEvent {
   @@map("campaign_outbox_events")
 }
 
-model Community_DiscussionThread {
-  id                  String                   @id @default(cuid()) @db.VarChar(64)
-  authorId            String @db.VarChar(64)
-  topic               String
-  content             String
-  category            String
-  status              Community_ThreadStatus   @default(OPEN)
-  expertiseLevel      Community_ExpertiseLevel
-  businessContext     Json
-  maxResponsesPerUser Int                      @default(3)
-  acceptedAnswerId    String?
-  resolvedAt          DateTime?
-  createdAt           DateTime                 @default(now())
-  updatedAt           DateTime                 @updatedAt
-  answers             Community_ThreadAnswer[]
-
-  @@index([authorId])
-  @@index([category, status])
-  @@index([status, createdAt])
-  @@map("community_discussion_threads")
-}
-
-model Community_ThreadAnswer {
-  id           String                     @id @default(cuid()) @db.VarChar(64)
-  threadId     String @db.VarChar(64)
-  authorId     String @db.VarChar(64)
-  content      String
-  qualityScore Int                        @default(0)
-  isAccepted   Boolean                    @default(false)
-  createdAt    DateTime                   @default(now())
-  updatedAt    DateTime                   @updatedAt
-  thread       Community_DiscussionThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
-
-  @@index([threadId])
-  @@index([authorId])
-  @@index([isAccepted])
-  @@map("community_thread_answers")
-}
-
-model Community_BusinessProfile {
-  id                     String                   @id @default(cuid()) @db.VarChar(64)
-  userId                 String                   @unique @db.VarChar(64)
-  businessId             String? @db.VarChar(64)
-  expertiseAreas         Json
-  industryExperience     String[]
-  certifications         String[]
-  contributionScore      Int                      @default(0)
-  contributionMetrics    Json
-  reputationTier         Community_ReputationTier @default(NEWCOMER)
-  businessGoals          Json
-  learningObjectives     Json
-  availableForMentorship Boolean                  @default(false)
-  mentorshipCapacity     Int                      @default(0)
-  createdAt              DateTime                 @default(now())
-  updatedAt              DateTime                 @updatedAt
-
-  @@index([userId])
-  @@index([reputationTier])
-  @@map("community_business_profiles")
-}
-
-model Community_KnowledgeArticle {
-  id               String                    @id @default(cuid()) @db.VarChar(64)
-  authorId         String @db.VarChar(64)
-  title            String
-  summary          String
-  sections         Json
-  category         String
-  industryTags     String[]
-  expertiseLevel   Community_ExpertiseLevel
-  reviewStatus     Community_ReviewStatus    @default(DRAFT)
-  qualityScore     Int                       @default(0)
-  version          Int                       @default(1)
-  trainingModuleId String?
-  publishedAt      DateTime?
-  createdAt        DateTime                  @default(now())
-  updatedAt        DateTime                  @updatedAt
-  reviews          Community_ArticleReview[]
-
-  @@index([authorId])
-  @@index([category, reviewStatus])
-  @@index([reviewStatus, publishedAt])
-  @@map("community_knowledge_articles")
-}
-
-model Community_ArticleReview {
-  id         String                     @id @default(cuid()) @db.VarChar(64)
-  articleId  String @db.VarChar(64)
-  reviewerId String
-  score      Int
-  feedback   String
-  approved   Boolean                    @default(false)
-  createdAt  DateTime                   @default(now())
-  article    Community_KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
-
-  @@index([articleId])
-  @@index([reviewerId])
-  @@map("community_article_reviews")
-}
-
-model Community_BusinessChallenge {
-  id                 String                        @id @default(cuid()) @db.VarChar(64)
-  proposerId         String
-  title              String
-  description        String
-  category           String
-  industryTags       String[]
-  constraints        String[]
-  successCriteria    Json
-  status             Community_ChallengeStatus     @default(OPEN)
-  deadline           DateTime?
-  acceptedSolutionId String?
-  collaborators      String[]
-  createdAt          DateTime                      @default(now())
-  updatedAt          DateTime                      @updatedAt
-  solvedAt           DateTime?
-  solutions          Community_ChallengeSolution[]
-
-  @@index([proposerId])
-  @@index([category, status])
-  @@index([status, deadline])
-  @@map("community_business_challenges")
-}
-
-model Community_ChallengeSolution {
-  id             String                      @id @default(cuid()) @db.VarChar(64)
-  challengeId    String @db.VarChar(64)
-  authorId       String @db.VarChar(64)
-  solution       String
-  approach       String
-  implementation String?
-  isAccepted     Boolean                     @default(false)
-  votes          Int                         @default(0)
-  createdAt      DateTime                    @default(now())
-  updatedAt      DateTime                    @updatedAt
-  challenge      Community_BusinessChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-
-  @@index([challengeId])
-  @@index([authorId])
-  @@map("community_challenge_solutions")
-}
-
-model Community_EngagementQuota {
-  id              String   @id @default(cuid()) @db.VarChar(64)
-  userId          String @db.VarChar(64)
-  quotaType       String
-  dailyLimit      Int
-  weeklyLimit     Int
-  dailyUsed       Int      @default(0)
-  weeklyUsed      Int      @default(0)
-  dailyRemaining  Int
-  weeklyRemaining Int
-  lastResetDaily  DateTime @default(now())
-  lastResetWeekly DateTime @default(now())
-  qualityBonus    Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@unique([userId, quotaType])
-  @@index([userId])
-  @@map("community_engagement_quotas")
-}
-
-model Community_ContributionHistory {
-  id           String   @id @default(cuid()) @db.VarChar(64)
-  userId       String @db.VarChar(64)
-  actionType   String
-  contentId    String
-  contentType  String
-  pointsEarned Int      @default(0)
-  qualityScore Int?
-  createdAt    DateTime @default(now())
-
-  @@index([userId, createdAt])
-  @@index([userId, actionType])
-  @@map("community_contribution_history")
-}
-
-model Community_UserInteraction {
-  id              String   @id @default(cuid()) @db.VarChar(64)
-  userId          String @db.VarChar(64)
-  contentId       String
-  contentType     String
-  category        String
-  interactionType String
-  timestamp       DateTime @default(now())
-
-  @@index([userId, timestamp])
-  @@index([contentId, interactionType])
-  @@map("community_user_interactions")
-}
-
-model Community_PeerEndorsement {
-  id            String   @id @default(cuid()) @db.VarChar(64)
-  endorserId    String
-  endorseeId    String
-  expertiseArea String
-  message       String?
-  createdAt     DateTime @default(now())
-
-  @@unique([endorserId, endorseeId, expertiseArea])
-  @@index([endorseeId, expertiseArea])
-  @@map("community_peer_endorsements")
-}
-
-model Community_OutboxEvent {
-  id          String    @id @default(cuid()) @db.VarChar(64)
-  eventId     String    @unique
-  eventType   String
-  eventData   Json
-  status      String    @default("PENDING")
-  createdAt   DateTime  @default(now())
-  processedAt DateTime?
-  attempts    Int       @default(0)
-  lastError   String?
-  nextRetryAt DateTime?
-
-  @@index([status, nextRetryAt])
-  @@index([createdAt])
-  @@map("community_outbox_events")
-}
-
 model SagaLog {
   sagaId      String        @id @db.VarChar(64)
   sagaType    String
@@ -3829,6 +3547,8 @@ model SagaLog {
   updatedAt   DateTime      @updatedAt
   steps       SagaStepLog[]
 
+  @@index([status])
+  @@index([sagaType])
   @@map("saga_logs")
 }
 
@@ -3842,6 +3562,7 @@ model SagaStepLog {
   error       String?
   saga        SagaLog   @relation(fields: [sagaId], references: [sagaId], onDelete: Cascade)
 
+  @@index([sagaId])
   @@map("saga_step_logs")
 }
 
@@ -3854,6 +3575,8 @@ model SagaDeadLetter {
   failedAt  DateTime @default(now())
   reason    String
 
+  @@index([sagaType])
+  @@index([failedAt])
   @@map("saga_dead_letters")
 }
 
@@ -3864,7 +3587,6 @@ model EventLog {
   processedAt  DateTime @default(now())
 
   @@unique([eventId, consumerName])
-  @@index([eventId])
   @@index([consumerName])
   @@map("event_logs")
 }
@@ -4078,71 +3800,6 @@ enum Commission_PayoutStatus {
   processed
   cancelled
   failed
-}
-
-enum Community_PostType {
-  text
-  image
-  video
-  link
-  poll
-  event
-}
-
-enum Community_Visibility {
-  public
-  followers
-  private
-}
-
-enum Community_PostStatus {
-  draft
-  published
-  hidden
-  deleted
-}
-
-enum Community_UserStatus {
-  active
-  suspended
-  deactivated
-}
-
-enum Community_CommentStatus {
-  published
-  hidden
-  deleted
-}
-
-enum Community_LikeType {
-  like
-  love
-  laugh
-  angry
-  sad
-}
-
-enum Community_FollowStatus {
-  pending
-  accepted
-  blocked
-}
-
-enum Community_ReportReason {
-  spam
-  harassment
-  inappropriate_content
-  copyright_violation
-  hate_speech
-  misinformation
-  other
-}
-
-enum Community_ReportStatus {
-  pending
-  reviewed
-  resolved
-  dismissed
 }
 
 enum Compliance_SubjectRightsRequestType {
@@ -4667,42 +4324,6 @@ enum Campaign_ConditionType {
   GEOGRAPHIC_REGION
 }
 
-enum Community_ThreadStatus {
-  OPEN
-  ACTIVE
-  RESOLVED
-  CLOSED
-}
-
-enum Community_ExpertiseLevel {
-  BEGINNER
-  INTERMEDIATE
-  ADVANCED
-  EXPERT
-}
-
-enum Community_ReputationTier {
-  NEWCOMER
-  CONTRIBUTOR
-  EXPERT
-  MENTOR
-  THOUGHT_LEADER
-}
-
-enum Community_ReviewStatus {
-  DRAFT
-  PENDING_REVIEW
-  PUBLISHED
-  REJECTED
-}
-
-enum Community_ChallengeStatus {
-  OPEN
-  IN_PROGRESS
-  SOLVED
-  CLOSED
-}
-
 enum Sms_Status {
   QUEUED
   SENDING
@@ -4866,7 +4487,6 @@ model Catalog_SellerLocation {
 
   fulfillmentSelections Catalog_FulfillmentSelection[]
 
-  @@index([sellerId])
   @@index([sellerId, status])
   @@index([latitude, longitude])
   @@index([regionId])
@@ -4893,6 +4513,7 @@ model Catalog_FulfillmentSelection {
   location       Catalog_SellerLocation @relation(fields: [locationId], references: [id])
 
   @@index([checkoutId])
+  @@index([locationId])
   @@map("catalog_fulfillment_selections")
 }
 
@@ -5167,6 +4788,20 @@ model Logistics_PricingConfig {
   // ── Platform margin ────────────────────────────────────────────────────────
   platformMarginPct          Decimal   @db.Decimal(6, 4)
 
+  // ── Payment processing rates (MYS-DEL-001 Article 29 correction 8) ────────
+  // Mobile money / card / bank transfer processing cost as a fraction of
+  // the transaction amount. Stored here so the FinancialFeasibilityEngine
+  // can include actual provider rates and produce PROFITABLE rather than
+  // UNVERIFIED classification.
+  // Defaults: 0.01 (1%) for mobile money (Tanzanian M-Pesa/Airtel/Tigo),
+  //           0.015 (1.5%) for card, 0 for WALLET (internal, no provider fee).
+  /// Payment processing rate for mobile money (e.g. 0.01 = 1%). Nullable — defaults to 0.01 in application code.
+  mobileMoneyProcessingRatePct Decimal? @db.Decimal(6, 4)
+  /// Payment processing rate for card payments. Nullable — defaults to 0.015.
+  cardProcessingRatePct        Decimal? @db.Decimal(6, 4)
+  /// Payment processing rate for COD collection (courier cash-handling fee). Nullable — defaults to 0.005.
+  codProcessingRatePct         Decimal? @db.Decimal(6, 4)
+
   // ── Floor / ceiling / rounding ─────────────────────────────────────────────
   floorPriceTzs              Decimal   @db.Decimal(12, 2)
   ceilingPriceTzs            Decimal   @db.Decimal(12, 2)
@@ -5287,12 +4922,23 @@ model Logistics_Shipment {
   status                  String   @default("CREATED") @db.VarChar(32)
   failureReason           String?  @db.VarChar(40)       // set when status = FAILED
   deliveryJobId           String?  @db.VarChar(64)       // set when assigned to a DeliveryJob
+  /// Constitutional terminal outcome (MYS-DEL-001 Article 23).
+  /// One of: COMPLETED | CANCELLED_BY_CUSTOMER | CANCELLED_BY_MERCHANT |
+  /// CANCELLED_BY_DRIVER | CANCELLED_BY_PLATFORM | FAILED_CUSTOMER_UNAVAILABLE |
+  /// FAILED_MERCHANT_UNAVAILABLE | FAILED_ADDRESS_OR_LOCATION |
+  /// FAILED_OTHER | RETURNED_TO_ORIGIN
+  /// Null until the shipment reaches a terminal state.
+  outcomeCode             String?  @db.VarChar(40)
+  /// Responsible party for cost attribution: CUSTOMER | MERCHANT | DRIVER | MAYSAR | INVESTIGATE.
+  /// Set when outcomeCode is set; null for in-progress shipments.
+  outcomeResponsibleParty String?  @db.VarChar(16)
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 
   @@index([orderId])
   @@index([sellerId])
   @@index([status])
+  @@index([outcomeCode])
   @@index([deliveryJobId])
   @@map("logistics_shipments")
 }
@@ -5413,7 +5059,6 @@ model Logistics_VehicleTariff {
 
   @@unique([vehicleId, version])
   @@index([vehicleId, isActive])
-  @@index([isActive])
   @@map("logistics_vehicle_tariffs")
 }
 
@@ -5457,6 +5102,7 @@ model Logistics_LedgerEntry {
   @@index([deliveryJobId])
   @@index([entryType])
   @@index([counterpartyId])
+  @@index([shipmentId])
   @@map("logistics_ledger_entries")
 }
 
@@ -5522,12 +5168,12 @@ model Logistics_FairnessFlag {
 
   @@index([checkType])
   @@index([resolvedAt])
+  @@index([deliveryJobId])
   @@map("logistics_fairness_flags")
 }
 
-/// Per-buyer logistics behavior record, updated on every DeliveryConfirmed /
-/// DeliveryFailed event. Feeds failure_probability in option ranking.
-/// (Phase 6 §6.3)
+/// Per-driver buyer profile for delivery preference/reliability tracking.
+/// Updated on every DeliveryConfirmed / DeliveryFailed event.
 model Logistics_BuyerProfile {
   id                          String   @id @db.VarChar(64)  // byp-{ULID}
   buyerId                     String   @unique @db.VarChar(64)
@@ -5583,7 +5229,60 @@ model Logistics_PoolOptimizationRun {
   durationMs                  Int
   ranAt                       DateTime @default(now())
 
+  @@index([ranAt])
   @@map("logistics_pool_optimization_runs")
+}
+
+/// Merchant delivery contribution policy (MYS-DEL-001 Article 4.4).
+/// One row per merchant — defines how the merchant contributes to delivery
+/// cost. Only CONFIRMED contributions enter total funding; this record stores
+/// the arrangement, not the confirmation (which happens at settlement).
+model Logistics_MerchantDeliveryPolicy {
+  id              String   @id @default(cuid()) @db.VarChar(64)
+  merchantId      String   @unique @db.VarChar(64)
+  /// FLAT_PER_ORDER | PERCENTAGE_OF_ORDER | PERCENTAGE_OF_FEE | CAPPED_PERCENTAGE | NONE
+  contributionType String  @db.VarChar(32)
+  /// Rate for percentage types [0, 1]. Null for FLAT_PER_ORDER and NONE.
+  rate            Decimal? @db.Decimal(8, 6)
+  /// Fixed TZS for FLAT_PER_ORDER; cap TZS for CAPPED_PERCENTAGE. Null otherwise.
+  amountTzs       Decimal? @db.Decimal(12, 2)
+  /// Contract/commercial memo reference for auditability.
+  agreementRef    String?  @db.VarChar(128)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime @updatedAt @db.Timestamp(6)
+
+  @@index([isActive])
+  @@map("logistics_merchant_delivery_policies")
+}
+
+/// Explicitly authorized delivery subsidy (MYS-DEL-001 Article 4.5).
+/// Every subsidy must have a funding source, purpose, authorization, amount
+/// and expiry. The SubsidyGovernanceEngine reads this record at quote time.
+/// Rows are append-only — corrections are new authorizations, not overwrites.
+model Logistics_AuthorizedSubsidy {
+  id                String   @id @default(cuid()) @db.VarChar(64)
+  /// MAYSAR_PLATFORM | MERCHANT_PROMOTION | COMMERCIAL_PARTNER | CAMPAIGN
+  fundingSource     String   @db.VarChar(32)
+  /// FREE_DELIVERY_PROMOTION | DISCOUNTED_DELIVERY | COVERAGE_OF_DEFICIT | DRIVER_MINIMUM_TOP_UP | NEW_ZONE_LAUNCH
+  purpose           String   @db.VarChar(40)
+  authorizedAmountTzs Decimal @db.Decimal(12, 2)
+  /// Operator or system actor who approved this subsidy.
+  authorizedBy      String   @db.VarChar(64)
+  authorizedAt      DateTime @default(now()) @db.Timestamp(6)
+  /// null = no expiry (must be reviewed explicitly)
+  expiresAt         DateTime? @db.Timestamp(6)
+  /// Optional link to a merchant, campaign or partner record.
+  sourceRef         String?  @db.VarChar(128)
+  /// Optional zone/strategy scope: null = applies globally.
+  applicableZone    String?  @db.VarChar(32)
+  applicableStrategy String? @db.VarChar(32)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now()) @db.Timestamp(6)
+
+  @@index([isActive, expiresAt])
+  @@index([fundingSource])
+  @@map("logistics_authorized_subsidies")
 }
 
 // ── Product Intelligence Engine ──────────────────────────────────────────────
@@ -5611,7 +5310,6 @@ model Catalog_ProductContentSection {
   updatedAt               DateTime @updatedAt @db.Timestamp(6)
 
   @@unique([productId, sectionType])
-  @@index([productId])
   @@index([productId, isSellerOffer])
   @@map("catalog_product_content_sections")
 }
@@ -5631,7 +5329,6 @@ model Catalog_ProductLifecycleLog {
   triggeredBy  String?  @db.VarChar(64)
   createdAt    DateTime @default(now()) @db.Timestamp(6)
 
-  @@index([productId])
   @@index([productId, toState])
   @@index([createdAt])
   @@map("catalog_product_lifecycle_log")
@@ -5849,6 +5546,8 @@ model Request_Procurement {
 
   @@index([orderId])
   @@index([itemId])
+  @@index([supplierId])
+  @@index([sourceId])
   @@map("request_procurements")
 }
 

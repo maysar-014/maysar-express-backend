@@ -1,11 +1,11 @@
 {
-  "runDate": "2026-11-10T14:05:16.622Z",
+  "runDate": "2026-11-17T16:44:10.533Z",
   "baseUrl": "http://localhost:3000",
   "summary": {
-    "total": 176,
-    "passed": 176,
+    "total": 195,
+    "passed": 191,
     "failed": 0,
-    "skipped": 0,
+    "skipped": 4,
     "passRate": "100%"
   },
   "byLifecycle": {
@@ -160,14 +160,14 @@
       "skipped": 0
     },
     "LC-31": {
-      "passed": 2,
-      "failed": 0,
-      "skipped": 0
-    },
-    "LC-32": {
       "passed": 6,
       "failed": 0,
-      "skipped": 0
+      "skipped": 1
+    },
+    "LC-32": {
+      "passed": 17,
+      "failed": 0,
+      "skipped": 3
     },
     "LC-33": {
       "passed": 6,
@@ -1147,6 +1147,36 @@
       "ok": true
     },
     {
+      "lifecycle": "LC-31",
+      "step": "GET /api/enabler/enablers/:id/earnings [enabler]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-31",
+      "step": "GET /api/enabler/enablers/:id/earnings/summary [enabler]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-31",
+      "step": "Enabler_Earning for this order NOT FOUND (non-enabler order)",
+      "status": "info",
+      "ok": null
+    },
+    {
+      "lifecycle": "LC-31",
+      "step": "GET enabler wallet balance",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-31",
+      "step": "GET enabler earnings as buyer → 401/403 (RBAC)",
+      "status": 403,
+      "ok": true
+    },
+    {
       "lifecycle": "LC-32",
       "step": "POST /api/catalog/v1/seller/offers [seller]",
       "status": 409,
@@ -1239,6 +1269,90 @@
     {
       "lifecycle": "LC-35",
       "step": "POST /api/catalog/v1/checkout/validate [buyer]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-32",
+      "step": "GET delivery status (seller view)",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-32",
+      "step": "GET order status post-delivery [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-32",
+      "step": "GET order status post-delivery [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-32",
+      "step": "GET seller wallet balance post-delivery",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-32",
+      "step": "GET seller wallet statement [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-32",
+      "step": "GET /api/payout/payouts [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-32",
+      "step": "GET /api/commission/sellers/:sellerId [seller]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-32",
+      "step": "GET /api/commission/order/:orderId [admin]",
+      "status": 404,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-32",
+      "step": "GET logistics quote breakdown [admin]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-32",
+      "step": "feasibility classification ABSENT (11-stage fallback)",
+      "status": "info",
+      "ok": null
+    },
+    {
+      "lifecycle": "LC-32",
+      "step": "GET /api/logistics/api/courier/earnings [courier]",
+      "status": 200,
+      "ok": true
+    },
+    {
+      "lifecycle": "LC-32",
+      "step": "Shipment outcomeCode (Article 23): ABSENT",
+      "status": 200,
+      "ok": null
+    },
+    {
+      "lifecycle": "LC-32",
+      "step": "outcomeCode ABSENT (not terminal or not migrated)",
+      "status": "info",
+      "ok": null
+    },
+    {
+      "lifecycle": "LC-32",
+      "step": "GET monthly delivery economics report [admin]",
       "status": 200,
       "ok": true
     }

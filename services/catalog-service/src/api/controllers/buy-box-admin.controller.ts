@@ -126,8 +126,16 @@ export class BuyBoxAdminController {
       }
 
       // Prisma P2025 = "record to update not found" → no anomaly flag with that id
-      if ((error as { code?: string })?.code === 'P2025'
-        || String((error as Error)?.message || '').includes('Record to update not found')) {
+      // Prisma P2023 = "inconsistent column data" → invalid ID format (non-CUID)
+      const errCode = (error as { code?: string })?.code ?? '';
+      const errMsg = String((error as Error)?.message || '');
+      if (
+        errCode === 'P2025'
+        || errMsg.includes('Record to update not found')
+        || errCode === 'P2023'
+        || errMsg.includes('Inconsistent column data')
+        || errMsg.includes('Invalid')
+      ) {
         res.status(404).json({
           success: false,
           error: { code: 'ANOMALY_FLAG_NOT_FOUND', message: 'Anomaly flag not found.' }

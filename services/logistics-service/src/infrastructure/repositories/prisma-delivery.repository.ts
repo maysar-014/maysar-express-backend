@@ -111,6 +111,34 @@ export class PrismaDeliveryRepository implements IDeliveryRepository {
 
     if (status === 'delivered') {
       data.actualDeliveryTime = new Date();
+      // MYS-DEL-001 Article 23: set constitutional outcomeCode on terminal delivery
+      data.outcomeCode = 'COMPLETED';
+      data.outcomeResponsibleParty = 'MAYSAR'; // settled normally
+    }
+
+    if (status === 'cancelled') {
+      // Default actor: platform. Can be overridden via metadata.outcomeCode
+      data.outcomeCode = metadata?.outcomeCode ?? 'CANCELLED_BY_PLATFORM';
+      const OUTCOME_PARTY: Record<string, string> = {
+        CANCELLED_BY_CUSTOMER: 'CUSTOMER',
+        CANCELLED_BY_MERCHANT: 'MERCHANT',
+        CANCELLED_BY_DRIVER:   'INVESTIGATE',
+        CANCELLED_BY_PLATFORM: 'MAYSAR',
+      };
+      data.outcomeResponsibleParty = OUTCOME_PARTY[data.outcomeCode as string] ?? 'INVESTIGATE';
+    }
+
+    if (status === 'failed') {
+      // Default: unknown cause. Can be overridden via metadata.outcomeCode
+      data.outcomeCode = metadata?.outcomeCode ?? 'FAILED_OTHER';
+      const OUTCOME_PARTY: Record<string, string> = {
+        FAILED_CUSTOMER_UNAVAILABLE: 'CUSTOMER',
+        FAILED_MERCHANT_UNAVAILABLE: 'MERCHANT',
+        FAILED_ADDRESS_OR_LOCATION:  'INVESTIGATE',
+        FAILED_OTHER:                'INVESTIGATE',
+        RETURNED_TO_ORIGIN:          'INVESTIGATE',
+      };
+      data.outcomeResponsibleParty = OUTCOME_PARTY[data.outcomeCode as string] ?? 'INVESTIGATE';
     }
 
     if (metadata) {

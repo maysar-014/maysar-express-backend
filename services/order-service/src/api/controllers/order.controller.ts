@@ -630,7 +630,7 @@ export class OrderController {
       let scope: { buyerId?: string; sellerId?: string } = {};
 
       if (requestedBuyerId) {
-        orders = await this.orderRepository.findByBuyerId(requestedBuyerId);
+        orders = await this.orderRepository.findByBuyerId(requestedBuyerId, limitNum, (pageNum - 1) * limitNum);
         scope = { buyerId: requestedBuyerId };
       } else if (requestedSellerId) {
         if (!this.orderRepository.findBySellerId) {
@@ -641,7 +641,7 @@ export class OrderController {
           });
           return;
         }
-        orders = await this.orderRepository.findBySellerId(requestedSellerId);
+        orders = await this.orderRepository.findBySellerId(requestedSellerId, limitNum, (pageNum - 1) * limitNum);
         scope = { sellerId: requestedSellerId };
       } else if (authUserId && roles.includes('seller') && !roles.includes('buyer')) {
         if (!this.orderRepository.findBySellerId) {
@@ -652,10 +652,10 @@ export class OrderController {
           });
           return;
         }
-        orders = await this.orderRepository.findBySellerId(authUserId);
+        orders = await this.orderRepository.findBySellerId(authUserId, limitNum, (pageNum - 1) * limitNum);
         scope = { sellerId: authUserId };
       } else if (authUserId) {
-        orders = await this.orderRepository.findByBuyerId(authUserId);
+        orders = await this.orderRepository.findByBuyerId(authUserId, limitNum, (pageNum - 1) * limitNum);
         scope = { buyerId: authUserId };
       } else {
         res.status(400).json({

@@ -46,7 +46,7 @@ Per-order risk assessment adds a further layer. Before any COD order is placed, 
 
 ### Seller trust: compliance with accountability
 
-Every seller on Maysar passes KYC verification that includes AML screening against sanctions and politically exposed persons lists, TRA tax compliance verification, and TCRA registration check where applicable. The verification path is: automated document pre-checks, manual compliance officer review, AML screening, TRA check, TCRA check, final decision. Rejection provides a reason and an appeal path. Approval requires passing all stages. Annual re-verification is required to maintain active status.
+Every seller on Maysar passes KYC verification that includes AML screening against sanctions and politically exposed persons lists, internal tax compliance verification, and business registration verification where applicable. The verification path is: automated document pre-checks, manual compliance officer review, AML screening, internal tax compliance check, business registration check, final decision. Rejection provides a reason and an appeal path. Approval requires passing all stages. Annual re-verification is required to maintain active status.
 
 Ongoing trust is maintained through behavioral signals: rolling COD dispute rates, fulfillment reliability, cancellation rates, return rates, and stock behavior. A seller whose rolling 30-day COD dispute rate exceeds 15% across a minimum of five orders is automatically suspended from offering COD until the rate drops below 10%.
 
@@ -360,7 +360,7 @@ As of September 2026, the core platform is live. The following systems are imple
 
 The buyer-facing marketplace: product search and discovery through MeiliSearch, buy-box ranking with the nine-signal composite engine and category-specific weight strategies, full order lifecycle from cart through payment through delivery through settlement, COD trust scoring with the dual-axis five-tier model and identity graph, per-order dynamic risk assessment, and the full payment suite (Mpesa, Airtel Money, Tigo Pesa, Halopesa, wallet, bank transfer, card, COD) with fraud scoring and saga-based compensation.
 
-The seller and supplier layer: business registration with full KYC/AML/TRA/TCRA compliance, product catalog with fingerprinting and variant management, inventory management with reservation and reconciliation, campaign and pricing rules, seller analytics dashboard, and the production service for bulk order management.
+The seller and supplier layer: business registration with full KYC/AML compliance, product catalog with fingerprinting and variant management, inventory management with reservation and reconciliation, campaign and pricing rules, seller analytics dashboard, and the production service for bulk order management.
 
 The enabler network: profile management, training and certification system with business gate enforcement, assisted sale attribution through encoded product links, and commission calculation and settlement.
 

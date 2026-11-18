@@ -87,9 +87,9 @@ Score ≥ 90 → "Trusted Seller" badge.
 | Type | Required documents |
 |---|---|
 | `SOLE_PROPRIETORSHIP` | `REGISTRATION_CERTIFICATE`, `PROOF_OF_ADDRESS`, `OWNER_ID` |
-| `PARTNERSHIP` | + `TAX_CERTIFICATE` |
-| `LIMITED_LIABILITY` | + `TAX_CERTIFICATE`, `BUSINESS_LICENSE` |
-| `CORPORATION` | + `TAX_CERTIFICATE`, `BUSINESS_LICENSE` |
+| `PARTNERSHIP` | + `BUSINESS_LICENSE` |
+| `LIMITED_LIABILITY` | + `BUSINESS_LICENSE` |
+| `CORPORATION` | + `BUSINESS_LICENSE` |
 
 - `REJECTED` businesses cannot be re-verified — error `VERIFICATION_REJECTED`
 - `CLOSED` businesses cannot be verified — error `BUSINESS_CLOSED`

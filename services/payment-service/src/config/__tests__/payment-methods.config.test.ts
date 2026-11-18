@@ -249,8 +249,8 @@ describe("PaymentMethodConfigService", () => {
         loadPaymentEnvironment({
           PAYMENT_MPESA_MODE: "sandbox",
           PAYMENT_WALLET_MODE: "live",
-          PAYMENT_SELCOM_SANDBOX_BASE_URL:
-            "https://apigwtest.selcommobile.com/v1",
+          PAYMENT_SANDBOX_BASE_URL:
+            "https://sandbox.payment-gateway.example/v1",
         }),
       ).not.toThrow();
     });
