@@ -27,6 +27,7 @@ RUN --mount=type=cache,id=s/f16defe0-3cda-4477-9ce2-74289cd6d0ac-/root/.npm,targ
 # Build application
 FROM deps AS builder
 COPY . .
+ENV NODE_OPTIONS=--max-old-space-size=3072
 RUN npm run build
 RUN mkdir -p /tmp/runtime-prisma \
     && cp -R node_modules/prisma /tmp/runtime-prisma/prisma \
